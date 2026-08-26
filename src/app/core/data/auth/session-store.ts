@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { Session } from '@domain/entities/session';
+import { readClubId, readRoles } from './jwt-claims';
 
 const LS_KEY = 'setpoint:session:v1';
 
@@ -26,6 +27,20 @@ export class SessionStore {
   readonly refreshToken = this._refreshToken.asReadonly();
   readonly mustChangePassword = this._mustChangePassword.asReadonly();
   readonly isAuthenticated = computed(() => this._accessToken() !== null);
+
+  /**
+   * Salen del TOKEN y no del login: `hydrate()` corre en el constructor, así que sobreviven un
+   * F5. `TenantContext` sólo lo puebla `SessionFacade.login()`, y por eso no sirve como fuente.
+   */
+  readonly clubId = computed(() => {
+    const token = this._accessToken();
+    return token === null ? null : readClubId(token);
+  });
+
+  readonly roles = computed(() => {
+    const token = this._accessToken();
+    return token === null ? [] : readRoles(token);
+  });
 
   constructor() {
     this.hydrate();

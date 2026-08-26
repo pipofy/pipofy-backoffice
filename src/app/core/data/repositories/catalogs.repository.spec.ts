@@ -55,3 +55,30 @@ describe('CatalogsRepository', () => {
     expect(paths).toEqual(['/catalogs/plan-types']);
   });
 });
+
+describe('CatalogsRepository.paymentMethods', () => {
+  it('pide el catálogo y lo valida, igual que los otros cuatro', async () => {
+    const { facade, paths } = setup(() => of([{ id: '3', name: 'efectivo' }]));
+    expect(await facade.paymentMethods()).toEqual([{ id: '3', name: 'efectivo' }]);
+    expect(paths).toEqual(['/catalogs/payment-methods']);
+  });
+
+  /**
+   * Propaga el error en vez de tragarlo. Antes caía a una lista demo con ids inventados —
+   * puesta cuando el endpoint no existía— que disfrazaba de "modo demo" cualquier fallo, un
+   * corte de red o un 401 incluidos. El endpoint existe desde el backend `168181f`.
+   */
+  it('propaga el fallo en vez de devolver una lista inventada', async () => {
+    const { facade } = setup(() => throwError(() => new HttpErrorResponse({ status: 0 })));
+    await expect(facade.paymentMethods()).rejects.toEqual({ kind: 'network' });
+  });
+});
+
+describe('CatalogsRepository.studentStatuses', () => {
+  it('pide /catalogs/student-statuses y memoiza como los demás', async () => {
+    const { facade, paths } = setup(() => of([{ id: '2', name: 'pending_classification' }]));
+    expect(await facade.studentStatuses()).toEqual([{ id: '2', name: 'pending_classification' }]);
+    await facade.studentStatuses();
+    expect(paths).toEqual(['/catalogs/student-statuses']);
+  });
+});

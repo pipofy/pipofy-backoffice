@@ -12,6 +12,7 @@ export function toStudent(dto: StudentDto): Student {
     lastName: dto.lastName ?? '',
     birthDate: toYmd(dto.birthDate),
     categoryId: dto.categoryId,
+    studentStatusId: dto.studentStatusId,
     dominantHand: dto.dominantHand,
     ranking: dto.ranking,
     notes: dto.notes,
@@ -19,8 +20,9 @@ export function toStudent(dto: StudentDto): Student {
 }
 
 /**
- * `categoryId` y `birthDate` se OMITEN cuando son null, por motivos DISTINTOS (ver el
- * comentario del schema). El resto se manda en null, que es lo que los vacía.
+ * `categoryId`, `birthDate` y `studentStatusId` se OMITEN cuando son null, por motivos
+ * DISTINTOS (ver el comentario del schema). El resto se manda en null, que es lo que los
+ * vacía.
  *
  * Ojo con "unificar" esto con toPlanRequest: ese omite una sola clave (coachId) y manda
  * null en todo lo demás. Cada mapper tiene un test que fija su regla justamente para que
@@ -36,6 +38,7 @@ export function toStudentRequest(draft: StudentDraft): StudentRequest {
     notes: draft.notes,
     ...(draft.categoryId !== null ? { categoryId: draft.categoryId } : {}),
     ...(draft.birthDate !== null ? { birthDate: draft.birthDate } : {}),
+    ...(draft.studentStatusId !== null ? { studentStatusId: draft.studentStatusId } : {}),
   };
 }
 

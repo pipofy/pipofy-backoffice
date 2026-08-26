@@ -8,6 +8,8 @@ import { GruposCategoriaFacade } from './grupos-categoria/grupos-categoria.facad
 import { GrupoItemsFacade } from './grupos-categoria/grupo-items.facade';
 import { GrupoItemsStore } from './grupos-categoria/grupo-items-store';
 import { PlanesFacade } from './planes/planes.facade';
+import { PlanCategoriasFacade } from './planes/plan-categorias.facade';
+import { PlanCategoriasStore } from './planes/plan-categorias-store';
 import { ProfesoresFacade } from './profesores/profesores.facade';
 import { HorariosFacade } from './horarios/horarios.facade';
 
@@ -28,6 +30,8 @@ export const CONFIGURACION_ROUTES: Routes = [
       GrupoItemsFacade,
       GrupoItemsStore,
       PlanesFacade,
+      PlanCategoriasFacade,
+      PlanCategoriasStore,
       ProfesoresFacade,
       HorariosFacade,
       ...CONFIGURACION_PROVIDERS,

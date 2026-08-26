@@ -6,6 +6,7 @@ import { PlansRepository } from '@domain/contracts/plans.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Plan, PlanDraft, PlanInput } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
+import { PlanCategoriasStore } from './plan-categorias-store';
 
 const plan: Plan = {
   id: '1', name: 'Mensual 8', planTypeId: '2', coachId: '5',
@@ -26,6 +27,8 @@ function setup(over: Partial<PlansRepository> = {}, coachList: () => Promise<Coa
     create: async (_d: PlanDraft) => { calls.push('create'); },
     update: async (_id: string, _d: PlanDraft) => { calls.push('update'); },
     remove: async (_id: string) => { calls.push('remove'); },
+    addCategory: async () => undefined,
+    removeCategory: async () => undefined,
     ...over,
   } as PlansRepository;
 
@@ -35,6 +38,7 @@ function setup(over: Partial<PlansRepository> = {}, coachList: () => Promise<Coa
       PlanesFacade,
       { provide: PlansRepository, useValue: repo },
       { provide: CoachesRepository, useValue: { list: coachList } as unknown as CoachesRepository },
+      PlanCategoriasStore,
     ],
   });
   const facade = TestBed.inject(PlanesFacade);

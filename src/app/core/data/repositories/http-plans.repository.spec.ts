@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
 import { HttpPlansRepository } from './http-plans.repository';
 import { ApiClient } from '../http/api-client';
+import { API_CONFIG } from '../config/api-config.token';
 import { PlanDraft } from '@domain/entities/plan';
 
 interface Call { readonly method: string; readonly path: string; readonly body?: unknown }
@@ -23,6 +24,8 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
       provideZonelessChangeDetection(),
       HttpPlansRepository,
       { provide: ApiClient, useValue: api },
+      { provide: HttpClient, useValue: {} as HttpClient },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
     ],
   });
   return { repo: TestBed.inject(HttpPlansRepository), calls };
@@ -91,5 +94,82 @@ describe('HttpPlansRepository escrituras', () => {
     const { repo } = setup({ post: throwError(() => err) });
     await expect(repo.create({ ...draft, coachId: '99' }))
       .rejects.toEqual({ kind: 'domain', message: 'coachId inválido: no pertenece a este club' });
+  });
+});
+
+interface HttpCall { readonly method: string; readonly url: string; readonly body?: unknown }
+
+/** Setup aparte: addCategory/removeCategory usan HttpClient directo, no ApiClient. */
+function setupCategories(fail?: HttpErrorResponse) {
+  const calls: HttpCall[] = [];
+  const http = {
+    post: (url: string, body: unknown) => {
+      calls.push({ method: 'post', url, body });
+      return fail ? throwError(() => fail) : of({});
+    },
+    delete: (url: string) => {
+      calls.push({ method: 'delete', url });
+      return fail ? throwError(() => fail) : of({});
+    },
+  } as unknown as HttpClient;
+
+  TestBed.configureTestingModule({
+    providers: [
+      provideZonelessChangeDetection(),
+      HttpPlansRepository,
+      { provide: ApiClient, useValue: {} as ApiClient },
+      { provide: HttpClient, useValue: http },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+    ],
+  });
+  return { repo: TestBed.inject(HttpPlansRepository), calls };
+}
+
+describe('HttpPlansRepository.addCategory', () => {
+  it('postea la categoría al plan', async () => {
+    const { repo, calls } = setupCategories();
+    await repo.addCategory('7', '3');
+    expect(calls[0]).toEqual({
+      method: 'post',
+      url: '/api/plans/7/categories',
+      body: { categoryId: '3' },
+    });
+  });
+
+  it('un 409 NO lanza: la categoría ya estaba, el estado final es el pedido', async () => {
+    // Es la pieza que sostiene todo el modal: sin poder LEER la asignación, la única forma de
+    // que la vista se autocorrija es que "ya estaba" cuente como éxito.
+    const { repo } = setupCategories(new HttpErrorResponse({ status: 409 }));
+    await expect(repo.addCategory('7', '3')).resolves.toBeUndefined();
+  });
+
+  it('un 400 sí lanza, con el mensaje del backend', async () => {
+    const err = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'categoryId inválido: no pertenece a este club' },
+    });
+    const { repo } = setupCategories(err);
+    await expect(repo.addCategory('7', '3')).rejects.toEqual({
+      kind: 'domain',
+      message: 'categoryId inválido: no pertenece a este club',
+    });
+  });
+});
+
+describe('HttpPlansRepository.removeCategory', () => {
+  it('borra la categoría del plan', async () => {
+    const { repo, calls } = setupCategories();
+    await repo.removeCategory('7', '3');
+    expect(calls[0]).toEqual({ method: 'delete', url: '/api/plans/7/categories/3' });
+  });
+
+  it('un 404 NO lanza: la categoría no estaba, el estado final es el pedido', async () => {
+    const { repo } = setupCategories(new HttpErrorResponse({ status: 404 }));
+    await expect(repo.removeCategory('7', '3')).resolves.toBeUndefined();
+  });
+
+  it('un 403 sí lanza', async () => {
+    const { repo } = setupCategories(new HttpErrorResponse({ status: 403 }));
+    await expect(repo.removeCategory('7', '3')).rejects.toEqual({ kind: 'forbidden' });
   });
 });

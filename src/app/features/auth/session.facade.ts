@@ -5,7 +5,6 @@ import { AuthRepository } from '@domain/contracts/auth.repository';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
 import { SessionStore } from '@data/auth/session-store';
-import { readClubId } from '@data/auth/jwt-claims';
 
 /**
  * Dueña de la sesión. Se provee en ROOT (app.config.ts) porque el shell la necesita para el
@@ -38,7 +37,7 @@ export class SessionFacade extends SignalStore<void, DomainError> {
         this.store.set(session);
         // El clubId sale del JWT, no del header X-Tenant-Id (que el backend ignora). Poblarlo
         // mantiene funcionando los effect() que resetean estado al cambiar de tenant.
-        this.tenant.set(readClubId(session.accessToken));
+        this.tenant.set(this.store.clubId());
       }),
       toDomainError,
     );

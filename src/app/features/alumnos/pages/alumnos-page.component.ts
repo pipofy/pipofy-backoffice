@@ -7,6 +7,7 @@ import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/con
 import { Student, StudentInput, studentDisplayName } from '@domain/entities/student';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { catalogLabel } from '@data/catalog-labels';
 
 @Component({
   selector: 'app-alumnos-page',
@@ -32,6 +33,7 @@ export class AlumnosPageComponent {
   constructor() {
     if (!this.facade.data() && !this.facade.loading()) void this.facade.load();
     if (this.facade.categories().length === 0) void this.facade.loadCategories();
+    if (this.facade.statuses().length === 0) void this.facade.loadStatuses();
   }
 
   protected readonly filtered = computed(() => {
@@ -63,6 +65,15 @@ export class AlumnosPageComponent {
     if (id === null) return '—';
     const hit = this.facade.categories().find((c) => c.id === id);
     return hit ? hit.name || '(sin nombre)' : '—';
+  }
+
+  /**
+   * El '—' cubre el catálogo que no cargó, no un alumno sin estado: la columna es NOT NULL.
+   * Sin el catálogo la tabla mostraría el id crudo, que no le dice nada a nadie.
+   */
+  protected statusName(id: string): string {
+    const hit = this.facade.statuses().find((s) => s.id === id);
+    return hit ? catalogLabel(hit.name) : '—';
   }
 
   protected handName(hand: string | null): string {

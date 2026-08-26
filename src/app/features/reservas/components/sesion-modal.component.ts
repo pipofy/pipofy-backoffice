@@ -2,14 +2,16 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal, viewChild,
 } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
-import { ClassSession, occupiedSpots } from '@domain/entities/class-session';
+import { ClassSession } from '@domain/entities/class-session';
 import { Student, studentDisplayName } from '@domain/entities/student';
 import { StudentPlan, studentPlanIsUsable } from '@domain/entities/student-plan';
 import { Plan } from '@domain/entities/plan';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { domainErrorMessage } from '@domain/errors';
+import { catalogLabel } from '@data/catalog-labels';
 import { localDateKey } from '@domain/local-date';
+import { reservationStatusLabel } from '@domain/entities/session-reservation';
 import { SesionFacade } from '../sesion.facade';
 import { minutosRestantes } from '../hold-countdown';
 
@@ -55,27 +57,80 @@ import { minutosRestantes } from '../hold-countdown';
       <button type="button" class="btn btn-primary" [disabled]="!puedeReservar() || facade.loading()"
               (click)="onReservar()">Reservar</button>
 
+      <h4>Anotados</h4>
+      @for (r of anotados(); track r.id) {
+        <div class="arow">
+          <div class="a-main">
+            <div class="a-title">{{ nameOf(r.studentId) }}</div>
+            <div class="a-meta">{{ estado(r.status) }}</div>
+          </div>
+        </div>
+      } @empty {
+        <p class="a-empty">Todavía no se anotó nadie.</p>
+      }
+
       <h4>Pendientes de confirmar</h4>
-      @for (h of holds(); track h.reservation.id) {
+      @for (h of holds(); track h.id) {
         <div class="arow">
           <div class="a-main">
             <div class="a-title">{{ nameOf(h.studentId) }}</div>
             <div class="a-meta">
-              @if (vencido(h.reservation.holdExpiresAt)) {
+              @if (vencido(h.holdExpiresAt)) {
                 Venció
               } @else {
-                {{ minutos(h.reservation.holdExpiresAt) }} min para que venza
+                {{ minutos(h.holdExpiresAt) }} min para que venza
               }
             </div>
           </div>
           <button type="button" class="btn btn-primary btn-sm"
-                  [disabled]="facade.loading() || vencido(h.reservation.holdExpiresAt)"
-                  (click)="onConfirmar(h.reservation.id)">Confirmar</button>
+                  [disabled]="facade.loading() || vencido(h.holdExpiresAt)"
+                  (click)="onConfirmar(h.id)">Confirmar</button>
+          <!-- La OTRA salida del hold, no un fallback: Confirmar gasta un crédito del plan,
+               Cobrar cobra plata y no toca los créditos. Cuál corresponde lo decide el
+               mostrador. Sólo es el único camino cuando la reserva no tiene plan con
+               créditos: ahí Confirmar devuelve 409 'Requiere pago manual'. -->
+          <button type="button" class="btn btn-ghost btn-sm" data-test="cobrar"
+                  [disabled]="facade.loading() || vencido(h.holdExpiresAt)"
+                  [attr.aria-expanded]="cobrando() === h.id"
+                  (click)="onCobrarToggle(h.id)">Cobrar</button>
           <button type="button" class="btn btn-danger btn-sm" [disabled]="facade.loading()"
-                  (click)="onCancelar(h.reservation.id)">Cancelar</button>
+                  (click)="onCancelar(h.id)">Cancelar</button>
         </div>
+
+        <!-- Fila que se despliega y NO un modal anidado: un <dialog> adentro de otro es
+             justo lo que el polyfill de jsdom de test-setup.ts no cubre. -->
+        @if (cobrando() === h.id) {
+          <div class="cobro" data-test="cobro-form">
+            <div class="field field-dense">
+              <label [attr.for]="'cobro-monto-' + h.id">Monto cobrado</label>
+              <!-- inputmode y no type="number": el monto viaja como string hasta un Decimal
+                   de Prisma, y un input numérico lo redondearía antes de salir de acá. -->
+              <input class="control" inputmode="decimal" placeholder="0"
+                     [attr.id]="'cobro-monto-' + h.id"
+                     [value]="monto()" (input)="onMonto($event)" />
+            </div>
+            <div class="field field-dense">
+              <label [attr.for]="'cobro-medio-' + h.id">Medio de pago</label>
+              <select class="control" [attr.id]="'cobro-medio-' + h.id"
+                      [value]="medio()" (change)="onMedio($event)">
+                <option value="">Elegí un medio…</option>
+                @for (m of facade.paymentMethods(); track m.id) {
+                  <option [value]="m.id">{{ label(m.name) }}</option>
+                }
+              </select>
+              @if (facade.paymentMethods().length === 0) {
+                <p class="hint">No se pudieron cargar los medios de pago. Cerrá y reabrí la clase.</p>
+              }
+            </div>
+            <!-- Mismo guard que Confirmar y que Cobrar: sobre un hold vencido el backend
+                 responde 409 'El hold expiró', así que el botón no tiene que dejar intentarlo. -->
+            <button type="button" class="btn btn-primary btn-sm" data-test="cobro-confirmar"
+                    [disabled]="facade.loading() || vencido(h.holdExpiresAt)"
+                    (click)="onCobrar(h.id)">Cobrar y confirmar</button>
+          </div>
+        }
       } @empty {
-        <p class="a-empty">Ninguna reserva pendiente en esta visita.</p>
+        <p class="a-empty">Ninguna reserva pendiente.</p>
       }
 
       <h4>Lista de espera</h4>
@@ -99,6 +154,7 @@ import { minutosRestantes } from '../hold-countdown';
   styles: [`
     .form-error{margin-bottom:var(--space-md)}
     h4{margin:var(--space-md) 0 var(--space-sm)}
+    .cobro{padding:var(--space-sm) var(--space-md);border-left:2px solid var(--color-primary)}
   `],
 })
 export class SesionModalComponent {
@@ -114,6 +170,12 @@ export class SesionModalComponent {
   protected readonly session = signal<ClassSession | null>(null);
   protected readonly studentId = signal('');
   protected readonly planId = signal('');
+
+  /** id de la reserva cuya fila de cobro está desplegada, o null. Uno a la vez: dos formularios
+   *  abiertos comparten `monto` y `medio` y no hay forma de saber cuál se está editando. */
+  protected readonly cobrando = signal<string | null>(null);
+  protected readonly monto = signal('');
+  protected readonly medio = signal('');
   private readonly plans = signal<readonly StudentPlan[]>([]);
   /** Catálogo de planes, sólo para ponerles nombre a las opciones del select. */
   private readonly planCatalog = signal<readonly Plan[]>([]);
@@ -165,15 +227,52 @@ export class SesionModalComponent {
     () => new Map(this.students().map((s) => [s.id, studentDisplayName(s)] as const)),
   );
 
+  /**
+   * Tres estados van acá: confirmadas, holds VIGENTES y `pending_review`. Las dos primeras son
+   * las que cuenta `countOccupiedSpots` en el backend — un hold vencido queda afuera porque
+   * mostrarlo acá diría que el lugar está tomado. Sigue apareciendo en "Pendientes", que es
+   * donde "Venció" es la información útil.
+   *
+   * `pending_review` es la excepción consciente: el backend NO la cuenta para el cupo, pero es
+   * un alumno real anotado por WhatsApp sin plan, esperando revisión manual (ver
+   * `conversation.service.ts`) — dejarla fuera de las dos secciones la haría invisible en el
+   * panel, que es peor que no contarla en el cupo. No va a "Pendientes" porque ahí el
+   * `holdExpiresAt` maneja la cuenta regresiva y `pending_review` lo trae en `null` a
+   * propósito (no expira por el mecanismo de hold normal) — mostrarla ahí diría "Venció" para
+   * siempre, que es mentira.
+   *
+   * Depende de `now()` a través de `vencido()`: el tick de 30 s lo saca solo de esta lista.
+   */
+  protected readonly anotados = computed(() =>
+    this.facade
+      .reservationsOf(this.session()?.id ?? '')
+      .filter(
+        (r) =>
+          r.status === 'confirmed' ||
+          r.status === 'pending_review' ||
+          (r.status === 'held' && !this.vencido(r.holdExpiresAt)),
+      ),
+  );
+
+  protected estado(name: string): string { return reservationStatusLabel(name); }
+
   protected readonly holds = computed(() => this.facade.holdsOf(this.session()?.id ?? ''));
 
   protected puedeReservar(): boolean {
     return this.studentId() !== '' && this.planId() !== '';
   }
 
+  /**
+   * Sin fracción de ocupación: `session()` es el `ClassSession` capturado en `open()` y nunca
+   * se refresca, mientras que "Anotados" sí relee la API en vivo — mostrar "3/6" arriba de una
+   * lista de cinco alumnos era el resultado. Ni con datos frescos coincidirían del todo:
+   * `pending_review` cuenta para "Anotados" pero no para el `countOccupiedSpots` del backend.
+   * La lista de abajo ya dice exactamente quién está anotado, que es más información que una
+   * fracción, y calcular el cupo acá duplicaría la lógica de cupo del backend.
+   */
   protected subtitle(): string {
     const s = this.session();
-    return s ? `${this.labels()(s)} · ${occupiedSpots(s)}/${s.capacity}` : '';
+    return s ? `${this.labels()(s)} · ${s.capacity} lugares` : '';
   }
 
   protected name(s: Student): string { return studentDisplayName(s); }
@@ -195,6 +294,8 @@ export class SesionModalComponent {
     return this.planNames().get(planId) || `Plan #${planId}`;
   }
 
+  protected label(name: string): string { return catalogLabel(name); }
+
   protected errorText(): string {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
@@ -205,6 +306,7 @@ export class SesionModalComponent {
     this.studentId.set('');
     this.planId.set('');
     this.plans.set([]);
+    this.cerrarCobro();
     this.facade.clearError();
     void this.facade.open(session.id);
     this.modal().open();
@@ -272,6 +374,40 @@ export class SesionModalComponent {
 
   protected onConfirmar(reservationId: string): void {
     this.conSesion((sessionId) => this.facade.confirmar(sessionId, reservationId));
+  }
+
+  /** Abre la fila de cobro de esta reserva, o la cierra si ya era la abierta. */
+  protected onCobrarToggle(reservationId: string): void {
+    if (this.cobrando() === reservationId) {
+      this.cerrarCobro();
+      return;
+    }
+    this.facade.clearError();
+    this.cobrando.set(reservationId);
+    this.monto.set('');
+    this.medio.set('');
+  }
+
+  protected onMonto(e: Event): void { this.monto.set((e.target as HTMLInputElement).value); }
+  protected onMedio(e: Event): void { this.medio.set((e.target as HTMLSelectElement).value); }
+
+  /** Pasa por conSesion como los otros cinco handlers: ver el comentario de doble-submit. */
+  protected onCobrar(reservationId: string): void {
+    this.conSesion((sessionId) =>
+      this.facade
+        .cobrar(sessionId, reservationId, { paymentMethodId: this.medio(), amount: this.monto() })
+        .then(() => {
+          // Sólo si salió bien: cerrar tras un error se lleva puesto el monto ya tipeado.
+          if (this.facade.error()) return;
+          this.cerrarCobro();
+        }),
+    );
+  }
+
+  private cerrarCobro(): void {
+    this.cobrando.set(null);
+    this.monto.set('');
+    this.medio.set('');
   }
 
   protected onCancelar(reservationId: string): void {

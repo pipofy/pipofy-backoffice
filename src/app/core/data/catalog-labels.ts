@@ -22,6 +22,15 @@ const CATALOG_LABELS = new Map<string, string>([
   ['mensual_grupal', 'Mensual grupal'],
   ['individual', 'Individual'],
   ['nivelacion', 'Nivelación'],
+  // Medios de pago. 'mp_link' es el único que el humanizador genérico dejaría como "Mp link".
+  ['transferencia', 'Transferencia'],
+  ['efectivo', 'Efectivo'],
+  ['mp_link', 'Link de Mercado Pago'],
+  // Estados del alumno. 'pending_classification' NO se humaniza como "Pending classification":
+  // es el alumno que entró por WhatsApp y todavía no tiene categoría asignada.
+  ['active', 'Activo'],
+  ['pending_classification', 'Sin clasificar'],
+  ['inactive', 'Inactivo'],
 ]);
 
 /**

@@ -3,6 +3,12 @@
  * para que el mock ejercite el mismo borde DTO→entidad que usaría el backend real.
  *
  * `as const` NO: el schema valibot devuelve tipos mutables y v.parse lo consume tal cual.
+ *
+ * ponytail: toda la pantalla `/grupos` corre contra esta semilla. Salida: el endpoint HTTP de
+ * asistencia, que no existe en el backend — `attendance_status` sólo lo escriben
+ * `conversation.service.ts` y `coach-conversation.service.ts` (el flujo de WhatsApp). El
+ * roster ya tiene fuente real (`GET /class-sessions/:id/reservations`, conectado en esta
+ * misma entrega); sin asistencia queda mitad real y mitad maqueta, por eso no se migra ahora.
  */
 export const GROUPS_SEED = {
   club_id: 'c1',

@@ -28,6 +28,18 @@ describe('catalogLabel — tipos de plan', () => {
   });
 });
 
+describe('catalogLabel — estados del alumno', () => {
+  it('traduce los tres estados del seed', () => {
+    expect(catalogLabel('active')).toBe('Activo');
+    expect(catalogLabel('inactive')).toBe('Inactivo');
+    expect(catalogLabel('pending_classification')).toBe('Sin clasificar');
+  });
+
+  it('pending_classification necesita entrada explícita: el fallback lo dejaría en inglés', () => {
+    expect(catalogLabel('pending_classification')).not.toBe('Pending classification');
+  });
+});
+
 describe('catalogLabel — nombres heredados de Object.prototype', () => {
   it('no devuelve miembros del prototipo', () => {
     // Con un objeto literal, `CATALOG_LABELS['constructor']` devolvía la función Object y el

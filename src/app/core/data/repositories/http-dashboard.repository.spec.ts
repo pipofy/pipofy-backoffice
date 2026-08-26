@@ -42,8 +42,11 @@ function setup(
       waitingListCalls.push(id);
       return waiting;
     },
+    reservations: async () => [],
     joinWaitingList: async () => undefined,
     leaveWaitingList: async () => undefined,
+    cancel: async () => undefined,
+    cancelDay: async () => undefined,
     ...overrides,
   } as ClassSessionsRepository;
 

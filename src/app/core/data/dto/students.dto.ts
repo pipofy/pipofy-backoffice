@@ -1,9 +1,11 @@
 import * as v from 'valibot';
 
 /**
- * `studentStatusId` NO se declara a propósito: el backend lo manda pero no hay catálogo
- * para traducirlo (no existe GET /catalogs/student-statuses, §2.3), así que la UI no lo
- * usa. v.object lo descarta junto con clubId, createdAt y updatedAt.
+ * `studentStatusId` NO es nullable: es `BigInt` a secas en el schema (schema.prisma:240) y
+ * el alta lo fuerza a 'pending_classification' del lado del backend, así que toda fila lo
+ * tiene. Llega como string porque el serializador global convierte los BigInt.
+ *
+ * v.object descarta el resto (clubId, waOptIn*, createdAt, updatedAt).
  */
 export const StudentDtoSchema = v.object({
   id: v.string(),
@@ -12,6 +14,7 @@ export const StudentDtoSchema = v.object({
   lastName: v.nullable(v.string()),
   birthDate: v.nullable(v.string()),
   categoryId: v.nullable(v.string()),
+  studentStatusId: v.string(),
   dominantHand: v.nullable(v.string()),
   ranking: v.nullable(v.number()),
   notes: v.nullable(v.string()),
@@ -22,7 +25,7 @@ export type StudentDto = v.InferOutput<typeof StudentDtoSchema>;
 export const StudentListDtoSchema = v.array(StudentDtoSchema);
 
 /**
- * Write-path. DOS claves opcionales, por dos motivos distintos:
+ * Write-path. TRES claves opcionales, por tres motivos distintos:
  *
  * `categoryId` se omite cuando es null porque BigInt(null) tira TypeError → 500 (§3.2).
  * `birthDate` se omite cuando es null porque mandarlo no lo vacía: el service lo convierte
@@ -31,8 +34,10 @@ export const StudentListDtoSchema = v.array(StudentDtoSchema);
  * `phone` se manda siempre, pero el backend lo IGNORA en el PATCH (§3.1). Se manda igual
  *   para no tener dos schemas; el valor es el original porque el campo es readonly.
  *
- * `studentStatusId` no está: el alta lo fuerza a 'pending_classification' del lado del
- *   backend y la UI no puede editarlo sin catálogo.
+ * `studentStatusId` es la TERCERA clave opcional, y por un motivo propio: el alta no lo
+ *   acepta (CreateStudentDto no lo declara) pero la edición sí (UpdateStudentDto:38). Se
+ *   omite en el alta —donde el backend lo fuerza a 'pending_classification'— y se manda en
+ *   la edición. Nunca va en null: la columna es NOT NULL.
  */
 export const StudentRequestSchema = v.object({
   phone: v.string(),
@@ -40,6 +45,7 @@ export const StudentRequestSchema = v.object({
   lastName: v.nullable(v.string()),
   birthDate: v.optional(v.string()),
   categoryId: v.optional(v.string()),
+  studentStatusId: v.optional(v.string()),
   dominantHand: v.nullable(v.string()),
   ranking: v.nullable(v.number()),
   notes: v.nullable(v.string()),

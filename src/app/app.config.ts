@@ -18,6 +18,7 @@ import { AuthRepository } from '@domain/contracts/auth.repository';
 import { HttpAuthRepository } from '@data/repositories/http-auth.repository';
 import { HttpClubRepository } from '@data/repositories/http-club.repository';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { UsersRepository } from '@data/repositories/users.repository';
 import { environment } from '../environments/environment';
 import { API_CONFIG } from './core/data/config/api-config.token';
 
@@ -47,6 +48,9 @@ export const appConfig: ApplicationConfig = {
     // promete su docstring era falso: abrir Configuración y después el dashboard pedía
     // /catalogs/surface-types dos veces.
     CatalogsRepository,
+    // En ROOT porque su único consumidor es ShellComponent, que vive en `layout/` y no
+    // cuelga de ninguna ruta lazy: no hay providers donde bindearlo salvo acá.
+    UsersRepository,
     {
       provide: API_CONFIG,
       useValue: {

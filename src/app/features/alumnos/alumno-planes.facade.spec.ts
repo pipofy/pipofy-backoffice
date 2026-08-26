@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection} from '@angular/core';
 import { AlumnoPlanesFacade } from './alumno-planes.facade';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { StudentPlan } from '@domain/entities/student-plan';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { Plan } from '@domain/entities/plan';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+
+const CATALOGS_DOUBLE = {
+  paymentMethods: async () => [{ id: '3', name: 'efectivo' }],
+} as unknown as CatalogsRepository;
 
 function setup(repo: Partial<StudentsRepository>, plansRepo: Partial<PlansRepository> = {}) {
   TestBed.resetTestingModule();
@@ -13,6 +18,7 @@ function setup(repo: Partial<StudentsRepository>, plansRepo: Partial<PlansReposi
     providers: [
       provideZonelessChangeDetection(),
       AlumnoPlanesFacade,
+      { provide: CatalogsRepository, useValue: CATALOGS_DOUBLE },
       { provide: StudentsRepository, useValue: repo },
       { provide: PlansRepository, useValue: { list: async () => [], ...plansRepo } },
     ],

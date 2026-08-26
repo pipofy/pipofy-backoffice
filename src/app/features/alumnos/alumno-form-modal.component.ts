@@ -3,6 +3,8 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { DOMINANT_HANDS, Student, StudentInput } from '@domain/entities/student';
 import { dominantHandLabel } from './hand-label';
 import { Category } from '@domain/entities/category';
+import { CatalogItem } from '@data/dto/catalogs.dto';
+import { catalogLabel } from '@data/catalog-labels';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(alumno)` es edición.
@@ -79,6 +81,28 @@ import { Category } from '@domain/entities/category';
         </select>
       </div>
 
+      <!-- SÓLO en edición: CreateStudentDto no declara studentStatusId, así que en el alta el
+           backend lo fuerza a 'pending_classification' y un select acá prometería algo que no
+           se cumple. UpdateStudentDto:38 sí lo acepta. -->
+      @if (student()) {
+        <div class="field field-dense">
+          <label for="alumno-estado">Estado</label>
+          <select id="alumno-estado" class="control" data-test="alumno-estado"
+                  [value]="studentStatusId()" (change)="studentStatusId.set(value($event))">
+            <!-- Sin opción vacía: la columna es NOT NULL, no hay "sin estado" que elegir. -->
+            @if (orphanStatusId(); as orphan) {
+              <option [value]="orphan" [selected]="true" disabled>(no disponible)</option>
+            }
+            @for (status of statuses(); track status.id) {
+              <option [value]="status.id" [selected]="status.id === studentStatusId()">
+                {{ statusLabel(status) }}
+              </option>
+            }
+          </select>
+          <p class="hint">Los que entran por WhatsApp quedan sin clasificar hasta que un profe les asigna categoría.</p>
+        </div>
+      }
+
       <div class="field field-dense">
         <label for="alumno-mano">Mano hábil</label>
         <!-- Este select SÍ ofrece siempre el vacío: dominantHand es un String? libre y
@@ -117,6 +141,7 @@ import { Category } from '@domain/entities/category';
 })
 export class AlumnoFormModalComponent {
   readonly categories = input.required<readonly Category[]>();
+  readonly statuses = input.required<readonly CatalogItem[]>();
   /** Copy ya traducido del error que dejó la facade; '' cuando no hay. */
   readonly error = input('');
   readonly saved = output<StudentInput>();
@@ -131,6 +156,7 @@ export class AlumnoFormModalComponent {
   protected readonly lastName = signal('');
   protected readonly birthDate = signal('');
   protected readonly categoryId = signal('');
+  protected readonly studentStatusId = signal('');
   protected readonly dominantHand = signal('');
   protected readonly ranking = signal('');
   protected readonly notes = signal('');
@@ -166,12 +192,25 @@ export class AlumnoFormModalComponent {
     return this.categories().some((c) => c.id === id) ? null : id;
   });
 
+  /** Mismo hazard que orphanCategoryId: si el catálogo no cargó, sin esta opción el select
+   *  mostraría el primer estado de la lista como si fuera el del alumno. */
+  protected readonly orphanStatusId = computed(() => {
+    const id = this.studentStatusId();
+    if (id === '') return null;
+    return this.statuses().some((s) => s.id === id) ? null : id;
+  });
+
   /** Para una mano hábil guardada con un valor que ya no está en DOMINANT_HANDS. */
   protected readonly orphanHand = computed(() => {
     const hand = this.dominantHand();
     if (hand === '') return null;
     return (DOMINANT_HANDS as readonly string[]).includes(hand) ? null : hand;
   });
+
+  /** El catálogo llega en snake_case del seed: 'pending_classification' → 'Sin clasificar'. */
+  protected statusLabel(status: CatalogItem): string {
+    return catalogLabel(status.name);
+  }
 
   protected handLabel(hand: string): string {
     return dominantHandLabel(hand);
@@ -195,6 +234,7 @@ export class AlumnoFormModalComponent {
     this.lastName.set(student?.lastName ?? '');
     this.birthDate.set(student?.birthDate ?? '');
     this.categoryId.set(student?.categoryId ?? '');
+    this.studentStatusId.set(student?.studentStatusId ?? '');
     this.dominantHand.set(student?.dominantHand ?? '');
     this.ranking.set(student?.ranking != null ? String(student.ranking) : '');
     this.notes.set(student?.notes ?? '');
@@ -216,6 +256,9 @@ export class AlumnoFormModalComponent {
       lastName: this.lastName(),
       birthDate: this.birthDate(),
       categoryId: this.categoryId(),
+      // '' en el alta (el select no se dibuja): createStudentDraft lo pasa a null y el
+      // mapper omite la clave, que es lo que el backend espera.
+      studentStatusId: this.studentStatusId(),
       dominantHand: this.dominantHand(),
       ranking: this.ranking(),
       notes: this.notes(),

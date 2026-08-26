@@ -19,6 +19,8 @@ export interface Student {
   /** yyyy-MM-dd, ya recortado del ISO que devuelve el backend. */
   readonly birthDate: string | null;
   readonly categoryId: string | null;
+  /** Nunca null: la columna es NOT NULL y el alta lo fuerza a 'pending_classification'. */
+  readonly studentStatusId: string;
   readonly dominantHand: string | null;
   readonly ranking: number | null;
   readonly notes: string | null;
@@ -30,6 +32,8 @@ export interface StudentDraft {
   readonly lastName: string | null;
   readonly birthDate: string | null;
   readonly categoryId: string | null;
+  /** null = no mandarlo. Es lo que pasa en el alta, donde el backend no acepta la clave. */
+  readonly studentStatusId: string | null;
   readonly dominantHand: string | null;
   readonly ranking: number | null;
   readonly notes: string | null;
@@ -41,6 +45,7 @@ export interface StudentInput {
   readonly lastName: string;
   readonly birthDate: string;
   readonly categoryId: string;
+  readonly studentStatusId: string;
   readonly dominantHand: string;
   readonly ranking: string;
   readonly notes: string;
@@ -57,6 +62,7 @@ export function createStudentDraft(input: StudentInput): StudentDraft {
     lastName: input.lastName.trim() || null,
     birthDate: input.birthDate || null,
     categoryId: input.categoryId || null,
+    studentStatusId: input.studentStatusId || null,
     dominantHand: input.dominantHand || null,
     ranking: optionalInt(input.ranking, 'El ranking tiene que ser un número entero positivo.'),
     notes: input.notes.trim() || null,

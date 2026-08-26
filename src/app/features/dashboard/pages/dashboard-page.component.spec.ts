@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { DashboardFacade } from '../dashboard.facade';
 import { DashboardRepository } from '@domain/contracts/dashboard.repository';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { DashboardSnapshot } from '@domain/entities/dashboard-snapshot';
+import { SessionStore } from '@data/auth/session-store';
 
 const snapshot: DashboardSnapshot = {
   clubId: 'c1',
@@ -30,13 +31,17 @@ const snapshot: DashboardSnapshot = {
 };
 
 /** Doble simple: getSnapshot resuelve el snapshot fijo de arriba. */
-async function mount(repo: DashboardRepository = { getSnapshot: async () => snapshot }) {
+async function mount(
+  repo: DashboardRepository = { getSnapshot: async () => snapshot },
+  clubId: string | null = 'c1',
+) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       DashboardFacade,
       { provide: DashboardRepository, useValue: repo },
       { provide: ClubRepository, useValue: { isActive: async () => true } },
+      { provide: SessionStore, useValue: { clubId: signal<string | null>(clubId) } },
     ],
   });
   const fixture = TestBed.createComponent(DashboardPageComponent);
@@ -60,5 +65,13 @@ describe('DashboardPageComponent', () => {
     expect(el.querySelector('#view-dashboard')).toBeTruthy();
     expect(el.querySelector('app-court-grid')).toBeTruthy();
     expect(el.querySelector('.rail app-waitlist-card')).toBeTruthy();
+  });
+
+  it('sin club en la sesión no pide el snapshot', async () => {
+    // Token corrupto o sesión aún no hidratada: SessionStore.clubId() da null. Pedir el
+    // snapshot de un club vacío haría fallar RefreshDashboard con un error que no ayuda a nadie.
+    const getSnapshot = vi.fn(async () => snapshot);
+    await mount({ getSnapshot }, null);
+    expect(getSnapshot).not.toHaveBeenCalled();
   });
 });

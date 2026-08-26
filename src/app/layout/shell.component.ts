@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Data, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
@@ -7,8 +7,22 @@ import { BrandmarkComponent } from '@shared/ui/brandmark.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { ToastHostComponent } from '@shared/ui/toast/toast-host.component';
 import { SessionFacade } from '@features/auth/session.facade';
+import { SessionStore } from '@data/auth/session-store';
+import { UsersRepository } from '@data/repositories/users.repository';
+import { currentUserName } from '@data/dto/users.dto';
 import { NavBadgesService } from './nav-badges.service';
 import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from './nav.model';
+
+/**
+ * Los cuatro roles que siembra el backend en el signup. El fallback devuelve el nombre crudo:
+ * un rol nuevo del seed se ve raro pero honesto, que es mejor que esconderlo.
+ */
+const ROLE_LABELS = new Map<string, string>([
+  ['admin', 'Administrador'],
+  ['encargado', 'Encargado'],
+  ['profesor', 'Profesor'],
+  ['superprofesor', 'Superprofesor'],
+]);
 
 @Component({
   selector: 'app-shell',
@@ -23,6 +37,8 @@ export class ShellComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly session = inject(SessionFacade);
+  private readonly store = inject(SessionStore);
+  private readonly usersRepo = inject(UsersRepository);
   protected readonly badges = inject(NavBadgesService);
 
   protected readonly groups = NAV_GROUPS;
@@ -31,6 +47,9 @@ export class ShellComponent {
   protected readonly sideOpen = signal(false);
   protected readonly title = signal('SetPoint');
   protected readonly crumb = signal('');
+
+  /** '' mientras carga y si la request falla — ver loadUser(). */
+  protected readonly userName = signal('');
 
   // Reloj: new Date() en runtime está OK (la prohibición es sólo de scripts de workflow).
   protected readonly clock = signal(this.formatClock());
@@ -44,6 +63,24 @@ export class ShellComponent {
 
     const id = setInterval(() => this.clock.set(this.formatClock()), 15_000);
     inject(DestroyRef).onDestroy(() => clearInterval(id));
+
+    void this.loadUser();
+  }
+
+  /**
+   * Falla en SILENCIO, misma política que los catálogos: el nombre es decoración del
+   * sidebar, no algo por lo que valga la pena mostrarle un error a alguien que ya está
+   * adentro. Si no llega, queda el rol solo — exactamente como antes de esta conexión.
+   *
+   * Se pide una vez por construcción del shell y no se cachea en el repositorio: ver ahí
+   * por qué (un logout+login en la misma pestaña mostraría el nombre anterior).
+   */
+  private async loadUser(): Promise<void> {
+    try {
+      this.userName.set(currentUserName(await this.usersRepo.me()));
+    } catch {
+      this.userName.set('');
+    }
   }
 
   protected toggleSide(): void {
@@ -64,6 +101,26 @@ export class ShellComponent {
 
   protected itemsIn(group: NavGroup): readonly NavItem[] {
     return this.items.filter((i) => i.group === group);
+  }
+
+  /**
+   * El rol sigue saliendo del JWT y NO de `GET /users/me`, que también lo devuelve: el token
+   * ya lo tiene sin pagar una request, así que se pinta en el primer frame y sobrevive a que
+   * la request falle. El nombre sí viene del endpoint porque no está en el token.
+   *
+   * Que sean dos fuentes es a propósito: la barata e instantánea para lo que el token sabe,
+   * la request sólo para lo que no.
+   */
+  protected readonly rol = computed(() => {
+    const roles = this.store.roles();
+    if (!roles.length) return 'Sin rol';
+    return roles.map((r) => ROLE_LABELS.get(r) ?? r).join(' · ');
+  });
+
+  /** 0 = no se dibuja. Se calcula en la clase y no en el template para no pelear con el
+   *  narrowing de `item.badge`, que es opcional. */
+  protected badgeCount(item: NavItem): number {
+    return item.badge ? this.badges.counts()[item.badge] : 0;
   }
 
   private syncRouteMeta(): void {

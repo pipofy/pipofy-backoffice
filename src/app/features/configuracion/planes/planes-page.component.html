@@ -41,6 +41,8 @@
               <td>{{ plan.validityDays !== null ? plan.validityDays + ' días' : '—' }}</td>
               <td>{{ plan.active ? 'Sí' : 'No' }}</td>
               <td class="cell-end">
+                <button type="button" class="btn btn-ghost btn-sm" data-test="categorias"
+                        (click)="openCategorias(plan)">Categorías</button>
                 <button type="button" class="btn btn-ghost btn-sm" (click)="openEdit(plan)">Editar</button>
                 <button type="button" class="btn btn-danger btn-sm" (click)="askDelete(plan)">Eliminar</button>
               </td>
@@ -70,3 +72,5 @@
 <app-confirm-delete-modal
   [itemName]="deleting()?.name || 'este plan'"
   (confirmed)="onDeleteConfirmed()" />
+
+<app-plan-categorias-modal [categories]="categories()" />

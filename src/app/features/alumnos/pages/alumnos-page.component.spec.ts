@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection} from '@angular/core';
 import { AlumnosPageComponent } from './alumnos-page.component';
 import { AlumnosFacade } from '../alumnos.facade';
 import { AlumnoPlanesFacade } from '../alumno-planes.facade';
@@ -8,11 +8,21 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { Student, StudentDraft } from '@domain/entities/student';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const ALUMNO: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '5', dominantHand: 'zurdo', ranking: 12, notes: null,
+  birthDate: '2001-05-03', categoryId: '5', studentStatusId: '2',
+  dominantHand: 'zurdo', ranking: 12, notes: null,
 };
+
+const CATALOGS_DOUBLE = {
+  paymentMethods: async () => [{ id: '3', name: 'efectivo' }],
+  studentStatuses: async () => [
+    { id: '1', name: 'active' },
+    { id: '2', name: 'pending_classification' },
+  ],
+} as unknown as CatalogsRepository;
 
 async function settle(fixture: ComponentFixture<AlumnosPageComponent>): Promise<void> {
   await fixture.whenStable();
@@ -20,7 +30,7 @@ async function settle(fixture: ComponentFixture<AlumnosPageComponent>): Promise<
   fixture.detectChanges();
 }
 
-async function mount(over: Partial<StudentsRepository> = {}) {
+async function mount(over: Partial<StudentsRepository> = {}, catalogs = CATALOGS_DOUBLE) {
   const repo = {
     list: async () => [ALUMNO],
     create: async (_d: StudentDraft) => undefined,
@@ -37,6 +47,7 @@ async function mount(over: Partial<StudentsRepository> = {}) {
       // El modal de planes se renderiza siempre (cerrado) y trae su propia facade, que a su
       // vez necesita PlansRepository para resolver nombres.
       AlumnoPlanesFacade,
+      { provide: CatalogsRepository, useValue: catalogs },
       { provide: StudentsRepository, useValue: repo },
       {
         provide: CategoriesRepository,
@@ -52,6 +63,8 @@ async function mount(over: Partial<StudentsRepository> = {}) {
 }
 
 const filas = (el: HTMLElement) => Array.from(el.querySelectorAll('tbody tr'));
+/** Columna Estado: Alumno, Teléfono, Categoría, ESTADO, Mano, Ranking, Acciones. */
+const estado = (el: HTMLElement) => filas(el)[0].querySelectorAll('td')[3].textContent?.trim();
 const buscador = (el: HTMLElement) => el.querySelector<HTMLInputElement>('#alumnos-q')!;
 
 describe('AlumnosPageComponent', () => {
@@ -64,6 +77,22 @@ describe('AlumnosPageComponent', () => {
   it('un alumno sin nombre se muestra por su teléfono', async () => {
     const { el } = await mount({ list: async () => [{ ...ALUMNO, firstName: '', lastName: '' }] });
     expect(filas(el)[0].textContent).toContain('1155667788');
+  });
+
+  it('muestra el estado humanizado, no el id crudo', async () => {
+    // 'pending_classification' es el alumno que entró por WhatsApp y todavía no tiene
+    // categoría: hasta esta conexión el panel no lo distinguía de uno activo.
+    const { el } = await mount();
+    expect(estado(el)).toBe('Sin clasificar');
+  });
+
+  it('si el catálogo de estados no cargó, la columna muestra una raya y no el id', async () => {
+    const { el } = await mount({}, {
+      paymentMethods: async () => [],
+      studentStatuses: () => Promise.reject({ kind: 'network' as const }),
+    } as unknown as CatalogsRepository);
+    // La celda, no la fila entera: el ranking (12) también contiene el id '2'.
+    expect(estado(el)).toBe('—');
   });
 
   it('un alumno sin categoría muestra una raya', async () => {

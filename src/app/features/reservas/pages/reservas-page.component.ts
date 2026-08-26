@@ -1,19 +1,22 @@
-import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ReservasFacade } from '../reservas.facade';
 import { SesionModalComponent } from '../components/sesion-modal.component';
+import { CancelarClaseModalComponent } from '../components/cancelar-clase-modal.component';
 import { ClassSession, occupiedSpots } from '@domain/entities/class-session';
 import { Student } from '@domain/entities/student';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
+import { CancelClassInput } from '@domain/entities/class-cancellation';
 import { domainErrorMessage } from '@domain/errors';
 import { localHhMm } from '@domain/local-date';
+import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
   selector: 'app-reservas-page',
   standalone: true,
-  imports: [SesionModalComponent],
+  imports: [SesionModalComponent, CancelarClaseModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reservas-page.component.html',
   styleUrl: './reservas-page.component.css',
@@ -24,8 +27,13 @@ export class ReservasPageComponent {
   private readonly courtsRepo = inject(CourtsRepository);
   private readonly coachesRepo = inject(CoachesRepository);
   private readonly groupsRepo = inject(CategoryGroupsRepository);
+  private readonly toast = inject(ToastService);
 
   private readonly modal = viewChild.required(SesionModalComponent);
+  private readonly cancelModal = viewChild.required(CancelarClaseModalComponent);
+
+  /** Qué se está cancelando: una clase, el día ('dia'), o nada (modal cerrado). */
+  private readonly cancelando = signal<ClassSession | 'dia' | null>(null);
 
   protected readonly students = signal<readonly Student[]>([]);
   private readonly courtName = signal<ReadonlyMap<string, string>>(new Map());
@@ -92,5 +100,63 @@ export class ReservasPageComponent {
 
   protected openSession(session: ClassSession): void {
     this.modal().open(session);
+  }
+
+  /**
+   * Las de la fecha que todavía NO cancelamos en esta sesión: son las que cancelDay toca.
+   *
+   * `computed` y no un método: el template lo consulta vía hayVigentes() y un método plano
+   * volvería a filtrar la lista en CADA ciclo de detección de cambios.
+   */
+  private readonly vigentes = computed(() =>
+    this.facade.sorted().filter((s) => !this.facade.cancelled().has(s.id)),
+  );
+
+  protected readonly hayVigentes = computed(() => this.vigentes().length > 0);
+
+  protected estaCancelada(session: ClassSession): boolean {
+    return this.facade.cancelled().has(session.id);
+  }
+
+  /** clearError() antes de abrir: sin esto un error viejo aparecería dentro del modal. */
+  protected askCancelClase(session: ClassSession): void {
+    this.facade.clearError();
+    this.cancelando.set(session);
+    this.cancelModal().open({
+      what: `la clase de ${this.label(session)}`,
+      affected: occupiedSpots(session),
+    });
+  }
+
+  protected askCancelDia(): void {
+    this.facade.clearError();
+    const rows = this.vigentes();
+    this.cancelando.set('dia');
+    this.cancelModal().open({
+      what: rows.length === 1 ? 'la única clase de este día' : `las ${rows.length} clases de este día`,
+      affected: rows.reduce((n, s) => n + occupiedSpots(s), 0),
+    });
+  }
+
+  protected onCancelConfirm(input: CancelClassInput): void {
+    const target = this.cancelando();
+    if (target === null) return;
+
+    void (target === 'dia'
+      ? this.facade.cancelarDia(input)
+      : this.facade.cancelarClase(target.id, input)
+    ).then(() => {
+      // Sólo si salió bien: cerrar tras un error se lleva puesto el motivo ya tipeado.
+      if (this.facade.error()) return;
+      this.cancelModal().close();
+      this.cancelando.set(null);
+      // El título sale del BOTÓN que se apretó, no de cuántas clases había: apretar
+      // "Cancelar el día" en un día con una sola clase igual canceló el día.
+      this.toast.show(
+        'ok',
+        target === 'dia' ? 'Día cancelado' : 'Clase cancelada',
+        input.notify ? 'Se les avisó por WhatsApp.' : 'No se envió ningún aviso.',
+      );
+    });
   }
 }

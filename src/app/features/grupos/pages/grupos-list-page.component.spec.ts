@@ -1,11 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { GruposListPageComponent } from './grupos-list-page.component';
 import { GruposFacade } from '../grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { InMemoryGroupsRepository } from '@data/repositories/in-memory-groups.repository';
+import { SessionStore } from '@data/auth/session-store';
+
+/** Doble mínimo: SessionStore está bindeado en root, así que el TestBed no lo provee solo. */
+const sessionStoreStub = { provide: SessionStore, useValue: { clubId: signal<string | null>('c1') } };
 
 /** Salto de MACROTAREA. whenStable() cede UN tick de microtarea y sólo espera el PendingTasks
  *  de Angular: la cadena load()→run()→setData() no está registrada ahí. Sin esto los asserts
@@ -19,6 +23,7 @@ async function mount(repo: GroupsRepository = new InMemoryGroupsRepository(0)) {
       provideRouter([]),
       GruposFacade,
       { provide: GroupsRepository, useValue: repo },
+      sessionStoreStub,
     ],
   });
   const fixture = TestBed.createComponent(GruposListPageComponent);
@@ -104,6 +109,7 @@ describe('GruposListPageComponent', () => {
         provideRouter([]),
         GruposFacade,
         { provide: GroupsRepository, useValue: new InMemoryGroupsRepository(50) },
+        sessionStoreStub,
       ],
     });
     const fixture = TestBed.createComponent(GruposListPageComponent);
@@ -120,5 +126,14 @@ describe('GruposListPageComponent', () => {
     expect(el.textContent).toContain('No se pudo cargar los grupos');
     expect(el.textContent).toContain('Revisá tu conexión');
     expect(el.textContent).not.toContain('network');
+  });
+
+  it('declara que los datos son de demostración', async () => {
+    // La semilla se queda (borrarla dejaría la pantalla rota sin ganar nada), pero no puede
+    // verse igual de sana que una pantalla conectada.
+    const { el } = await mount();
+    const aviso = el.querySelector('.notice');
+    expect(aviso?.textContent).toContain('Datos de demostración');
+    expect(aviso?.textContent).toContain('endpoint de asistencia');
   });
 });

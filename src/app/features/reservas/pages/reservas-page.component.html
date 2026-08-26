@@ -6,6 +6,10 @@
       <input id="reservas-fecha" class="control" type="date"
              [value]="facade.date()" (change)="onDate($event)" />
     </div>
+    <button type="button" class="btn btn-danger" data-test="cancelar-dia"
+            [disabled]="!hayVigentes()" (click)="askCancelDia()">
+      Cancelar el día
+    </button>
   </div>
 
   <!-- BANNER, no una rama del chain: la facade también ESCRIBE (vía SesionFacade), y un error
@@ -31,16 +35,24 @@
         </thead>
         <tbody>
           @for (s of facade.sorted(); track s.id) {
-            <tr>
+            <tr [class.cancelada]="estaCancelada(s)">
               <td>{{ hora(s) }}</td>
               <td>{{ court(s) }}</td>
               <td>{{ grupo(s) }}</td>
               <td>{{ coach(s) }}</td>
               <td>{{ cupo(s) }}</td>
               <td class="cell-end">
-                <button type="button" class="btn btn-ghost btn-sm" (click)="openSession(s)">
-                  Abrir
-                </button>
+                @if (estaCancelada(s)) {
+                  <span class="chip-cancelada">Cancelada</span>
+                } @else {
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="openSession(s)">
+                    Abrir
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" data-test="cancelar-clase"
+                          (click)="askCancelClase(s)">
+                    Cancelar
+                  </button>
+                }
               </td>
             </tr>
           }
@@ -55,3 +67,4 @@
 </section>
 
 <app-sesion-modal [students]="students()" [labels]="label" />
+<app-cancelar-clase-modal [error]="errorText()" (confirmed)="onCancelConfirm($event)" />

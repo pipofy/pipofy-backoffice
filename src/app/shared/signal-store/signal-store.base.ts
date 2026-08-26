@@ -16,6 +16,9 @@ export abstract class SignalStore<T, E = unknown> {
 
   protected setData(v: T | null) { this._data.set(v); }
   protected setError(e: E | null) { this._error.set(e); }
+  // Para los flujos que NO caben en run(): una escritura cuyo fallo posterior no debe
+  // reportarse como fallo de la escritura (ver AlumnoPlanesFacade.comprar).
+  protected setLoading(v: boolean) { this._loading.set(v); }
 
   protected async run(promise: Promise<T>, mapError: (e: unknown) => E = (e) => e as E): Promise<void> {
     this._loading.set(true);

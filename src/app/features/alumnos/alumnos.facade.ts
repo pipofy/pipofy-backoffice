@@ -6,6 +6,8 @@ import { Student, StudentInput, createStudentDraft } from '@domain/entities/stud
 import { Category } from '@domain/entities/category';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@data/dto/catalogs.dto';
 
 /**
  * ponytail: create/update/remove reusan `loading`, así que la tabla muestra su spinner
@@ -15,10 +17,15 @@ import { toDomainError } from '@data/http/to-domain-error';
 export class AlumnosFacade extends SignalStore<Student[], DomainError> {
   private readonly repo = inject(StudentsRepository);
   private readonly categoriesRepo = inject(CategoriesRepository);
+  private readonly catalogs = inject(CatalogsRepository);
 
   private readonly _categories = signal<readonly Category[]>([]);
   /** Lookup para el select y para la columna Categoría. Vacío si su carga falló. */
   readonly categories = this._categories.asReadonly();
+
+  private readonly _statuses = signal<readonly CatalogItem[]>([]);
+  /** Ídem para la columna Estado y su select. Vacío si su carga falló. */
+  readonly statuses = this._statuses.asReadonly();
 
   /**
    * Apellido y después nombre, con los que no tienen nombre cargado AL FINAL.
@@ -62,6 +69,18 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
     }
   }
 
+  /**
+   * Mismo silencio que loadCategories, por el mismo motivo. `CatalogsRepository` memoiza,
+   * así que entrar y salir de la pantalla no vuelve a pedirlo.
+   */
+  async loadStatuses(): Promise<void> {
+    try {
+      this._statuses.set(await this.catalogs.studentStatuses());
+    } catch {
+      this._statuses.set([]);
+    }
+  }
+
   /** Ver GruposCategoriaFacade.clearError(): mismo motivo, y por qué no vive en SignalStore. */
   clearError(): void {
     this.setError(null);
@@ -76,6 +95,7 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
   override reset(): void {
     super.reset();
     this._categories.set([]);
+    this._statuses.set([]);
   }
 
   /**

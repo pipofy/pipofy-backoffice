@@ -8,6 +8,7 @@ const base: StudentInput = {
   lastName: 'Pérez',
   birthDate: '2001-05-03',
   categoryId: '4',
+  studentStatusId: '2',
   dominantHand: 'diestro',
   ranking: '12',
   notes: 'Zurda para el revés',
@@ -15,7 +16,8 @@ const base: StudentInput = {
 
 const student: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '4', dominantHand: 'diestro', ranking: 12, notes: null,
+  birthDate: '2001-05-03', categoryId: '4', studentStatusId: '2',
+  dominantHand: 'diestro', ranking: 12, notes: null,
 };
 
 describe('createStudentDraft', () => {
@@ -26,6 +28,7 @@ describe('createStudentDraft', () => {
       lastName: 'Pérez',
       birthDate: '2001-05-03',
       categoryId: '4',
+      studentStatusId: '2',
       dominantHand: 'diestro',
       ranking: 12,
       notes: 'Zurda para el revés',
@@ -40,7 +43,7 @@ describe('createStudentDraft', () => {
   it('los opcionales vacíos quedan en null', () => {
     const draft = createStudentDraft({
       ...base, firstName: '', lastName: '  ', birthDate: '', categoryId: '',
-      dominantHand: '', ranking: '', notes: '   ',
+      studentStatusId: '', dominantHand: '', ranking: '', notes: '   ',
     });
     expect(draft.firstName).toBeNull();
     expect(draft.lastName).toBeNull();

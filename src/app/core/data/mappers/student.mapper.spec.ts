@@ -4,13 +4,13 @@ import { StudentDraft } from '@domain/entities/student';
 
 const dto = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4',
+  birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4', studentStatusId: '2',
   dominantHand: 'diestro', ranking: 12, notes: null, deletedAt: null,
 };
 
 const draft: StudentDraft = {
   phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '4',
+  birthDate: '2001-05-03', categoryId: '4', studentStatusId: '2',
   dominantHand: 'diestro', ranking: 12, notes: null,
 };
 
@@ -34,7 +34,7 @@ describe('toStudent', () => {
   it('mapea el resto tal cual', () => {
     expect(toStudent(dto)).toEqual({
       id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-      birthDate: '2001-05-03', categoryId: '4',
+      birthDate: '2001-05-03', categoryId: '4', studentStatusId: '2',
       dominantHand: 'diestro', ranking: 12, notes: null,
     });
   });
@@ -70,8 +70,14 @@ describe('toStudentRequest', () => {
     expect(toStudentRequest(draft).phone).toBe('1155667788');
   });
 
+  it('OMITE studentStatusId cuando es null', () => {
+    // Es lo que pasa en el ALTA: CreateStudentDto no declara la clave, así que mandarla
+    // haría rebotar la request entera con el ValidationPipe en whitelist.
+    expect('studentStatusId' in toStudentRequest({ ...draft, studentStatusId: null })).toBe(false);
+  });
+
   it('manda exactamente las claves del DTO del backend', () => {
     expect(Object.keys(toStudentRequest(draft)).sort())
-      .toEqual(['birthDate', 'categoryId', 'dominantHand', 'firstName', 'lastName', 'notes', 'phone', 'ranking']);
+      .toEqual(['birthDate', 'categoryId', 'dominantHand', 'firstName', 'lastName', 'notes', 'phone', 'ranking', 'studentStatusId']);
   });
 });

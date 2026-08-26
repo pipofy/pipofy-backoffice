@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
-import { GruposFacade, CLUB_ID } from './grupos.facade';
+import { GruposFacade } from './grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { InMemoryGroupsRepository } from '@data/repositories/in-memory-groups.repository';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { GroupNotFoundError } from '@domain/errors';
+
+/** Fixture de test: no es la constante de producción que se borró (era un club inventado). */
+const CLUB_ID = 'c1';
 
 function setup(repo: GroupsRepository = new InMemoryGroupsRepository(0), tenant?: unknown) {
   TestBed.configureTestingModule({

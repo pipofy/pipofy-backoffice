@@ -29,8 +29,17 @@ export class ApiClient {
     return this.request(this.http.patch<T>(`${this.baseUrl}${path}`, body));
   }
 
-  delete<T>(path: string): Observable<T> {
-    return this.request(this.http.delete<T>(`${this.baseUrl}${path}`));
+  /**
+   * `body` es opcional porque casi ningún DELETE lo lleva. `DELETE /reservations/:id` sí: el
+   * backend lee de ahí `offerToWaitingList` y `notify`. `HttpClient` no acepta cuerpo como
+   * segundo argumento posicional en DELETE —sólo dentro de las options—, y pasarle
+   * `{ body: undefined }` no es lo mismo que no pasar nada, así que se omiten enteras cuando
+   * no hay cuerpo.
+   */
+  delete<T>(path: string, body?: unknown): Observable<T> {
+    return this.request(
+      this.http.delete<T>(`${this.baseUrl}${path}`, body === undefined ? undefined : { body }),
+    );
   }
 
   // Centralizes HTTP-error -> DomainError so repos don't each repeat it.

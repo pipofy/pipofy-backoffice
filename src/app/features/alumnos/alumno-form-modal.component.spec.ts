@@ -10,17 +10,24 @@ const CATEGORIAS: Category[] = [
   { id: '5', name: 'Quinta', levelOrder: 5 },
 ];
 
+const ESTADOS = [
+  { id: '1', name: 'active' },
+  { id: '2', name: 'pending_classification' },
+];
+
 const ALUMNO: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '5', dominantHand: 'zurdo', ranking: 12, notes: 'Buen revés',
+  birthDate: '2001-05-03', categoryId: '5', studentStatusId: '1',
+  dominantHand: 'zurdo', ranking: 12, notes: 'Buen revés',
 };
 
 const SIN_DATOS: Student = {
   id: '2', phone: '1199887766', firstName: '', lastName: '',
-  birthDate: null, categoryId: null, dominantHand: null, ranking: null, notes: null,
+  birthDate: null, categoryId: null, studentStatusId: '2',
+  dominantHand: null, ranking: null, notes: null,
 };
 
-function setup(alumno: Student | null, error = '', categorias = CATEGORIAS) {
+function setup(alumno: Student | null, error = '', categorias = CATEGORIAS, estados = ESTADOS) {
   // reset explícito: el test del select llama setup() más de una vez DENTRO del mismo it(), y
   // TestBed no deja reconfigurar un módulo ya instanciado sin esto (mismo patrón que
   // plan-form-modal.component.spec.ts y cancha-form-modal.component.spec.ts).
@@ -28,6 +35,7 @@ function setup(alumno: Student | null, error = '', categorias = CATEGORIAS) {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(AlumnoFormModalComponent);
   fixture.componentRef.setInput('categories', categorias);
+  fixture.componentRef.setInput('statuses', estados);
   fixture.componentRef.setInput('error', error);
   fixture.detectChanges();
   fixture.componentInstance.open(alumno);
@@ -102,6 +110,7 @@ describe('AlumnoFormModalComponent', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const f = TestBed.createComponent(AlumnoFormModalComponent);
     f.componentRef.setInput('categories', []);
+    f.componentRef.setInput('statuses', ESTADOS);
     f.componentRef.setInput('error', '');
     f.detectChanges();
     f.componentInstance.open(ALUMNO);
@@ -142,6 +151,33 @@ describe('AlumnoFormModalComponent', () => {
     expect(emitido!.birthDate).toBe('');
   });
 
+  it('el estado NO se ofrece en el alta: el backend no acepta la clave ahí', () => {
+    // CreateStudentDto no declara studentStatusId — lo fuerza a 'pending_classification'.
+    // Un select acá prometería algo que la request no puede cumplir.
+    expect(setup(null).nativeElement.querySelector('[data-test="alumno-estado"]')).toBeNull();
+  });
+
+  it('el estado se precarga y se humaniza en la edición', () => {
+    const f = setup(ALUMNO);
+    expect(el(f, '[data-test="alumno-estado"]').value).toBe('1');
+    expect(opciones(f, '[data-test="alumno-estado"]').map((o) => o.textContent?.trim()))
+      .toEqual(['Activo', 'Sin clasificar']);
+  });
+
+  it('el estado no ofrece vaciarse: la columna es NOT NULL', () => {
+    const f = setup(ALUMNO);
+    expect(opciones(f, '[data-test="alumno-estado"]').some((o) => o.value === '')).toBe(false);
+  });
+
+  it('un estado fuera del catálogo no cae en la primera opción', () => {
+    // Mismo hazard que la categoría: si el catálogo no cargó, [value] a secas deja
+    // selectedIndex 0 y la pantalla muestra "Activo" sobre un alumno que no lo está.
+    const f = setup(ALUMNO, '', CATEGORIAS, []);
+    const select = el(f, '[data-test="alumno-estado"]');
+    expect(select.value).toBe('1');
+    expect(opciones(f, '[data-test="alumno-estado"]')[0].disabled).toBe(true);
+  });
+
   it('emite los valores crudos, sin validar', () => {
     const f = setup(ALUMNO);
     let emitido: unknown;
@@ -149,7 +185,7 @@ describe('AlumnoFormModalComponent', () => {
     (f.nativeElement.querySelector('[data-test="save"]') as HTMLButtonElement).click();
     expect(emitido).toEqual({
       phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-      birthDate: '2001-05-03', categoryId: '5', dominantHand: 'zurdo',
+      birthDate: '2001-05-03', categoryId: '5', studentStatusId: '1', dominantHand: 'zurdo',
       ranking: '12', notes: 'Buen revés',
     });
   });

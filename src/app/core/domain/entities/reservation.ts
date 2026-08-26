@@ -1,19 +1,5 @@
 import { InvalidReservationError } from '../errors';
 
-/**
- * Lo que devuelve `POST /class-sessions/:id/reservations`, recortado a lo que el front no
- * puede saber por su cuenta.
- *
- * Dos campos y no doce a propósito: el alumno y la clase ya los tiene la pantalla en memoria.
- * Lo único que sólo la API sabe es el id de la reserva —imprescindible, porque NO existe
- * `GET /reservations` y este es el único momento en que el front lo ve— y hasta cuándo vive
- * el hold.
- */
-export interface Reservation {
-  readonly id: string;
-  readonly holdExpiresAt: string | null;
-}
-
 /** Lo que sale de los selects del modal: vacío es '', no null. */
 export interface ReservationInput {
   readonly sessionId: string;
@@ -38,9 +24,10 @@ export interface ReservationDraft {
  *
  * El modal ya deshabilita el botón; la entidad no confía en la UI.
  *
- * ponytail: exigir plan es la salida corta a que `confirm-payment` esté bloqueado. Techo: un
- * alumno sin plan vigente no se puede anotar aunque pague en el mostrador. Salida real:
- * `GET /catalogs/payment-methods` en el backend habilita `confirm-payment`.
+ * ponytail: la reserva exige plan aunque `confirm-payment` ya funcione y pueda cobrar un hold
+ * sin plan. Techo: un alumno sin plan vigente no se puede anotar desde acá aunque vaya a pagar
+ * en el mostrador. Salida: aceptar `studentPlanId` vacío y que el mostrador resuelva por
+ * "Cobrar" — es un cambio de flujo, no de código, y hay que decidirlo antes.
  */
 export function createReservationDraft(input: ReservationInput): ReservationDraft {
   if (!input.studentId) {

@@ -5,10 +5,16 @@ import { ApiClient } from '../http/api-client';
 import { toDomainError } from '../http/to-domain-error';
 import { CatalogItem, CatalogListDtoSchema } from '../dto/catalogs.dto';
 
-type CatalogName = 'surface-types' | 'court-statuses' | 'plan-types' | 'session-types';
+type CatalogName =
+  | 'surface-types'
+  | 'court-statuses'
+  | 'plan-types'
+  | 'session-types'
+  | 'payment-methods'
+  | 'student-statuses';
 
 /**
- * Los cuatro catálogos los siembra `prisma:seed` y no cambian en runtime, así que se piden
+ * Los catálogos los siembra `prisma:seed` y no cambian en runtime, así que se piden
  * una vez por sesión y se memoiza la promesa.
  *
  * Vive en `data` y no en una feature porque lo consumen Configuración y el dashboard, y
@@ -31,6 +37,11 @@ export class CatalogsRepository {
   courtStatuses(): Promise<CatalogItem[]> { return this.get('court-statuses'); }
   planTypes(): Promise<CatalogItem[]> { return this.get('plan-types'); }
   sessionTypes(): Promise<CatalogItem[]> { return this.get('session-types'); }
+
+  paymentMethods(): Promise<CatalogItem[]> { return this.get('payment-methods'); }
+
+  /** Los estados del alumno: 'active', 'pending_classification', 'inactive' (prisma/seed.ts:6). */
+  studentStatuses(): Promise<CatalogItem[]> { return this.get('student-statuses'); }
 
   private get(name: CatalogName): Promise<CatalogItem[]> {
     const cached = this.cache.get(name);

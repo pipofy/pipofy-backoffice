@@ -2,23 +2,19 @@ import { Injectable, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
 import { ReservationsRepository } from '@domain/contracts/reservations.repository';
-import {
-  Reservation,
-  ReservationInput,
-  createReservationDraft,
-} from '@domain/entities/reservation';
+import { ReservationInput, createReservationDraft } from '@domain/entities/reservation';
 import { WaitingListEntry } from '@domain/entities/waiting-list';
+import { SessionReservation } from '@domain/entities/session-reservation';
+import { ClassPaymentInput, createClassPaymentDraft } from '@domain/entities/payment';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@data/dto/catalogs.dto';
 import { ReservasFacade } from './reservas.facade';
 
-export interface PendingHold {
-  readonly reservation: Reservation;
-  readonly studentId: string;
-}
-
 /**
- * Lo de UNA sesión: su lista de espera (la tríada de SignalStore) y sus holds sin confirmar.
+ * Lo de UNA sesión: su lista de espera (la tríada de SignalStore) y el roster completo de sus
+ * reservas — holds, confirmadas, canceladas, etc., no sólo las sin confirmar.
  *
  * Separada de ReservasFacade igual que AlumnoPlanesFacade de AlumnosFacade: con una sola
  * facade, abrir el modal prendería el spinner de la tabla y un error del modal taparía el de
@@ -33,23 +29,71 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
   private readonly sessions = inject(ClassSessionsRepository);
   private readonly reservations = inject(ReservationsRepository);
   private readonly reservas = inject(ReservasFacade);
+  private readonly catalogs = inject(CatalogsRepository);
+
+  private readonly _paymentMethods = signal<readonly CatalogItem[]>([]);
+  readonly paymentMethods = this._paymentMethods.asReadonly();
 
   /**
-   * sessionId → holds creados en ESTA visita.
+   * Las reservas de la sesión abierta, tal como las devuelve la API. Reemplaza al Map en
+   * memoria que vivía acá: aquél se perdía al salir de /reservas y un hold sin confirmar era
+   * invisible después de un F5 aunque siguiera vivo en la base.
    *
-   * ponytail: en memoria. Vive en la facade, que está provista en la ruta, así que cerrar y
-   * reabrir el modal no los pierde; salir de /reservas sí. Techo aceptado a conciencia: no
-   * existe `GET /reservations`, así que un hold sin confirmar es invisible después de un F5
-   * aunque siga vivo en la base. Salida: `GET /reservations?status=held` en el backend.
+   * Guarda el `sessionId` junto a las filas para que pedir OTRA clase devuelva vacío en vez de
+   * el roster de la anterior mientras vuela el GET.
    */
-  private readonly _holds = signal<ReadonlyMap<string, readonly PendingHold[]>>(new Map());
+  private readonly _reservations = signal<{
+    readonly sessionId: string;
+    readonly rows: readonly SessionReservation[];
+  }>({ sessionId: '', rows: [] });
 
-  holdsOf(sessionId: string): readonly PendingHold[] {
-    return this._holds().get(sessionId) ?? [];
+  reservationsOf(sessionId: string): readonly SessionReservation[] {
+    const current = this._reservations();
+    return current.sessionId === sessionId ? current.rows : [];
+  }
+
+  /**
+   * Pendientes de confirmar: los `held`, **vencidos incluidos**. Ahí "Venció" es la información
+   * útil. El recorte por vencimiento necesita un reloj y vive en el componente.
+   */
+  holdsOf(sessionId: string): readonly SessionReservation[] {
+    return this.reservationsOf(sessionId).filter((r) => r.status === 'held');
+  }
+
+  private async loadReservations(sessionId: string): Promise<void> {
+    this._reservations.set({ sessionId, rows: await this.sessions.reservations(sessionId) });
   }
 
   open(sessionId: string): Promise<void> {
-    return this.run(this.sessions.waitingList(sessionId), toDomainError);
+    // Sale en paralelo y falla en silencio: sin medios de pago se puede confirmar con crédito
+    // igual, que es el camino principal. Un error acá taparía el de la lista de espera.
+    void this.loadPaymentMethods();
+    // Las dos lecturas son independientes: encadenadas, el modal esperaría la suma de los dos
+    // viajes en vez del más lento.
+    return this.run(
+      Promise.all([
+        this.sessions.waitingList(sessionId),
+        this.loadReservations(sessionId),
+      ]).then(([waiting]) => waiting),
+      toDomainError,
+    );
+  }
+
+  /**
+   * Falla en SILENCIO y el select queda vacío, que es lo que el aviso de abajo del select
+   * explica. Un error acá taparía el de la lista de espera, que es el que importa.
+   *
+   * El guard evita repreguntar mientras viva la facade —una vez por visita a la pantalla, no
+   * por cada apertura de modal—; `CatalogsRepository` ya memoiza el éxito y borra su entrada
+   * al fallar, así que un endpoint que se recupera se detecta al volver a entrar.
+   */
+  private async loadPaymentMethods(): Promise<void> {
+    if (this._paymentMethods().length > 0) return;
+    try {
+      this._paymentMethods.set(await this.catalogs.paymentMethods());
+    } catch {
+      this._paymentMethods.set([]);
+    }
   }
 
   clearError(): void {
@@ -68,10 +112,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
     return this.run(
       Promise.resolve()
         .then(() => this.reservations.reserve(createReservationDraft(input)))
-        .then((reservation) =>
-          this.pushHold(sessionId, { reservation, studentId: input.studentId }),
-        )
-        .then(() => this.reservas.load())
+        .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
         .then(() => this.data() ?? []),
       toDomainError,
     );
@@ -81,31 +122,55 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
     return this.run(
       this.reservations
         .confirm(reservationId)
-        .then(() => this.dropHold(sessionId, reservationId))
-        .then(() => this.reservas.load())
+        .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
         .then(() => this.data() ?? []),
       toDomainError,
     );
   }
 
   /**
-   * Cancelar refresca DOS cosas. `ReservationsService.cancel()` promueve al primero de la
-   * lista de espera creando un hold nuevo y marcando su anotación como 'notificado': la lista
-   * se acortó sola, sin que el usuario haya tocado ese bloque.
+   * La OTRA salida del hold: cobrar en vez de gastar un crédito. Deja la reserva igual de
+   * 'confirmed' que `confirmar()`, así que el roster se relee lo mismo.
    *
-   * Las dos lecturas son independientes entre sí —sólo dependen de que el cancel haya
-   * entrado—, así que van en paralelo: encadenadas, el modal esperaba la suma de los dos
+   * `createClassPaymentDraft` tira de forma síncrona con el monto vacío o sin medio de pago:
+   * va DENTRO de la promesa, mismo patrón que `reservar()`.
+   */
+  cobrar(sessionId: string, reservationId: string, input: ClassPaymentInput): Promise<void> {
+    return this.run(
+      Promise.resolve()
+        .then(() => this.reservations.confirmPayment(reservationId, createClassPaymentDraft(input)))
+        .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
+        .then(() => this.data() ?? []),
+      toDomainError,
+    );
+  }
+
+  /**
+   * Cancelar refresca TRES cosas. `cancel()` ya no promueve a nadie por sí solo: eso lo hace
+   * `WaitingListOfferService.offerNext()`, que el controlador llama porque el repo manda
+   * `offerToWaitingList` (ver el comentario de `cancel()` en http-reservations.repository.ts).
+   * Y `offerNext()` no crea un hold nuevo, marca la anotación del primero de la lista como
+   * 'notificado' con vencimiento a 15 minutos y le manda un WhatsApp; recién si el alumno
+   * acepta por ahí toma el lugar. Por eso releer la lista de espera importa igual que releer
+   * las sesiones y el roster: la anotación cambió de estado sin que el usuario haya tocado ese
+   * bloque, aunque no vaya a aparecer un hold nuevo.
+   *
+   * Las tres lecturas son independientes entre sí —sólo dependen de que el cancel haya
+   * entrado—, así que van en paralelo: encadenadas, el modal esperaba la suma de los tres
    * viajes en vez del más lento.
    */
   cancelar(sessionId: string, reservationId: string): Promise<void> {
     return this.run(
       this.reservations
         .cancel(reservationId)
-        .then(() => this.dropHold(sessionId, reservationId))
         .then(() =>
-          Promise.all([this.reservas.load(), this.sessions.waitingList(sessionId)]),
+          Promise.all([
+            this.reservas.load(),
+            this.loadReservations(sessionId),
+            this.sessions.waitingList(sessionId),
+          ]),
         )
-        .then(([, waiting]) => waiting),
+        .then(([, , waiting]) => waiting),
       toDomainError,
     );
   }
@@ -124,20 +189,5 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
       this.sessions.leaveWaitingList(entryId).then(() => this.sessions.waitingList(sessionId)),
       toDomainError,
     );
-  }
-
-  private pushHold(sessionId: string, hold: PendingHold): void {
-    const next = new Map(this._holds());
-    next.set(sessionId, [...this.holdsOf(sessionId), hold]);
-    this._holds.set(next);
-  }
-
-  private dropHold(sessionId: string, reservationId: string): void {
-    const next = new Map(this._holds());
-    next.set(
-      sessionId,
-      this.holdsOf(sessionId).filter((h) => h.reservation.id !== reservationId),
-    );
-    this._holds.set(next);
   }
 }

@@ -6,6 +6,7 @@ import { Plan, PlanInput, createPlanDraft } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { PlanCategoriasStore } from './plan-categorias-store';
 
 /**
  * ponytail: create/update/remove reusan `loading`, así que la tabla muestra su spinner
@@ -15,6 +16,7 @@ import { toDomainError } from '@data/http/to-domain-error';
 export class PlanesFacade extends SignalStore<Plan[], DomainError> {
   private readonly repo = inject(PlansRepository);
   private readonly coachesRepo = inject(CoachesRepository);
+  private readonly categorias = inject(PlanCategoriasStore);
 
   private readonly _coaches = signal<readonly Coach[]>([]);
   /** Lookup para el select y para la columna Profesor. Vacío si su carga falló. */
@@ -87,7 +89,12 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
 
   remove(id: string): Promise<void> {
     return this.run(
-      this.repo.remove(id).then(() => this.repo.list()),
+      this.repo
+        .remove(id)
+        // La pista de categorías vive en el navegador y el backend no la conoce: si no se
+        // borra acá, queda huérfana para siempre.
+        .then(() => this.categorias.forget(id))
+        .then(() => this.repo.list()),
       toDomainError,
     );
   }

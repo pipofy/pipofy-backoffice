@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { SessionStore } from './session-store';
-import { readClubId } from './jwt-claims';
+import { readClubId, readRoles } from './jwt-claims';
 
 function store(): SessionStore {
   TestBed.resetTestingModule();
@@ -22,9 +22,13 @@ function fakeJwt(payload: Record<string, unknown>): string {
   return `h.${b64url}.s`;
 }
 
-describe('SessionStore', () => {
-  beforeEach(() => localStorage.clear());
+// A nivel de archivo (no de un describe puntual): los describes de más abajo (readClubId,
+// readRoles, datos derivados del token) son hermanos de 'SessionStore', no hijos — un
+// beforeEach adentro de ese describe no los alcanzaría y el test 'sin sesión' del último
+// arrancaría con el localStorage sucio que deja el test del F5.
+beforeEach(() => localStorage.clear());
 
+describe('SessionStore', () => {
   it('arranca vacío y no autenticado', () => {
     const s = store();
     expect(s.accessToken()).toBeNull();
@@ -100,5 +104,58 @@ describe('readClubId', () => {
     const token = fakeJwt({ sub: '1', clubId: '42?7' });
     expect(token).toMatch(/[-_]/);
     expect(readClubId(token)).toBe('42?7');
+  });
+});
+
+describe('readRoles', () => {
+  it('devuelve los roles del payload', () => {
+    expect(readRoles(fakeJwt({ sub: '1', roles: ['admin', 'encargado'] }))).toEqual([
+      'admin',
+      'encargado',
+    ]);
+  });
+
+  it('devuelve [] si el token no tiene el claim', () => {
+    expect(readRoles(fakeJwt({ sub: '1' }))).toEqual([]);
+  });
+
+  it('descarta los elementos que no son string', () => {
+    expect(readRoles(fakeJwt({ roles: ['admin', 7, null] }))).toEqual(['admin']);
+  });
+
+  it('devuelve [] con un token malformado en vez de tirar', () => {
+    expect(readRoles('no-es-un-jwt')).toEqual([]);
+  });
+});
+
+describe('SessionStore · datos derivados del token', () => {
+  it('expone clubId y roles del access token', () => {
+    const s = store();
+    s.set({
+      accessToken: fakeJwt({ sub: '1', clubId: '42', roles: ['admin'] }),
+      refreshToken: 'r',
+      mustChangePassword: false,
+    });
+    expect(s.clubId()).toBe('42');
+    expect(s.roles()).toEqual(['admin']);
+  });
+
+  it('sobreviven un F5: salen del token rehidratado, no del login', () => {
+    // Ésta es la razón de derivarlos del token y no de TenantContext, que sólo puebla
+    // SessionFacade.login(): hydrate() corre en el constructor de la instancia nueva.
+    store().set({
+      accessToken: fakeJwt({ sub: '1', clubId: '42', roles: ['encargado'] }),
+      refreshToken: 'r',
+      mustChangePassword: false,
+    });
+    const otro = store();               // instancia nueva, mismo localStorage
+    expect(otro.clubId()).toBe('42');
+    expect(otro.roles()).toEqual(['encargado']);
+  });
+
+  it('sin sesión, clubId es null y roles es []', () => {
+    const s = store();
+    expect(s.clubId()).toBeNull();
+    expect(s.roles()).toEqual([]);
   });
 });

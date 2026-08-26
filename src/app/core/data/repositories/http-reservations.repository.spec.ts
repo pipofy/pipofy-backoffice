@@ -15,7 +15,7 @@ function setup(responses: Partial<Record<'post' | 'delete', Observable<unknown>>
       calls.push({ method: 'post', path, body });
       return responses.post ?? of({ id: '55', holdExpiresAt: '2026-08-19T21:30:00.000Z' });
     },
-    delete: (path: string) => { calls.push({ method: 'delete', path }); return responses.delete ?? of({}); },
+    delete: (path: string, body?: unknown) => { calls.push({ method: 'delete', path, body }); return responses.delete ?? of({}); },
   } as unknown as ApiClient;
 
   TestBed.configureTestingModule({
@@ -31,13 +31,16 @@ function setup(responses: Partial<Record<'post' | 'delete', Observable<unknown>>
 const draft = { sessionId: '10', studentId: '4', studentPlanId: '9' };
 
 describe('HttpReservationsRepository.reserve', () => {
-  it('postea a la sesión y devuelve el id del hold', async () => {
-    // Es el ÚNICO momento en que el front ve este id: no existe GET /reservations.
+  it('reserve() no devuelve nada: el roster sale de GET /class-sessions/:id/reservations', async () => {
+    const { repo } = setup({ post: of({ id: '55', holdExpiresAt: null }) });
+    await expect(
+      repo.reserve({ sessionId: '10', studentId: '4', studentPlanId: '9' }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('postea a la sesión con el body correcto', async () => {
     const { repo, calls } = setup();
-    expect(await repo.reserve(draft)).toEqual({
-      id: '55',
-      holdExpiresAt: '2026-08-19T21:30:00.000Z',
-    });
+    await repo.reserve(draft);
     expect(calls[0]).toEqual({
       method: 'post',
       path: '/class-sessions/10/reservations',
@@ -92,5 +95,55 @@ describe('HttpReservationsRepository.confirm / cancel', () => {
     const err = new HttpErrorResponse({ status: 409, error: { message: 'El hold expiró' } });
     const { repo } = setup({ post: throwError(() => err) });
     await expect(repo.confirm('55')).rejects.toEqual({ kind: 'domain', message: 'El hold expiró' });
+  });
+});
+
+describe('HttpReservationsRepository.cancel', () => {
+  it('manda offerToWaitingList: true — sin eso el cupo liberado no se le ofrece a nadie', async () => {
+    // Regresión de bfe503c/584b6d3: ReservationsService.cancel() dejó de promover la lista de
+    // espera. Ahora lo hace WaitingListOfferService.offerNext(), y el controlador sólo lo llama
+    // si el body lo pide. Un DELETE pelado cancela bien y deja el lugar muerto.
+    const { repo, calls } = setup();
+    await repo.cancel('55');
+    expect(calls[0]).toEqual({
+      method: 'delete',
+      path: '/reservations/55',
+      body: { offerToWaitingList: true },
+    });
+  });
+
+  it('no manda notify: sin reason el backend responde 400', async () => {
+    // CancelReservationDto valida `reason` con @ValidateIf(o => o.notify === true) y
+    // @MinLength(1). Mandar notify sin motivo es un 400 garantizado.
+    const { repo, calls } = setup();
+    await repo.cancel('55');
+    expect(Object.keys(calls[0].body as object)).toEqual(['offerToWaitingList']);
+  });
+});
+
+describe('HttpReservationsRepository.confirmPayment', () => {
+  it('postea monto y medio de pago al endpoint de cobro', async () => {
+    const { repo, calls } = setup();
+    await repo.confirmPayment('55', { paymentMethodId: '2', amount: '12000.50' });
+    expect(calls[0]).toEqual({
+      method: 'post',
+      path: '/reservations/55/confirm-payment',
+      body: { paymentMethodId: '2', amount: '12000.50' },
+    });
+  });
+
+  it('manda el monto como STRING: del otro lado es un new Prisma.Decimal', async () => {
+    const { repo, calls } = setup();
+    await repo.confirmPayment('55', { paymentMethodId: '2', amount: '12000' });
+    expect(typeof (calls[0].body as { amount: unknown }).amount).toBe('string');
+  });
+
+  it('propaga el mensaje del backend cuando el hold ya venció', async () => {
+    const err = new HttpErrorResponse({ status: 409, error: { message: 'El hold expiró' } });
+    const { repo } = setup({ post: throwError(() => err) });
+    await expect(repo.confirmPayment('55', { paymentMethodId: '2', amount: '1' })).rejects.toEqual({
+      kind: 'domain',
+      message: 'El hold expiró',
+    });
   });
 });

@@ -10,7 +10,8 @@ import { SessionsTableComponent } from '../components/sessions-table.component';
 import { AttendanceModalComponent, AttendanceResult, AttendanceTarget } from '../components/attendance-modal.component';
 import { creditsToDiscount } from '@domain/use-cases/apply-attendance.use-case';
 import { nextSessionDate } from '../grupos-format';
-import { CLUB_ID, GruposFacade } from '../grupos.facade';
+import { GruposFacade } from '../grupos.facade';
+import { SessionStore } from '@data/auth/session-store';
 
 /**
  * Detalle de un grupo. Origen: index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
@@ -31,13 +32,15 @@ import { CLUB_ID, GruposFacade } from '../grupos.facade';
 export class GrupoDetailPageComponent {
   protected readonly facade = inject(GruposFacade);
   private readonly toasts = inject(ToastService);
+  private readonly session = inject(SessionStore);
   private readonly groupId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly attendanceTarget = signal<AttendanceTarget | null>(null);
   private readonly modal = viewChild(AttendanceModalComponent);
 
   constructor() {
-    if (!this.facade.data() && !this.facade.loading()) void this.facade.load(CLUB_ID);
+    const clubId = this.session.clubId();
+    if (clubId && !this.facade.data() && !this.facade.loading()) void this.facade.load(clubId);
 
     // El modal vive detrás de un @if, así que no existe cuando se elige la sesión: hay que
     // abrirlo cuando Angular ya lo creó. Mismo patrón que el modal de cancelar del dashboard.
@@ -66,13 +69,14 @@ export class GrupoDetailPageComponent {
 
   protected async onConfirmed(result: AttendanceResult): Promise<void> {
     const target = this.attendanceTarget();
-    if (!target) return;
+    const clubId = this.session.clubId();
+    if (!target || !clubId) return;
     const taking = target.session.status === 'scheduled';
     const present = result.marks.filter((m) => m.present).length;
     const absent = result.marks.length - present;
 
     try {
-      await this.facade.saveAttendance(CLUB_ID, {
+      await this.facade.saveAttendance(clubId, {
         groupId: target.group.id,
         sessionId: target.session.id,
         marks: result.marks,

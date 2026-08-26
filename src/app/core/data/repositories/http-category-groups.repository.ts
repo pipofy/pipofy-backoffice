@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import * as v from 'valibot';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
@@ -7,6 +7,7 @@ import { CategoryGroup, CategoryGroupDraft } from '@domain/entities/category-gro
 import { CategoryGroupListDtoSchema, CategoryGroupRequestSchema } from '../dto/category-groups.dto';
 import { toCategoryGroup, toCategoryGroupRequest } from '../mappers/category-group.mapper';
 import { toDomainError } from '../http/to-domain-error';
+import { ignoringStatus } from '../http/ignoring-status';
 import { ApiClient } from '../http/api-client';
 import { API_CONFIG } from '../config/api-config.token';
 
@@ -69,27 +70,19 @@ export class HttpCategoryGroupsRepository extends CategoryGroupsRepository {
     }
   }
 
-  async addItem(groupId: string, categoryId: string): Promise<void> {
-    try {
-      await firstValueFrom(
-        this.http.post(`${this.baseUrl}/category-groups/${groupId}/items`, { categoryId }),
-      );
-    } catch (err) {
-      // 409 = 'La categoría ya está en el grupo'. Ver el contrato: es éxito, no error.
-      if (err instanceof HttpErrorResponse && err.status === 409) return;
-      throw toDomainError(err);
-    }
+  /** 409 = 'La categoría ya está en el grupo'. Ver el contrato: es éxito, no error. */
+  addItem(groupId: string, categoryId: string): Promise<void> {
+    return ignoringStatus(
+      409,
+      firstValueFrom(this.http.post(`${this.baseUrl}/category-groups/${groupId}/items`, { categoryId })),
+    );
   }
 
-  async removeItem(groupId: string, categoryId: string): Promise<void> {
-    try {
-      await firstValueFrom(
-        this.http.delete(`${this.baseUrl}/category-groups/${groupId}/items/${categoryId}`),
-      );
-    } catch (err) {
-      // 404 = 'La categoría no está en el grupo'. Idem: el estado final es el pedido.
-      if (err instanceof HttpErrorResponse && err.status === 404) return;
-      throw toDomainError(err);
-    }
+  /** 404 = 'La categoría no está en el grupo'. Idem: el estado final es el pedido. */
+  removeItem(groupId: string, categoryId: string): Promise<void> {
+    return ignoringStatus(
+      404,
+      firstValueFrom(this.http.delete(`${this.baseUrl}/category-groups/${groupId}/items/${categoryId}`)),
+    );
   }
 }

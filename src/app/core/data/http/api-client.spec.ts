@@ -31,4 +31,28 @@ describe('ApiClient', () => {
     const api = make({ get: () => throwError(() => new HttpErrorResponse({ status: 404 })) } as unknown as HttpClient);
     await expect(firstValueFrom(api.get('/x'))).rejects.toEqual({ kind: 'not-found' });
   });
+
+  it('delete sin body no le pasa options a HttpClient', async () => {
+    let calledUrl = '';
+    let calledOptions: unknown = 'no-lo-llamaron';
+    const api = make({
+      delete: (url: string, options?: unknown) => {
+        calledUrl = url;
+        calledOptions = options;
+        return of({});
+      },
+    } as unknown as HttpClient);
+    await firstValueFrom(api.delete('/courts/1'));
+    expect(calledUrl).toBe('https://api.test/courts/1');
+    expect(calledOptions).toBeUndefined();
+  });
+
+  it('delete con body lo manda dentro de options: HttpClient no acepta cuerpo posicional', async () => {
+    let calledOptions: unknown = null;
+    const api = make({
+      delete: (_url: string, options?: unknown) => { calledOptions = options; return of({}); },
+    } as unknown as HttpClient);
+    await firstValueFrom(api.delete('/reservations/55', { offerToWaitingList: true }));
+    expect(calledOptions).toEqual({ body: { offerToWaitingList: true } });
+  });
 });

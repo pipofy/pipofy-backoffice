@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { GrupoDetailPageComponent } from './grupo-detail-page.component';
 import { GruposFacade } from '../grupos.facade';
@@ -8,6 +8,7 @@ import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { InMemoryGroupsRepository } from '@data/repositories/in-memory-groups.repository';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { SessionCancelledError } from '@domain/errors';
+import { SessionStore } from '@data/auth/session-store';
 
 const flushRepo = () => new Promise((r) => setTimeout(r, 0));
 
@@ -18,6 +19,8 @@ function providers(id: string, repo: GroupsRepository) {
     GruposFacade,
     { provide: GroupsRepository, useValue: repo },
     { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id }) } } },
+    // SessionStore está bindeado en root: el TestBed no lo provee solo.
+    { provide: SessionStore, useValue: { clubId: signal<string | null>('c1') } },
   ];
 }
 

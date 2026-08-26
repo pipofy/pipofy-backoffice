@@ -44,11 +44,42 @@ export type WaitingListEntryDto = v.InferOutput<typeof WaitingListEntryDtoSchema
 export const WaitingListDtoSchema = v.array(WaitingListEntryDtoSchema);
 
 /**
- * Lo que devuelve `POST /class-sessions/:id/reservations`: la fila de Prisma entera. Se
- * declaran sólo los dos campos que la pantalla no puede reconstruir; valibot descarta el resto.
+ * Lo que devuelve `GET /class-sessions/:id/reservations`: filas crudas de Prisma con
+ * `reservationStatus` embebido por el `include` del servicio.
+ *
+ * `student` también viene incluido y NO se declara: el modal ya tiene el padrón en memoria y
+ * resuelve el nombre por `studentId`. valibot descarta lo que no está declarado.
+ *
+ * `deletedAt` SÍ se declara, por el mismo motivo que en `courts.dto.ts`: el `findMany` del
+ * backend no lo filtra y el recorte se hace en el cliente.
  */
-export const ReservationDtoSchema = v.object({
+export const SessionReservationDtoSchema = v.object({
   id: v.string(),
+  studentId: v.string(),
+  /** Nullable en Prisma (`schema.prisma:599`): una reserva cobrada puede no tener plan. */
+  studentPlanId: v.nullable(v.string()),
   holdExpiresAt: v.nullable(v.string()),
+  deletedAt: v.nullable(v.string()),
+  reservationStatus: v.object({ name: v.string() }),
 });
-export type ReservationDto = v.InferOutput<typeof ReservationDtoSchema>;
+export const SessionReservationListDtoSchema = v.array(SessionReservationDtoSchema);
+export type SessionReservationDto = v.InferOutput<typeof SessionReservationDtoSchema>;
+
+/**
+ * Body de `DELETE /class-sessions/:id` y de `DELETE /class-sessions/day?date=`.
+ *
+ * `reason` es OPCIONAL y se OMITE cuando no hay: `CancelClassSessionDto` lo valida con
+ * `@ValidateIf(o => o.notify === true)`, y el ValidationPipe corre con
+ * `whitelist: true, forbidNonWhitelisted: true` (app.module.ts:62), así que mandar la clave
+ * en null es un 400 y no "sin motivo".
+ *
+ * `offerToWaitingList` NO se manda NUNCA, aunque el endpoint individual lo acepte: le
+ * ofrecería el lugar liberado al primero de la lista de espera DE LA CLASE QUE ACABA DE
+ * CANCELARSE. `CancelDayDto` lo omite a propósito del lado del backend y explica por qué; al
+ * individual se le escapó. Hasta que lo arreglen, el que no lo manda es el front.
+ */
+export const CancelClassRequestSchema = v.object({
+  notify: v.boolean(),
+  reason: v.optional(v.string()),
+});
+export type CancelClassRequest = v.InferOutput<typeof CancelClassRequestSchema>;

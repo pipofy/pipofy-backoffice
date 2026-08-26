@@ -3,11 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { NavBadgesService } from './nav-badges.service';
 
 describe('NavBadgesService', () => {
-  it('expone contadores por defecto', () => {
+  it('arranca sin contadores: un número inventado invita a hacerle caso', () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), NavBadgesService],
     });
     const svc = TestBed.inject(NavBadgesService);
-    expect(svc.counts()).toEqual({ alerts: 6, payments: 3 });
+    expect(svc.counts()).toEqual({ alerts: 0, payments: 0 });
   });
 });

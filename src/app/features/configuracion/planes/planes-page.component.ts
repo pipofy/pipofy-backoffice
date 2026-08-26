@@ -1,19 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { PlanesFacade } from './planes.facade';
 import { PlanFormModalComponent } from './plan-form-modal.component';
+import { PlanCategoriasModalComponent } from './plan-categorias-modal.component';
 import { formatPlanPrice } from './plan-price';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 import { catalogLabel } from '@data/catalog-labels';
 import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
 import { Plan, PlanInput } from '@domain/entities/plan';
 import { CatalogItem } from '@data/dto/catalogs.dto';
+import { CategoriesRepository } from '@domain/contracts/categories.repository';
+import { Category } from '@domain/entities/category';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
   selector: 'app-planes-page',
   standalone: true,
-  imports: [PlanFormModalComponent, ConfirmDeleteModalComponent],
+  imports: [PlanFormModalComponent, PlanCategoriasModalComponent, ConfirmDeleteModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './planes-page.component.html',
   styleUrl: './planes-page.component.css',
@@ -21,16 +24,19 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 export class PlanesPageComponent {
   protected readonly facade = inject(PlanesFacade);
   private readonly catalogs = inject(CatalogsRepository);
+  private readonly categoriesRepo = inject(CategoriesRepository);
   private readonly toast = inject(ToastService);
 
   private readonly form = viewChild.required(PlanFormModalComponent);
   private readonly confirm = viewChild.required(ConfirmDeleteModalComponent);
+  private readonly categorias = viewChild.required(PlanCategoriasModalComponent);
 
   protected readonly query = signal('');
   /** Ya no viaja al modal por binding (open() lo recibe por parámetro): sólo enruta el guardado. */
   private readonly editing = signal<Plan | null>(null);
   protected readonly deleting = signal<Plan | null>(null);
   protected readonly planTypes = signal<readonly CatalogItem[]>([]);
+  protected readonly categories = signal<readonly Category[]>([]);
 
   constructor() {
     // La facade se provee en la ruta PADRE: un error de guardado o borrado queda en error()
@@ -45,6 +51,10 @@ export class PlanesPageComponent {
     // El catálogo falla en silencio a propósito: sin él el select queda vacío, pero la tabla
     // sigue siendo usable y el error de la lista es el que importa.
     void this.catalogs.planTypes().then((v) => this.planTypes.set(v)).catch(() => undefined);
+
+    // Falla en SILENCIO, mismo criterio que el catálogo de tipos: sin categorías el modal
+    // muestra su estado vacío, pero la tabla de planes sigue siendo usable.
+    void this.categoriesRepo.list().then((v) => this.categories.set(v)).catch(() => undefined);
   }
 
   protected readonly filtered = computed(() => {
@@ -87,6 +97,15 @@ export class PlanesPageComponent {
     this.facade.clearError();
     this.editing.set(plan);
     this.form().open(plan);
+  }
+
+  /**
+   * SIN clearError() de PlanesFacade, a diferencia de openNew/openEdit: el modal de categorías
+   * muestra el error de PlanCategoriasFacade, no el de la tabla, y IdSetHintFacade.open() ya lo
+   * resetea. Limpiarlo acá sólo borraba el banner de la tabla que el usuario estaba leyendo.
+   */
+  protected openCategorias(plan: Plan): void {
+    this.categorias().open(plan);
   }
 
   protected askDelete(plan: Plan): void {

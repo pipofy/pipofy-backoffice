@@ -24,6 +24,7 @@
             <th scope="col">Alumno</th>
             <th scope="col">Teléfono</th>
             <th scope="col">Categoría</th>
+            <th scope="col">Estado</th>
             <th scope="col">Mano</th>
             <th scope="col">Ranking</th>
             <th scope="col" class="cell-end">Acciones</th>
@@ -35,6 +36,7 @@
               <td>{{ displayName(student) }}</td>
               <td>{{ student.phone }}</td>
               <td>{{ categoryName(student.categoryId) }}</td>
+              <td>{{ statusName(student.studentStatusId) }}</td>
               <td>{{ handName(student.dominantHand) }}</td>
               <td>{{ student.ranking ?? '—' }}</td>
               <td class="cell-end">
@@ -62,6 +64,7 @@
 
 <app-alumno-form-modal
   [categories]="facade.categories()"
+  [statuses]="facade.statuses()"
   [error]="errorText()"
   (saved)="onSaved($event)" />
 

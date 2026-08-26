@@ -90,6 +90,13 @@ export function domainErrorMessage(err: DomainError): string {
   }
 }
 
+export class InvalidCancellationError extends DomainRuleError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidCancellationError';
+  }
+}
+
 export class InvalidCourtError extends DomainRuleError {
   constructor(message: string) {
     super(message);
@@ -159,5 +166,17 @@ export class InvalidReservationError extends DomainRuleError {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidReservationError';
+  }
+}
+
+/**
+ * Cubre las invariantes de la VENTA de un plan y las del COBRO de una clase suelta. Una sola
+ * clase para las dos, igual que InvalidScheduleError: los dos flujos validan lo mismo —un
+ * monto y un medio de pago— y lo que la persona lee es el mensaje, no el nombre de la clase.
+ */
+export class InvalidPaymentError extends DomainRuleError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidPaymentError';
   }
 }

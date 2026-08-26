@@ -6,22 +6,27 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Student, StudentDraft, StudentInput } from '@domain/entities/student';
 import { Category } from '@domain/entities/category';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const alumno: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '4', dominantHand: 'diestro', ranking: 12, notes: null,
+  birthDate: '2001-05-03', categoryId: '4', studentStatusId: '2',
+  dominantHand: 'diestro', ranking: 12, notes: null,
 };
 
 const input: StudentInput = {
   phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03', categoryId: '4', dominantHand: 'diestro', ranking: '12', notes: '',
+  birthDate: '2001-05-03', categoryId: '4', studentStatusId: '2',
+  dominantHand: 'diestro', ranking: '12', notes: '',
 };
 
 const CATEGORIAS: Category[] = [{ id: '4', name: 'Cuarta', levelOrder: 4 }];
+const ESTADOS = [{ id: '1', name: 'active' }, { id: '2', name: 'pending_classification' }];
 
 function setup(
   over: Partial<StudentsRepository> = {},
   categoryList: () => Promise<Category[]> = async () => CATEGORIAS,
+  statusList: () => Promise<{ id: string; name: string }[]> = async () => ESTADOS,
 ) {
   const calls: string[] = [];
   const repo = {
@@ -38,6 +43,7 @@ function setup(
       AlumnosFacade,
       { provide: StudentsRepository, useValue: repo },
       { provide: CategoriesRepository, useValue: { list: categoryList } as CategoriesRepository },
+      { provide: CatalogsRepository, useValue: { studentStatuses: statusList } as unknown as CatalogsRepository },
     ],
   });
   return { facade: TestBed.inject(AlumnosFacade), calls };
@@ -137,6 +143,19 @@ describe('AlumnosFacade', () => {
     expect(facade.error()).toBeNull();
   });
 
+  it('loadStatuses() puebla el lookup de estados', async () => {
+    const { facade } = setup();
+    await facade.loadStatuses();
+    expect(facade.statuses()).toEqual(ESTADOS);
+  });
+
+  it('loadStatuses() falla en SILENCIO, igual que las categorías', async () => {
+    const { facade } = setup({}, undefined, () => Promise.reject({ kind: 'network' as const }));
+    await facade.loadStatuses();
+    expect(facade.statuses()).toEqual([]);
+    expect(facade.error()).toBeNull();
+  });
+
   it('reset() también limpia el lookup de categorías', async () => {
     // SignalStore.reset() sólo conoce data/loading/error: sin el override, el lookup de
     // categorías del tenant anterior sobreviviría a un reset() de aislamiento de tenant.
@@ -145,5 +164,12 @@ describe('AlumnosFacade', () => {
     expect(facade.categories()).toEqual(CATEGORIAS);
     facade.reset();
     expect(facade.categories()).toEqual([]);
+  });
+
+  it('reset() también limpia el lookup de estados', async () => {
+    const { facade } = setup();
+    await facade.loadStatuses();
+    facade.reset();
+    expect(facade.statuses()).toEqual([]);
   });
 });

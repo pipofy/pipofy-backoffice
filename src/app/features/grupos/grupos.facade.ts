@@ -6,13 +6,6 @@ import { TenantContext } from '@shared/tenant/tenant-context';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
 
-/**
- * Club del demo. Mismo valor que el dashboard (dashboard-page.component.ts:15). Se exporta acá,
- * junto a la facade, para que las dos páginas del slice lo compartan en vez de declararlo dos
- * veces. Cuando exista autenticación, sale de la sesión.
- */
-export const CLUB_ID = 'c1';
-
 @Injectable()
 export class GruposFacade extends SignalStore<GroupsSnapshot, DomainError> {
   private readonly repo = inject(GroupsRepository);

@@ -8,6 +8,7 @@ import { ClubRepository } from '@domain/contracts/club.repository';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { ApiClient } from '@data/http/api-client';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { UsersRepository } from '@data/repositories/users.repository';
 import { SessionStore } from '@data/auth/session-store';
 import { API_CONFIG } from '@data/config/api-config.token';
 import { SessionFacade } from '@features/auth/session.facade';
@@ -40,6 +41,10 @@ async function harnessAt(url: string, conSesion = true, mustChangePassword = fal
       // En root, igual que en app.config.ts: lo usan Configuración y el dashboard, y una
       // instancia por ruta lazy significaba un cache de catálogos por ruta.
       CatalogsRepository,
+      // Igual que CatalogsRepository: en root porque su consumidor es ShellComponent, que no
+      // cuelga de ninguna ruta lazy. Corre el real contra el ApiClient stubeado — devuelve
+      // `[]`, el parse falla y el shell se lo come en silencio, que es justo su contrato.
+      UsersRepository,
     ],
   });
   if (conSesion) {

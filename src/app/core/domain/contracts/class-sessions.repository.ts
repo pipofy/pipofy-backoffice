@@ -1,5 +1,7 @@
 import { ClassSession } from '../entities/class-session';
 import { WaitingListEntry } from '../entities/waiting-list';
+import { SessionReservation } from '../entities/session-reservation';
+import { CancelClassDraft } from '../entities/class-cancellation';
 
 /**
  * Las clases de la agenda y su lista de espera. Clase abstracta por el mismo motivo que el
@@ -21,4 +23,26 @@ export abstract class ClassSessionsRepository {
   abstract joinWaitingList(sessionId: string, studentId: string): Promise<void>;
   /** `entryId` es el id de la ANOTACIÓN (`WaitingListEntry.id`), no el del alumno. */
   abstract leaveWaitingList(entryId: string): Promise<void>;
+  /**
+   * Las reservas de UNA clase. Es la fuente de verdad del roster y también de los holds sin
+   * confirmar: antes vivían en un Map en memoria de SesionFacade y se perdían con un F5.
+   *
+   * Devuelve TODOS los estados, vencidos incluidos. Nada expira los holds en la base — cada
+   * query del backend filtra con `holdExpiresAt > new Date()` en tiempo de consulta —, así que
+   * el recorte por vencimiento lo hace la pantalla, que ya tiene `minutosRestantes()`.
+   */
+  abstract reservations(sessionId: string): Promise<SessionReservation[]>;
+
+  /**
+   * Cancelar UNA clase y cancelar el día entero: la misma operación con distinto alcance, por
+   * eso comparten el draft. Ver `CancelClassDraft` por todo lo que arrastra del otro lado
+   * (reservas canceladas, créditos devueltos, WhatsApp).
+   *
+   * `cancelDay` toma la MISMA clave de fecha local ('yyyy-MM-dd') que `list`, y por el mismo
+   * motivo: el backend arma la ventana del día en -03:00 a partir de ese string.
+   *
+   * Devuelven void como el resto de las escrituras: quien llame re-lee `list(dateKey)`.
+   */
+  abstract cancel(sessionId: string, draft: CancelClassDraft): Promise<void>;
+  abstract cancelDay(dateKey: string, draft: CancelClassDraft): Promise<void>;
 }

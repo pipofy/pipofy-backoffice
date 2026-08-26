@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection} from '@angular/core';
 import { ReservasPageComponent } from './reservas-page.component';
 import { ReservasFacade } from '../reservas.facade';
 import { SesionFacade } from '../sesion.facade';
@@ -12,11 +12,16 @@ import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
 import { ClassSession } from '@domain/entities/class-session';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const session: ClassSession = {
   id: '10', courtId: '2', coachId: '5', categoryGroupId: '3',
   startAt: '2026-08-19T21:00:00.000Z', capacity: 4, availableSpots: 1,
 };
+
+const CATALOGS_DOUBLE = {
+  paymentMethods: async () => [{ id: '3', name: 'efectivo' }],
+} as unknown as CatalogsRepository;
 
 function setup(over: Partial<ClassSessionsRepository> = {}) {
   TestBed.configureTestingModule({
@@ -24,24 +29,31 @@ function setup(over: Partial<ClassSessionsRepository> = {}) {
       provideZonelessChangeDetection(),
       ReservasFacade,
       SesionFacade,
+      { provide: CatalogsRepository, useValue: CATALOGS_DOUBLE },
       { provide: ClassSessionsRepository, useValue: {
           list: async () => [session], waitingList: async () => [],
+          reservations: async () => [],
           joinWaitingList: async () => undefined, leaveWaitingList: async () => undefined,
+          cancel: async () => undefined, cancelDay: async () => undefined,
           ...over,
         } as ClassSessionsRepository },
       { provide: ReservationsRepository, useValue: {
-          reserve: async () => ({ id: '55', holdExpiresAt: null }),
+          reserve: async () => undefined,
           confirm: async () => undefined, cancel: async () => undefined,
+          confirmPayment: async () => undefined,
         } as ReservationsRepository },
       { provide: StudentsRepository, useValue: {
           list: async () => [], plans: async () => [],
           create: async () => undefined, update: async () => undefined, remove: async () => undefined,
+          purchasePlan: async () => undefined,
         } as StudentsRepository },
       // El modal de sesión (siempre presente en el DOM, cerrado) inyecta PlansRepository para
       // resolver el nombre del plan en su select.
       { provide: PlansRepository, useValue: {
           list: async () => [],
           create: async () => undefined, update: async () => undefined, remove: async () => undefined,
+          addCategory: async () => undefined,
+          removeCategory: async () => undefined,
         } as PlansRepository },
       { provide: CourtsRepository, useValue: {
           list: async () => [{ id: '2', name: 'Cancha 2', code: null, surfaceTypeId: null, indoor: false, courtStatusId: null }],
@@ -134,5 +146,73 @@ describe('ReservasPageComponent', () => {
     await settle(fixture);
 
     expect(TestBed.inject(ReservasFacade).date()).toBe('2026-09-01');
+  });
+});
+
+const btn = (f: ComponentFixture<ReservasPageComponent>, sel: string) =>
+  f.nativeElement.querySelector(sel) as HTMLButtonElement;
+
+describe('ReservasPageComponent · cancelar', () => {
+  it('cada clase ofrece cancelarse', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    expect(btn(fixture, '[data-test="cancelar-clase"]')).not.toBeNull();
+  });
+
+  it('el modal nombra la clase y cuántos anotados hay', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    btn(fixture, '[data-test="cancelar-clase"]').click();
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    // capacity 4 − availableSpots 1 = 3 anotados; el label sale de los tres catálogos.
+    expect(texto).toContain('3 alumnos');
+    expect(texto).toContain('Cancha 2');
+  });
+
+  it('confirmar cancela, atenúa la fila y deja de ofrecer acciones', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    btn(fixture, '[data-test="cancelar-clase"]').click();
+    fixture.detectChanges();
+    btn(fixture, '[data-test="cancel-confirm"]').click();
+    await settle(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('tbody tr.cancelada')).not.toBeNull();
+    expect(root.querySelector('.chip-cancelada')?.textContent).toContain('Cancelada');
+    expect(root.querySelector('[data-test="cancelar-clase"]')).toBeNull();
+  });
+
+  it('un fallo del backend NO cierra el modal ni atenúa la fila', async () => {
+    // Cerrar tras un error se lleva puesto el motivo ya tipeado.
+    const fixture = setup({ cancel: () => Promise.reject({ kind: 'forbidden' as const }) });
+    await settle(fixture);
+    btn(fixture, '[data-test="cancelar-clase"]').click();
+    fixture.detectChanges();
+    btn(fixture, '[data-test="cancel-confirm"]').click();
+    await settle(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('tbody tr.cancelada')).toBeNull();
+    expect(root.querySelector('[data-test="cancel-motivo"]')).not.toBeNull();
+    expect(root.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('cancelar el día alcanza a todas las clases de la fecha', async () => {
+    const fixture = setup();
+    await settle(fixture);
+    btn(fixture, '[data-test="cancelar-dia"]').click();
+    fixture.detectChanges();
+    btn(fixture, '[data-test="cancel-confirm"]').click();
+    await settle(fixture);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.cancelada'))
+      .toHaveLength(1);
+  });
+
+  it('sin clases vigentes, cancelar el día queda deshabilitado', async () => {
+    const fixture = setup({ list: async () => [] });
+    await settle(fixture);
+    expect(btn(fixture, '[data-test="cancelar-dia"]').disabled).toBe(true);
   });
 });

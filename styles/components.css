@@ -291,7 +291,9 @@ dialog.modal[open]::backdrop{animation:fadein var(--duration) var(--ease)}
 
 /* ═══════════════ NOTICE ═══════════════
    Fuente: index-v2.html:666-667. Consumidores: el modal de cancelar del dashboard
-   (`.notice.hold`) y el modal de asistencia de grupos (`.notice.ok`).
+   (`.notice.hold`), el modal de asistencia de grupos (`.notice.ok`) y los banners de datos de
+   demostración de la lista de grupos y el detalle de grupo (`.notice.hold`, grupos-list-page y
+   grupo-detail-page).
 
    La base lleva SÓLO geometría y el color vive en la variante. La maqueta pintaba el verde
    en `.notice` a secas y lo tapaba con el ámbar de `.hold`; cuando el único consumidor de la

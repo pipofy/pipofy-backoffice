@@ -3,7 +3,8 @@ import { Router } from '@angular/router';
 import { Group } from '@domain/entities/group';
 import { domainErrorMessage } from '@domain/errors';
 import { CupoCellComponent } from '../components/cupo-cell.component';
-import { CLUB_ID, GruposFacade } from '../grupos.facade';
+import { GruposFacade } from '../grupos.facade';
+import { SessionStore } from '@data/auth/session-store';
 
 const TODAS = 'Todas';
 
@@ -28,6 +29,7 @@ const TODAS = 'Todas';
 export class GruposListPageComponent {
   protected readonly facade = inject(GruposFacade);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionStore);
 
   protected readonly query = signal('');
   protected readonly category = signal(TODAS);
@@ -36,7 +38,8 @@ export class GruposListPageComponent {
   constructor() {
     // Carga sólo si el snapshot está vacío: la facade se provee en la ruta PADRE, así que volver
     // del detalle no recarga, y entrar por deep-link a /grupos/:id sí carga.
-    if (!this.facade.data() && !this.facade.loading()) void this.facade.load(CLUB_ID);
+    const clubId = this.session.clubId();
+    if (clubId && !this.facade.data() && !this.facade.loading()) void this.facade.load(clubId);
   }
 
   /** 'Todas' + las categorías presentes en los datos, sin repetir. Origen: 1688-1690. */

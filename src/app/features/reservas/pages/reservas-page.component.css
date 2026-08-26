@@ -3,3 +3,24 @@
 #reservas-fecha {
   max-width: 12rem;
 }
+
+/* Una clase cancelada se ATENÚA en vez de desaparecer: que se vea que se canceló es el punto.
+   Sólo alcanza a las que se cancelaron en esta misma sesión del navegador — ver el ponytail
+   de `_cancelled` en reservas.facade.ts. */
+tr.cancelada {
+  opacity: 0.55;
+}
+
+tr.cancelada td:first-child {
+  text-decoration: line-through;
+}
+
+.chip-cancelada {
+  display: inline-block;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+}

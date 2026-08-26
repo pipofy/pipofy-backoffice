@@ -24,8 +24,11 @@ function setup(over: Partial<ClassSessionsRepository> = {}) {
       return [late, early];
     },
     waitingList: async () => [],
+    reservations: async () => [],
     joinWaitingList: async () => undefined,
     leaveWaitingList: async () => undefined,
+    cancel: async () => undefined,
+    cancelDay: async () => undefined,
     ...over,
   } as ClassSessionsRepository;
 
@@ -68,5 +71,68 @@ describe('ReservasFacade', () => {
     await facade.load();
     expect(facade.error()).toEqual({ kind: 'forbidden' });
     expect(facade.data()).toBeNull();
+  });
+});
+
+describe('ReservasFacade · cancelar', () => {
+  it('cancela la clase y DESPUÉS re-lee la lista', async () => {
+    // La cancelación mueve el cupo (todas sus reservas pasan a 'cancelled') y eso lo calcula
+    // el backend: parchear en memoria mostraría el cupo viejo.
+    const orden: string[] = [];
+    const { facade } = setup({
+      cancel: async () => { orden.push('cancel'); },
+      list: async () => { orden.push('list'); return [late]; },
+    });
+    await facade.load();
+    await facade.cancelarClase('tarde', { reason: 'Se llovió', notify: true });
+    expect(orden).toEqual(['list', 'cancel', 'list']);
+    expect(facade.error()).toBeNull();
+  });
+
+  it('marca la clase como cancelada para que la fila deje de verse normal', async () => {
+    const { facade } = setup();
+    await facade.cancelarClase('tarde', { reason: '', notify: false });
+    expect(facade.cancelled().has('tarde')).toBe(true);
+    expect(facade.cancelled().has('temprano')).toBe(false);
+  });
+
+  it('pedir aviso sin motivo deja error de dominio y NO llama al repo', async () => {
+    let llamado = false;
+    const { facade } = setup({ cancel: async () => { llamado = true; } });
+    await facade.cancelarClase('tarde', { reason: '   ', notify: true });
+    expect(llamado).toBe(false);
+    expect(facade.error()).toMatchObject({ kind: 'domain' });
+    expect(facade.cancelled().size).toBe(0);
+  });
+
+  it('un fallo del repo NO marca la clase como cancelada', async () => {
+    const { facade } = setup({ cancel: () => Promise.reject({ kind: 'forbidden' as const }) });
+    await facade.cancelarClase('tarde', { reason: '', notify: false });
+    expect(facade.error()).toEqual({ kind: 'forbidden' });
+    expect(facade.cancelled().size).toBe(0);
+  });
+
+  it('cancelar el día marca TODAS las clases de la fecha', async () => {
+    // cancelDay() cancela todas las 'programada', y ningún flujo del backend escribe
+    // 'completada': lo que no estaba cancelado, quedó.
+    const { facade } = setup();
+    await facade.load();
+    await facade.cancelarDia({ reason: 'Paro', notify: true });
+    expect([...facade.cancelled()].sort()).toEqual(['tarde', 'temprano']);
+  });
+
+  it('cancelar el día manda la fecha de la facade', async () => {
+    const fechas: string[] = [];
+    const { facade } = setup({ cancelDay: async (dateKey: string) => { fechas.push(dateKey); } });
+    await facade.setDate('2026-09-01');
+    await facade.cancelarDia({ reason: '', notify: false });
+    expect(fechas).toEqual(['2026-09-01']);
+  });
+
+  it('reset() limpia las canceladas: son estado propio de la facade', async () => {
+    const { facade } = setup();
+    await facade.cancelarClase('tarde', { reason: '', notify: false });
+    facade.reset();
+    expect(facade.cancelled().size).toBe(0);
   });
 });

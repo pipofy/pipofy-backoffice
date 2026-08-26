@@ -30,13 +30,14 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4',
+  birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4', studentStatusId: '2',
   dominantHand: 'diestro', ranking: 12, notes: null, deletedAt: null, ...over,
 });
 
 const draft: StudentDraft = {
   phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
-  birthDate: null, categoryId: null, dominantHand: null, ranking: null, notes: null,
+  birthDate: null, categoryId: null, studentStatusId: null,
+  dominantHand: null, ranking: null, notes: null,
 };
 
 describe('HttpStudentsRepository.list', () => {
@@ -52,10 +53,11 @@ describe('HttpStudentsRepository.list', () => {
     expect((await repo.list()).map((s: { id: string }) => s.id)).toEqual(['1']);
   });
 
-  it('ignora studentStatusId, que el backend manda y la UI no usa', async () => {
-    // No hay GET /catalogs/student-statuses, así que el estado no se puede ni mostrar (§2.3).
-    const { repo } = setup({ get: of([row({ studentStatusId: '2' })]) });
-    expect(Object.keys((await repo.list())[0])).not.toContain('studentStatusId');
+  it('conserva studentStatusId: la columna Estado y su select lo necesitan', async () => {
+    // Antes se descartaba porque no existía GET /catalogs/student-statuses y el id crudo no
+    // se podía traducir. Ahora el catálogo existe y el estado se muestra Y se edita.
+    const { repo } = setup({ get: of([row({ studentStatusId: '3' })]) });
+    expect((await repo.list())[0].studentStatusId).toBe('3');
   });
 
   it('un payload que deriva sale como DomainError de validación', async () => {
@@ -141,5 +143,39 @@ describe('HttpStudentsRepository.plans', () => {
   it('un payload que deriva sale como DomainError de validación', async () => {
     const { repo } = setup({ get: of([{ id: 1 }]) });
     await expect(repo.plans('7')).rejects.toMatchObject({ kind: 'validation' });
+  });
+});
+
+describe('HttpStudentsRepository.purchasePlan', () => {
+  it('postea plan, medio y monto a /students/:id/plans', async () => {
+    const { repo, calls } = setup();
+    await repo.purchasePlan('7', { planId: '10', paymentMethodId: '2', amount: '96000' });
+    expect(calls[0]).toEqual({
+      method: 'post',
+      path: '/students/7/plans',
+      body: { planId: '10', paymentMethodId: '2', amount: '96000' },
+    });
+  });
+
+  // El ValidationPipe del backend corre con forbidNonWhitelisted: una clave de más es un 400.
+  it('no manda claves de más', async () => {
+    const { repo, calls } = setup();
+    await repo.purchasePlan('7', { planId: '10', paymentMethodId: '2', amount: '96000' });
+    expect(Object.keys(calls[0].body as object).sort())
+      .toEqual(['amount', 'paymentMethodId', 'planId']);
+  });
+
+  it('propaga el mensaje del backend cuando el plan está inactivo', async () => {
+    const err = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'planId inválido: no existe, es de otro club, o está inactivo' },
+    });
+    const { repo } = setup({ post: throwError(() => err) });
+    await expect(
+      repo.purchasePlan('7', { planId: '10', paymentMethodId: '2', amount: '1' }),
+    ).rejects.toEqual({
+      kind: 'domain',
+      message: 'planId inválido: no existe, es de otro club, o está inactivo',
+    });
   });
 });

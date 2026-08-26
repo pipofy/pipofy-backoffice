@@ -13,7 +13,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'delete', Observable<u
   const api = {
     get: (path: string) => { calls.push({ method: 'get', path }); return responses.get ?? of([]); },
     post: (path: string, body: unknown) => { calls.push({ method: 'post', path, body }); return responses.post ?? of({}); },
-    delete: (path: string) => { calls.push({ method: 'delete', path }); return responses.delete ?? of({}); },
+    delete: (path: string, body: unknown) => { calls.push({ method: 'delete', path, body }); return responses.delete ?? of({}); },
   } as unknown as ApiClient;
 
   TestBed.configureTestingModule({
@@ -101,5 +101,100 @@ describe('HttpClassSessionsRepository — lista de espera', () => {
       kind: 'domain',
       message: 'El alumno ya está en la lista de espera de esta clase',
     });
+  });
+});
+
+const reserva = (over: Record<string, unknown> = {}) => ({
+  id: '55', studentId: '4', studentPlanId: '9', holdExpiresAt: null, deletedAt: null,
+  reservationStatus: { name: 'confirmed' }, ...over,
+});
+
+describe('HttpClassSessionsRepository.reservations', () => {
+  it('pega al endpoint por sesión', async () => {
+    const { repo, calls } = setup();
+    await repo.reservations('10');
+    expect(calls[0]).toEqual({ method: 'get', path: '/class-sessions/10/reservations' });
+  });
+
+  it('aplana el estado embebido y conserva el hold', async () => {
+    const held = reserva({ id: '56', holdExpiresAt: '2026-08-19T21:30:00.000Z',
+                           reservationStatus: { name: 'held' } });
+    const { repo } = setup({ get: of([held]) });
+    expect(await repo.reservations('10')).toEqual([
+      { id: '56', studentId: '4', studentPlanId: '9', status: 'held',
+        holdExpiresAt: '2026-08-19T21:30:00.000Z' },
+    ]);
+  });
+
+  it('descarta las borradas: el backend no filtra deletedAt', async () => {
+    const viva = reserva({ id: 'viva' });
+    const borrada = reserva({ id: 'borrada', deletedAt: '2026-08-19T10:00:00.000Z' });
+    const { repo } = setup({ get: of([viva, borrada]) });
+    expect((await repo.reservations('10')).map((r) => r.id)).toEqual(['viva']);
+  });
+
+  it('acepta studentPlanId nulo: una clase cobrada no gasta créditos', async () => {
+    const { repo } = setup({ get: of([reserva({ studentPlanId: null })]) });
+    expect((await repo.reservations('10'))[0].studentPlanId).toBeNull();
+  });
+
+  it('normaliza un 404 a DomainError', async () => {
+    const { repo } = setup({
+      get: throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' })),
+    });
+    await expect(repo.reservations('10')).rejects.toMatchObject({ kind: 'not-found' });
+  });
+});
+
+describe('HttpClassSessionsRepository.cancel', () => {
+  it('pega DELETE a la clase con notify y motivo', async () => {
+    const { repo, calls } = setup();
+    await repo.cancel('10', { notify: true, reason: 'Se llovió' });
+    expect(calls).toEqual([
+      { method: 'delete', path: '/class-sessions/10', body: { notify: true, reason: 'Se llovió' } },
+    ]);
+  });
+
+  it('OMITE reason cuando es null', async () => {
+    // CancelClassSessionDto lo valida con @ValidateIf(o => o.notify === true) y el
+    // ValidationPipe corre en whitelist: mandarlo en null es un 400.
+    const { repo, calls } = setup();
+    await repo.cancel('10', { notify: false, reason: null });
+    expect(calls[0].body).toEqual({ notify: false });
+  });
+
+  it('NUNCA manda offerToWaitingList', async () => {
+    // El endpoint lo acepta, pero ofrecería el lugar liberado al primero de la lista de espera
+    // DE LA CLASE QUE SE ACABA DE CANCELAR. CancelDayDto lo omite a propósito del lado del
+    // backend; al individual se le escapó.
+    const { repo, calls } = setup();
+    await repo.cancel('10', { notify: true, reason: 'x' });
+    expect(calls[0].body).not.toHaveProperty('offerToWaitingList');
+  });
+
+  it('normaliza un 404 a DomainError', async () => {
+    const { repo } = setup({
+      delete: throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' })),
+    });
+    await expect(repo.cancel('10', { notify: false, reason: null }))
+      .rejects.toMatchObject({ kind: 'not-found' });
+  });
+});
+
+describe('HttpClassSessionsRepository.cancelDay', () => {
+  it('manda la fecha como QUERY, no en el path', async () => {
+    // El backend declara DELETE /class-sessions/day con @Query(), y esa ruta va ANTES de
+    // @Delete(':id') justo para que "day" no se enrute como un id.
+    const { repo, calls } = setup();
+    await repo.cancelDay('2026-08-26', { notify: false, reason: null });
+    expect(calls[0].path).toBe('/class-sessions/day?date=2026-08-26');
+  });
+
+  it('manda la fecha LOCAL tal cual, sin el ±1 día que necesita la lectura', async () => {
+    // cancelDay() arma su ventana en -03:00; list() la arma en UTC. Sólo la lectura compensa.
+    const { repo, calls } = setup();
+    await repo.cancelDay('2026-08-26', { notify: true, reason: 'Paro de transporte' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].body).toEqual({ notify: true, reason: 'Paro de transporte' });
   });
 });

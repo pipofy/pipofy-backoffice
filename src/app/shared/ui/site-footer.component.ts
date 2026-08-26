@@ -19,7 +19,12 @@ import { BrandmarkComponent } from './brandmark.component';
           <div class="sf-ctas"><ng-content /></div>
         </div>
         <div class="sf-legal">
-          <span>© 2026 SetPoint · Club Solaris</span>
+          <!-- ponytail: sin nombre de club. El token trae clubId, no el nombre, y no vale la pena
+               un GET /clubs/me acá solo para el pie. Salida: ya lo consume Configuración › Club. -->
+          <span>© 2026 SetPoint</span>
+          <!-- ponytail: los tres sin handler, no llevan a ninguna parte todavía. Techo: un
+               producto real necesita estas páginas y hoy no existen. Salida: crearlas
+               (Términos, Privacidad, Soporte) y reemplazar el href="#" por routerLink. -->
           <nav aria-label="Enlaces del pie">
             <a href="#" (click)="$event.preventDefault()">Términos</a>
             <a href="#" (click)="$event.preventDefault()">Privacidad</a>

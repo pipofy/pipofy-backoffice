@@ -4,8 +4,11 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { StudentPlan, studentPlanIsExpired, usableCredits } from '@domain/entities/student-plan';
 import { Plan } from '@domain/entities/plan';
+import { PlanPurchaseInput, createPlanPurchaseDraft } from '@domain/entities/payment';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@data/dto/catalogs.dto';
 import { localDateKey } from '@domain/local-date';
 
 /**
@@ -17,6 +20,7 @@ import { localDateKey } from '@domain/local-date';
 export class AlumnoPlanesFacade extends SignalStore<StudentPlan[], DomainError> {
   private readonly repo = inject(StudentsRepository);
   private readonly plansRepo = inject(PlansRepository);
+  private readonly catalogs = inject(CatalogsRepository);
 
   /** Congelado en cada load(): un computed que llamara new Date() no sería determinista. */
   private readonly _today = signal(localDateKey(new Date()));
@@ -30,12 +34,83 @@ export class AlumnoPlanesFacade extends SignalStore<StudentPlan[], DomainError> 
     () => new Map(this._plans().map((p) => [p.id, p.name] as const)),
   );
 
+  /** El catálogo entero, para el select de "Vender plan". Sólo los planes activos: vender
+   *  uno inactivo es un 400 del backend ('planId inválido: ... o está inactivo'). */
+  readonly planCatalog = computed(() => this._plans().filter((p) => p.active));
+
+  private readonly _paymentMethods = signal<readonly CatalogItem[]>([]);
+  readonly paymentMethods = this._paymentMethods.asReadonly();
+
   async load(studentId: string): Promise<void> {
     this._today.set(localDateKey(new Date()));
-    // Los dos pedidos salen juntos: el catálogo de planes sólo sirve para poner nombres y no
-    // debe agregarle su latencia a la tabla.
+    // Los tres pedidos salen juntos: ni el catálogo de planes ni el de medios de pago deben
+    // agregarle su latencia a la tabla, que es lo que se vino a ver.
     void this.loadPlanNames();
+    void this.loadPaymentMethods();
     await this.run(this.repo.plans(studentId), toDomainError);
+  }
+
+  /**
+   * Vender un plan. Devuelve si la VENTA entró — no si todo salió bien.
+   *
+   * NO usa run() con las dos llamadas encadenadas, a diferencia del resto de las facades, y es
+   * a propósito: encadenadas, un fallo de la RELECTURA se publicaba como fallo de la venta. El
+   * banner decía "No pudimos conectar" con el formulario todavía cargado, y el segundo click
+   * creaba un segundo `student_plan` y un segundo `payment` por una venta que ya había
+   * entrado. En una pantalla de plata, "reintentá" tiene que significar que no se cobró.
+   *
+   * `createPlanPurchaseDraft` tira de forma síncrona con el monto vacío o el plan sin elegir;
+   * queda adentro del primer try para que su invariante se normalice igual que un fallo de red.
+   *
+   * Re-lee `plans()` en vez de parchear la lista: la compra crea el student_plan del lado del
+   * backend con sus créditos y su vencimiento calculados, y ninguno se puede adivinar acá.
+   */
+  async comprar(studentId: string, input: PlanPurchaseInput): Promise<boolean> {
+    this.setLoading(true);
+    this.setError(null);
+    try {
+      await this.repo.purchasePlan(studentId, createPlanPurchaseDraft(input));
+    } catch (err) {
+      this.setError(toDomainError(err));
+      this.setLoading(false);
+      return false;
+    }
+
+    // Acá la venta YA está hecha. Nada de lo que siga puede devolver false: el llamador tiene
+    // que limpiar el formulario aunque la relectura falle, o el próximo click cobra de nuevo.
+    try {
+      this.setData(await this.repo.plans(studentId));
+    } catch (err) {
+      this.setError(toDomainError(err));
+    }
+    this.setLoading(false);
+    return true;
+  }
+
+  clearError(): void {
+    this.setError(null);
+  }
+
+  /** El precio de lista del plan, para pre-cargar el monto. '' cuando el plan no tiene precio. */
+  precioDe(planId: string): string {
+    return this._plans().find((p) => p.id === planId)?.price ?? '';
+  }
+
+  /**
+   * Falla en SILENCIO y el select queda vacío, que es lo que el aviso de abajo del select
+   * explica. Un error acá taparía el de la tabla, que es el que importa.
+   *
+   * El guard evita repreguntar mientras viva la facade —una vez por visita a la pantalla, no
+   * por cada apertura de modal—; `CatalogsRepository` ya memoiza el éxito y borra su entrada
+   * al fallar, así que un endpoint que se recupera se detecta al volver a entrar.
+   */
+  private async loadPaymentMethods(): Promise<void> {
+    if (this._paymentMethods().length > 0) return;
+    try {
+      this._paymentMethods.set(await this.catalogs.paymentMethods());
+    } catch {
+      this._paymentMethods.set([]);
+    }
   }
 
   /**

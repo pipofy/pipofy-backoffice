@@ -1,17 +1,33 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection} from '@angular/core';
 import { SesionFacade } from './sesion.facade';
 import { ReservasFacade } from './reservas.facade';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
 import { ReservationsRepository } from '@domain/contracts/reservations.repository';
 import { WaitingListEntry } from '@domain/entities/waiting-list';
+import { SessionReservation } from '@domain/entities/session-reservation';
+import { ReservationDraft } from '@domain/entities/reservation';
+import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const entry: WaitingListEntry = { id: '77', studentId: '4', requestedAt: null };
 const input = { sessionId: '10', studentId: '4', studentPlanId: '9' };
 
-function setup(over: Partial<ReservationsRepository> = {}) {
+const CATALOGS_DOUBLE = {
+  paymentMethods: async () => [{ id: '3', name: 'efectivo' }],
+} as unknown as CatalogsRepository;
+
+function setup(
+  over: Partial<ReservationsRepository> = {},
+  rows: readonly SessionReservation[] = [],
+) {
   const calls: string[] = [];
+  // Estado mutable y compartido entre los dos dobles, igual que en
+  // sesion-modal.component.spec.ts: SesionFacade relee `reservations()` (un GET) después de
+  // cada escritura en vez de guardar el hold en memoria, así que un doble que devolviera
+  // siempre `rows` sin tocar no podría probar que confirmar()/cancelar() sacan la fila de
+  // holdsOf() — la API real sí lo hace.
+  let state: SessionReservation[] = [...rows];
   const sessions = {
     list: async () => {
       calls.push('sessions.list');
@@ -21,24 +37,35 @@ function setup(over: Partial<ReservationsRepository> = {}) {
       calls.push('waitingList');
       return [entry];
     },
+    reservations: async () => {
+      calls.push('reservations');
+      return [...state];
+    },
     joinWaitingList: async () => {
       calls.push('join');
     },
     leaveWaitingList: async () => {
       calls.push('leave');
     },
+    cancel: async () => undefined,
+    cancelDay: async () => undefined,
   } as ClassSessionsRepository;
 
   const reservations = {
-    reserve: async () => {
+    reserve: async (draft: ReservationDraft) => {
       calls.push('reserve');
-      return { id: '55', holdExpiresAt: null };
+      state = [...state, {
+        id: '55', studentId: draft.studentId, studentPlanId: draft.studentPlanId,
+        status: 'held', holdExpiresAt: null,
+      }];
     },
-    confirm: async () => {
+    confirm: async (id: string) => {
       calls.push('confirm');
+      state = state.map((r) => (r.id === id ? { ...r, status: 'confirmed' } : r));
     },
-    cancel: async () => {
+    cancel: async (id: string) => {
       calls.push('cancel');
+      state = state.map((r) => (r.id === id ? { ...r, status: 'cancelled' } : r));
     },
     ...over,
   } as ReservationsRepository;
@@ -47,6 +74,7 @@ function setup(over: Partial<ReservationsRepository> = {}) {
     providers: [
       provideZonelessChangeDetection(),
       SesionFacade,
+      { provide: CatalogsRepository, useValue: CATALOGS_DOUBLE },
       ReservasFacade,
       { provide: ClassSessionsRepository, useValue: sessions },
       { provide: ReservationsRepository, useValue: reservations },
@@ -62,15 +90,6 @@ describe('SesionFacade', () => {
     expect(facade.data()).toEqual([entry]);
   });
 
-  it('reservar() deja el hold en pendientes y refresca las sesiones', async () => {
-    const { facade, calls } = setup();
-    await facade.reservar('10', input);
-    expect(facade.holdsOf('10')).toEqual([
-      { reservation: { id: '55', holdExpiresAt: null }, studentId: '4' },
-    ]);
-    expect(calls).toEqual(['reserve', 'sessions.list']);
-  });
-
   it('reservar() sin plan NO llama al repo y deja el error de dominio', async () => {
     const { facade, calls } = setup();
     await facade.reservar('10', { ...input, studentPlanId: '' });
@@ -81,23 +100,28 @@ describe('SesionFacade', () => {
     });
   });
 
-  it('confirmar() saca el hold de pendientes', async () => {
-    const { facade } = setup();
+  it('reservar() toma el hold Y relee sesiones y roster', async () => {
+    // Cobertura que se había perdido al borrar 'reservar() deja el hold en pendientes y
+    // refresca las sesiones': esa aserción era la única que probaba que reservar() relee la
+    // grilla, no sólo el roster. reservas.load() y loadReservations() van en Promise.all, pero
+    // el orden es determinista igual: los dos arrancan síncronamente (antes del primer await)
+    // al construirse el array, en el orden en que aparecen ahí.
+    const { facade, calls } = setup();
     await facade.reservar('10', input);
-    await facade.confirmar('10', '55');
-    expect(facade.holdsOf('10')).toEqual([]);
+    expect(calls).toEqual(['reserve', 'sessions.list', 'reservations']);
   });
 
-  it('cancelar() refresca las sesiones Y la lista de espera', async () => {
-    // El backend promueve al primero de la lista creando un hold nuevo: la lista se acortó
-    // sola aunque el usuario no haya tocado ese bloque. Sin este refresco, muestra a alguien
-    // que ya no está esperando.
+  it('cancelar() refresca las sesiones, las reservas Y la lista de espera', async () => {
+    // offerNext() NO crea un hold nuevo: marca la anotación del primero de la lista como
+    // 'notificado' con vencimiento a 15 minutos y le manda un WhatsApp; recién si el alumno
+    // acepta por ahí toma el lugar (ver el docblock de cancelar() en sesion.facade.ts). La
+    // anotación cambió de estado igual, así que sin este refresco la lista de espera se ve
+    // desactualizada aunque el usuario no haya tocado ese bloque.
     const { facade, calls } = setup();
     await facade.reservar('10', input);
     calls.length = 0;
     await facade.cancelar('10', '55');
-    expect(calls).toEqual(['cancel', 'sessions.list', 'waitingList']);
-    expect(facade.holdsOf('10')).toEqual([]);
+    expect(calls).toEqual(['cancel', 'sessions.list', 'reservations', 'waitingList']);
   });
 
   it('anotar() y quitar() releen la lista de espera', async () => {
@@ -109,17 +133,84 @@ describe('SesionFacade', () => {
     expect(calls).toEqual(['leave', 'waitingList']);
   });
 
-  it('los holds son por sesión: los de una no aparecen en la otra', async () => {
-    const { facade } = setup();
-    await facade.reservar('10', input);
-    expect(facade.holdsOf('11')).toEqual([]);
-  });
-
   it('un fallo al confirmar deja el error y NO rechaza', async () => {
     const { facade } = setup({
       confirm: () => Promise.reject({ kind: 'domain' as const, message: 'El hold expiró' }),
     });
     await facade.confirmar('10', '55');
     expect(facade.error()).toEqual({ kind: 'domain', message: 'El hold expiró' });
+  });
+});
+
+const HOLD_VIVO = { id: '55', studentId: '4', studentPlanId: '9', status: 'held',
+                    holdExpiresAt: '2099-01-01T00:00:00.000Z' } as const;
+const CONFIRMADA = { id: '56', studentId: '7', studentPlanId: '9', status: 'confirmed',
+                     holdExpiresAt: null } as const;
+const CANCELADA = { id: '57', studentId: '8', studentPlanId: null, status: 'cancelled',
+                    holdExpiresAt: null } as const;
+
+describe('SesionFacade · roster desde la API', () => {
+  it('open() carga las reservas además de la lista de espera', async () => {
+    const { facade, calls } = setup({}, [HOLD_VIVO, CONFIRMADA]);
+    await facade.open('10');
+    expect(calls).toContain('reservations');
+    expect(facade.reservationsOf('10').map((r) => r.id)).toEqual(['55', '56']);
+  });
+
+  it('holdsOf() devuelve sólo los held, no las confirmadas ni las canceladas', async () => {
+    const { facade } = setup({}, [HOLD_VIVO, CONFIRMADA, CANCELADA]);
+    await facade.open('10');
+    expect(facade.holdsOf('10').map((r) => r.id)).toEqual(['55']);
+  });
+
+  it('confirmar() saca el hold de pendientes', async () => {
+    const { facade } = setup({}, [HOLD_VIVO]);
+    await facade.open('10');
+    expect(facade.holdsOf('10').map((r) => r.id)).toEqual(['55']);
+
+    await facade.confirmar('10', '55');
+    expect(facade.holdsOf('10')).toEqual([]);
+  });
+
+  it('cancelar() también saca el hold de pendientes', async () => {
+    const { facade } = setup({}, [HOLD_VIVO]);
+    await facade.open('10');
+    expect(facade.holdsOf('10')).toHaveLength(1);
+
+    await facade.cancelar('10', '55');
+    expect(facade.holdsOf('10')).toEqual([]);
+  });
+
+  it('no devuelve las reservas de OTRA sesión', async () => {
+    // El signal guarda una sola clase. Sin esta guarda, abrir la clase B mostraría el roster
+    // de la A hasta que resolviera el GET — el mismo bug que arreglamos en el modal de planes.
+    const { facade } = setup({}, [HOLD_VIVO]);
+    await facade.open('10');
+    expect(facade.reservationsOf('99')).toEqual([]);
+  });
+
+  it('los holds sobreviven a una facade nueva: salen de la API, no de memoria', async () => {
+    // La regresión que justifica toda la tarea: antes el Map en memoria se perdía con un F5.
+    const primera = setup({}, [HOLD_VIVO]);
+    await primera.facade.open('10');
+    expect(primera.facade.holdsOf('10')).toHaveLength(1);
+
+    TestBed.resetTestingModule();
+    const segunda = setup({}, [HOLD_VIVO]);
+    await segunda.facade.open('10');
+    expect(segunda.facade.holdsOf('10')).toHaveLength(1);
+  });
+
+  it('relee las reservas después de reservar, confirmar, cobrar y cancelar', async () => {
+    const { facade, calls } = setup({ confirmPayment: async () => undefined }, []);
+    await facade.open('10');
+    const base = calls.filter((c) => c === 'reservations').length;
+
+    await facade.reservar('10', input);
+    await facade.confirmar('10', '55');
+    await facade.cobrar('10', '55', { paymentMethodId: '3', amount: '1000' });
+    await facade.cancelar('10', '55');
+
+    expect(calls.filter((c) => c === 'reservations')).toHaveLength(base + 4);
   });
 });

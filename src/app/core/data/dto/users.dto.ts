@@ -36,3 +36,20 @@ export function currentUserName(user: CurrentUserDto): string {
   if (parts.length > 0) return parts.join(' ');
   return user.email?.trim() ?? '';
 }
+
+/**
+ * Write-path de `POST /users`.
+ *
+ * SIN `clubId`: el backend lo resuelve del JWT. Mandarlo activaría la comparación de
+ * `ClubScopeGuard`, que hoy pasa de largo justamente porque el body no lo lleva (§4.2).
+ *
+ * `nombre` y `apellido` son `v.optional` y no `v.nullable`: el mapper OMITE la clave cuando
+ * no hay valor, así no se depende del manejo de null de `@IsOptional()` del otro repo.
+ */
+export const CreateUserRequestSchema = v.object({
+  email: v.string(),
+  nombre: v.optional(v.string()),
+  apellido: v.optional(v.string()),
+  roleId: v.string(),
+});
+export type CreateUserRequest = v.InferOutput<typeof CreateUserRequestSchema>;

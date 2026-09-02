@@ -8,13 +8,28 @@ import { ApiClient } from '../http/api-client';
 import { currentUserName } from '../dto/users.dto';
 
 const ME = {
-  id: '9', clubId: '42', email: 'ana@club.com',
-  nombre: 'Ana', apellido: 'Pérez', roles: ['admin'],
+  id: '9',
+  clubId: '42',
+  email: 'ana@club.com',
+  nombre: 'Ana',
+  apellido: 'Pérez',
+  roles: ['admin'],
 };
 
-function setup(get: () => Observable<unknown>) {
+function setup(get: () => Observable<unknown>, post: () => Observable<unknown> = () => of({})) {
   const paths: string[] = [];
-  const api = { get: (p: string) => { paths.push(p); return get(); } } as unknown as ApiClient;
+  const bodies: unknown[] = [];
+  const api = {
+    get: (p: string) => {
+      paths.push(p);
+      return get();
+    },
+    post: (p: string, body: unknown) => {
+      paths.push(p);
+      bodies.push(body);
+      return post();
+    },
+  } as unknown as ApiClient;
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
@@ -22,7 +37,7 @@ function setup(get: () => Observable<unknown>) {
       { provide: ApiClient, useValue: api },
     ],
   });
-  return { repo: TestBed.inject(UsersRepository), paths };
+  return { repo: TestBed.inject(UsersRepository), paths, bodies };
 }
 
 describe('UsersRepository', () => {
@@ -68,5 +83,78 @@ describe('currentUserName', () => {
 
   it('sin ninguno de los tres devuelve vacío, para que el sidebar no dibuje el renglón', () => {
     expect(currentUserName({ ...ME, nombre: null, apellido: null, email: null })).toBe('');
+  });
+});
+
+describe('UsersRepository.roles', () => {
+  const ROLES = [
+    { id: '3', name: 'admin' },
+    { id: '7', name: 'profesor' },
+  ];
+
+  it('pide /roles y parsea con el schema de catálogos', async () => {
+    const { repo, paths } = setup(() => of(ROLES));
+    expect(await repo.roles()).toEqual(ROLES);
+    expect(paths).toEqual(['/roles']);
+  });
+
+  it('NO cachea: dos llamadas son dos requests', async () => {
+    // Los roles son DEL CLUB del JWT. Memoizarlos serviría los del club anterior después de
+    // un logout+login en la misma pestaña (§3.4).
+    const { repo, paths } = setup(() => of(ROLES));
+    await repo.roles();
+    await repo.roles();
+    expect(paths).toHaveLength(2);
+  });
+
+  it('normaliza el error de red a DomainError', async () => {
+    const { repo } = setup(() => throwError(() => new HttpErrorResponse({ status: 0 })));
+    await expect(repo.roles()).rejects.toEqual({ kind: 'network' });
+  });
+});
+
+describe('UsersRepository.create', () => {
+  const DRAFT = { email: 'ana@club.com', nombre: 'Ana', apellido: 'Pérez', roleId: '7' };
+
+  it('postea a /users el body del mapper', async () => {
+    const { repo, paths, bodies } = setup(
+      () => of({}),
+      () => of({ id: '9', email: 'ana@club.com' }),
+    );
+    await repo.create(DRAFT);
+    expect(paths).toEqual(['/users']);
+    expect(bodies[0]).toEqual({
+      email: 'ana@club.com',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      roleId: '7',
+    });
+  });
+
+  it('con nombre y apellido en null no manda esas claves', async () => {
+    const { repo, bodies } = setup(
+      () => of({}),
+      () => of({}),
+    );
+    await repo.create({ ...DRAFT, nombre: null, apellido: null });
+    expect(bodies[0]).toEqual({ email: 'ana@club.com', roleId: '7' });
+  });
+
+  it('el 409 de email repetido sale como domain con el texto del backend', async () => {
+    const { repo } = setup(
+      () => of({}),
+      () =>
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 409,
+              error: { statusCode: 409, message: 'Ya existe un usuario con ese email' },
+            }),
+        ),
+    );
+    await expect(repo.create(DRAFT)).rejects.toEqual({
+      kind: 'domain',
+      message: 'Ya existe un usuario con ese email',
+    });
   });
 });

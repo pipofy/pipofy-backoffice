@@ -1,10 +1,7 @@
 /**
- * Sin create ni delete: en este slice los profesores son de SÓLO LECTURA salvo por
- * `description`, que el slice B agrega abajo con Draft e Input.
- *
- * Crear un profesor es imposible contra este backend: el coachProfile lo crea POST /users
- * cuando el rol se llama 'profesor', y ese endpoint exige un roleId que no hay forma de
- * obtener porque no existe GET /roles (§3.10).
+ * Sin delete: no hay endpoint para dar de baja un profesor. El alta SÍ existe, pero no pasa
+ * por acá: crear un profesor es crear un usuario con rol 'profesor' vía `POST /users`, que
+ * es lo que crea el `CoachProfile` del lado del backend. Ver `new-user.ts`.
  */
 export interface Coach {
   readonly id: string;

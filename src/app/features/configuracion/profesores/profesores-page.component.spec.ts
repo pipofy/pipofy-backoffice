@@ -6,18 +6,25 @@ import { ProfesoresFacade } from './profesores.facade';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach } from '@domain/entities/coach';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { UsersRepository } from '@data/repositories/users.repository';
 
 const COACHES: Coach[] = [
   { id: '1', displayName: 'Ana Díaz', description: 'Revés a una mano' },
   { id: '2', displayName: 'Zulema Paz', description: null },
 ];
 
-function setup(repo: Partial<CoachesRepository>) {
+const ROLES = [
+  { id: '3', name: 'admin' },
+  { id: '7', name: 'profesor' },
+];
+
+function setup(repo: Partial<CoachesRepository>, users: Partial<UsersRepository> = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       { provide: CoachesRepository, useValue: repo },
+      { provide: UsersRepository, useValue: users },
       ProfesoresFacade,
       ToastService,
     ],
@@ -41,33 +48,36 @@ describe('ProfesoresPageComponent', () => {
     expect(filas[1].textContent).toContain('—');
   });
 
-  it('NO ofrece alta ni baja: contra este backend son imposibles (§2.3)', async () => {
+  it('ofrece alta pero NO baja: no hay endpoint para borrar un profesor', async () => {
     const f = setup({ list: async () => COACHES });
     await f.whenStable();
     f.detectChanges();
-    expect(f.nativeElement.textContent).not.toContain('Nuevo profesor');
+    expect(f.nativeElement.textContent).toContain('Nuevo profesor');
     expect(f.nativeElement.querySelector('.btn-danger')).toBeNull();
     expect(f.nativeElement.querySelector('app-confirm-delete-modal')).toBeNull();
   });
 
-  it('explica de dónde salen los profesores', async () => {
+  it('avisa que el alta manda un mail con una contraseña temporal', async () => {
     const f = setup({ list: async () => COACHES });
     await f.whenStable();
     f.detectChanges();
-    expect(f.nativeElement.textContent).toContain('rol de profesor');
+    expect(f.nativeElement.textContent).toContain('contraseña temporal');
   });
 
-  it('el vacío NO dice "todavía no cargaste": acá no se puede cargar ninguno', async () => {
+  it('el vacío ahora SÍ puede invitar a cargar: el alta existe', async () => {
     const f = setup({ list: async () => [] });
     await f.whenStable();
     f.detectChanges();
-    expect(f.nativeElement.textContent).not.toContain('Todavía no cargaste');
-    expect(f.nativeElement.textContent).toContain('No hay profesores en este club');
+    expect(f.nativeElement.textContent).toContain('Todavía no hay profesores');
   });
 
   it('con la carga fallada NO muestra el vacío: data() en null es "no sé", no "está vacío"', async () => {
     // Regla 2 de §8.0.
-    const f = setup({ list: async () => { throw { kind: 'network' }; } });
+    const f = setup({
+      list: async () => {
+        throw { kind: 'network' };
+      },
+    });
     await f.whenStable();
     f.detectChanges();
     expect(f.nativeElement.textContent).not.toContain('No hay profesores en este club');
@@ -93,7 +103,12 @@ describe('ProfesoresPageComponent', () => {
   });
 
   it('si falla el guardado el modal QUEDA abierto: es donde se corrige', async () => {
-    const f = setup({ list: async () => COACHES, update: async () => { throw { kind: 'not-found' }; } });
+    const f = setup({
+      list: async () => COACHES,
+      update: async () => {
+        throw { kind: 'not-found' };
+      },
+    });
     await f.whenStable();
     f.detectChanges();
     (f.nativeElement.querySelector('[data-test="edit"]') as HTMLButtonElement).click();
@@ -110,7 +125,12 @@ describe('ProfesoresPageComponent', () => {
     // componente se reconstruye con data() YA poblado — el `if (!data() && ...) load()` del
     // constructor no vuelve a correr, así que sin clearError() el banner de un guardado viejo
     // reaparecería sobre una tabla que está perfectamente bien.
-    const f = setup({ list: async () => COACHES, update: async () => { throw { kind: 'not-found' }; } });
+    const f = setup({
+      list: async () => COACHES,
+      update: async () => {
+        throw { kind: 'not-found' };
+      },
+    });
     await f.whenStable();
     f.detectChanges();
     (f.nativeElement.querySelector('[data-test="edit"]') as HTMLButtonElement).click();
@@ -125,5 +145,119 @@ describe('ProfesoresPageComponent', () => {
     const f2 = TestBed.createComponent(ProfesoresPageComponent);
     f2.detectChanges();
     expect(f2.nativeElement.querySelector('.notice')).toBeNull();
+  });
+
+  // Hay DOS <dialog> en la página: el de edición va primero en el template, así que
+  // querySelector('dialog') a secas sigue devolviendo ése. El de alta se busca por su host.
+  const dialogNuevo = (f: { nativeElement: HTMLElement }) =>
+    f.nativeElement.querySelector('app-profesor-nuevo-modal dialog') as HTMLDialogElement;
+
+  it('el botón de alta abre el modal de alta', async () => {
+    const f = setup({ list: async () => COACHES });
+    await f.whenStable();
+    f.detectChanges();
+    (f.nativeElement.querySelector('[data-test="new"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(dialogNuevo(f).open).toBe(true);
+    expect(f.nativeElement.querySelector('#profesor-email')).not.toBeNull();
+  });
+
+  it('el alta exitosa cierra el modal', async () => {
+    const f = setup(
+      { list: async () => COACHES },
+      { roles: async () => ROLES, create: async () => undefined },
+    );
+    await f.whenStable();
+    f.detectChanges();
+    (f.nativeElement.querySelector('[data-test="new"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    const email = f.nativeElement.querySelector('#profesor-email') as HTMLInputElement;
+    email.value = 'ana@club.com';
+    email.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    (dialogNuevo(f).querySelector('[data-test="save"]') as HTMLButtonElement).click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(dialogNuevo(f).open).toBe(false);
+  });
+
+  it('alta exitosa con relectura fallida: cierra el modal pero NO toastea, el banner ya lo cuenta', async () => {
+    // crear() devuelve true apenas la ESCRITURA anduvo; el error de la RELECTURA llega
+    // después, en error(). La página no puede toastear éxito si terminó con un banner rojo.
+    let llamadas = 0;
+    const f = setup(
+      {
+        list: async () => {
+          llamadas++;
+          if (llamadas > 1) throw { kind: 'network' };
+          return COACHES;
+        },
+      },
+      { roles: async () => ROLES, create: async () => undefined },
+    );
+    await f.whenStable();
+    f.detectChanges();
+    (f.nativeElement.querySelector('[data-test="new"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    const email = f.nativeElement.querySelector('#profesor-email') as HTMLInputElement;
+    email.value = 'ana@club.com';
+    email.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    (dialogNuevo(f).querySelector('[data-test="save"]') as HTMLButtonElement).click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(dialogNuevo(f).open).toBe(false);
+    expect(TestBed.inject(ToastService).toasts()).toHaveLength(0);
+  });
+
+  it('el alta fallida deja el modal ABIERTO para corregir', async () => {
+    const f = setup(
+      { list: async () => COACHES },
+      { roles: async () => [{ id: '3', name: 'admin' }], create: async () => undefined },
+    );
+    await f.whenStable();
+    f.detectChanges();
+    (f.nativeElement.querySelector('[data-test="new"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    const email = f.nativeElement.querySelector('#profesor-email') as HTMLInputElement;
+    email.value = 'ana@club.com';
+    email.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    (dialogNuevo(f).querySelector('[data-test="save"]') as HTMLButtonElement).click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(dialogNuevo(f).open).toBe(true);
+    expect(f.nativeElement.textContent).toContain('rol de profesor');
+  });
+
+  it('después de un alta fallida se puede reintentar: markFailed() libera el guard', async () => {
+    // Sin markFailed(), el signal `saving` del modal queda en true y el botón deshabilitado
+    // para siempre: el usuario ve el error y no puede corregirlo.
+    let intentos = 0;
+    const f = setup(
+      { list: async () => COACHES },
+      {
+        roles: async () => ROLES,
+        create: async () => {
+          intentos++;
+          throw { kind: 'network' };
+        },
+      },
+    );
+    await f.whenStable();
+    f.detectChanges();
+    (f.nativeElement.querySelector('[data-test="new"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    const email = f.nativeElement.querySelector('#profesor-email') as HTMLInputElement;
+    email.value = 'ana@club.com';
+    email.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    const guardar = dialogNuevo(f).querySelector('[data-test="save"]') as HTMLButtonElement;
+    guardar.click();
+    await f.whenStable();
+    f.detectChanges();
+    guardar.click();
+    await f.whenStable();
+    expect(intentos).toBe(2);
   });
 });

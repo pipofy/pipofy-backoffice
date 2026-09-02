@@ -1,12 +1,16 @@
 <section class="panel">
   <div class="panel-head">
     <h3>Profesores</h3>
+    <button type="button" class="btn btn-primary" data-test="new" (click)="openNuevo()">
+      + Nuevo profesor
+    </button>
   </div>
 
   <!-- NO va como `.sub` del .panel-head: ese primitivo pone el texto AL LADO del título
        (grupos-list-page.component.html:9-10) y esta nota se comería el renglón entero. -->
   <p class="a-body">
-    Los profesores se crean al dar de alta un usuario con rol de profesor. Acá se edita su descripción.
+    Al crear un profesor se le da de alta una cuenta y se le manda un mail con una contraseña
+    temporal. Su descripción se edita desde la tabla.
   </p>
 
   <!-- BANNER, no una rama del chain (regla 1 de §8.0). -->
@@ -32,8 +36,14 @@
               <td>{{ coach.displayName }}</td>
               <td>{{ coach.description || '—' }}</td>
               <td class="cell-end">
-                <button type="button" class="btn btn-ghost btn-sm" data-test="edit"
-                        (click)="openEdit(coach)">Editar</button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  data-test="edit"
+                  (click)="openEdit(coach)"
+                >
+                  Editar
+                </button>
               </td>
             </tr>
           }
@@ -41,16 +51,15 @@
       </table>
     </div>
   } @else if (facade.data()) {
-    <!-- El vacío SÓLO cuando la lista LLEGÓ vacía (regla 2 de §8.0). Y con copy propio: es
-         la única pantalla cuyo vacío no se resuelve desde la UI, así que "todavía no
-         cargaste ninguno" sería mentira. -->
-    <div class="a-empty">
-      No hay profesores en este club. Se crean al dar de alta un usuario con rol de profesor.
-    </div>
+    <!-- El vacío SÓLO cuando la lista LLEGÓ vacía (regla 2 de §8.0). -->
+    <div class="a-empty">Todavía no hay profesores en este club.</div>
   }
 </section>
 
 <app-profesor-form-modal
   [error]="errorText()"
   [saving]="facade.loading()"
-  (saved)="onSaved($event)" />
+  (saved)="onSaved($event)"
+/>
+
+<app-profesor-nuevo-modal [error]="errorText()" (saved)="onNuevoGuardado($event)" />

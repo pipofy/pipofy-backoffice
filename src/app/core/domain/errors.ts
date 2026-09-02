@@ -151,6 +151,17 @@ export class InvalidClubError extends DomainRuleError {
 }
 
 /**
+ * La tira `createNewUserDraft`. Vive acá porque TODAS las DomainRuleError viven acá: si se
+ * dispersan, `toDomainError` deja de tener un solo lugar donde mirar.
+ */
+export class InvalidUserError extends DomainRuleError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidUserError';
+  }
+}
+
+/**
  * Cubre las invariantes del horario Y las del rango de generación. Una sola clase para las
  * dos porque el `kind` resultante es el mismo ('domain') y lo que la persona lee es el
  * mensaje: una segunda clase no cambiaría nada más que la cantidad de clases.

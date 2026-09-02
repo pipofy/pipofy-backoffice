@@ -3,8 +3,9 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { Coach, CoachInput } from '@domain/entities/coach';
 
 /**
- * Sólo EDICIÓN: no hay alta de profesores contra este backend (§2.3). Por eso `open()` pide
- * un Coach y no acepta null, a diferencia de los otros cinco modales del proyecto.
+ * Sólo EDICIÓN de la descripción de un profesor existente. Por eso `open()` pide un Coach y
+ * no acepta null, a diferencia de los otros cinco modales del proyecto. El ALTA vive en el
+ * modal hermano, `profesor-nuevo-modal.component.ts` (misma carpeta).
  *
  * Un solo campo, porque `PATCH /coaches/:id` sólo escribe `description` (§3.10). El nombre
  * va como subtítulo y no como campo deshabilitado: un control que no puede funcionar es

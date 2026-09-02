@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { ProfesoresFacade } from './profesores.facade';
 import { ProfesorFormModalComponent } from './profesor-form-modal.component';
+import { ProfesorNuevoModalComponent } from './profesor-nuevo-modal.component';
 import { Coach, CoachInput } from '@domain/entities/coach';
+import { NewUserInput } from '@domain/entities/new-user';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
   selector: 'app-profesores-page',
   standalone: true,
-  imports: [ProfesorFormModalComponent],
+  imports: [ProfesorFormModalComponent, ProfesorNuevoModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesores-page.component.html',
   styleUrl: './profesores-page.component.css',
@@ -18,6 +20,7 @@ export class ProfesoresPageComponent {
   private readonly toast = inject(ToastService);
 
   private readonly form = viewChild.required(ProfesorFormModalComponent);
+  private readonly nuevo = viewChild.required(ProfesorNuevoModalComponent);
   /** Sólo enruta el guardado: el modal recibe el profesor por parámetro en open(). */
   private readonly editing = signal<Coach | null>(null);
 
@@ -49,6 +52,33 @@ export class ProfesoresPageComponent {
     // El modal queda ABIERTO si falló: es donde el usuario puede corregir.
     if (this.facade.error()) return;
     this.form().close();
-    this.toast.show('ok', 'Profesor actualizado', `Se guardó la descripción de ${coach.displayName}.`);
+    this.toast.show(
+      'ok',
+      'Profesor actualizado',
+      `Se guardó la descripción de ${coach.displayName}.`,
+    );
+  }
+
+  /** clearError() antes de abrir: sin esto un error viejo del load() aparecería en el modal. */
+  protected openNuevo(): void {
+    this.facade.clearError();
+    this.nuevo().open();
+  }
+
+  protected async onNuevoGuardado(input: NewUserInput): Promise<void> {
+    const creado = await this.facade.crear(input);
+    if (!creado) {
+      // El modal queda ABIERTO: es donde se corrige. markFailed() libera su guard de doble
+      // submit, que si no dejaría el botón deshabilitado para siempre.
+      this.nuevo().markFailed();
+      return;
+    }
+    this.nuevo().close();
+    if (this.facade.error()) return; // el banner ya lo cuenta; no toastear éxito encima
+    this.toast.show(
+      'ok',
+      'Profesor creado',
+      `Le mandamos a ${input.email} un mail con su contraseña temporal.`,
+    );
   }
 }

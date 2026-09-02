@@ -12,13 +12,15 @@ import { domainErrorMessage } from '@domain/errors';
 import { catalogLabel } from '@data/catalog-labels';
 import { localDateKey } from '@domain/local-date';
 import { reservationStatusLabel } from '@domain/entities/session-reservation';
+import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 import { SesionFacade } from '../sesion.facade';
 import { minutosRestantes } from '../hold-countdown';
+import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
 
 @Component({
   selector: 'app-sesion-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, AsistenciaSeccionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Clase" [subtitle]="subtitle()" icon="primary">
@@ -68,6 +70,13 @@ import { minutosRestantes } from '../hold-countdown';
       } @empty {
         <p class="a-empty">Todavía no se anotó nadie.</p>
       }
+
+      <app-asistencia-seccion
+        [reservas]="rosterActual()"
+        [nombres]="studentNames()"
+        [saving]="facade.loading()"
+        (guardar)="onAsistencia($event)"
+      />
 
       <h4>Pendientes de confirmar</h4>
       @for (h of holds(); track h.id) {
@@ -166,6 +175,7 @@ export class SesionModalComponent {
   private readonly repo = inject(StudentsRepository);
   private readonly plansRepo = inject(PlansRepository);
   private readonly modal = viewChild.required(ModalComponent);
+  private readonly asistencia = viewChild.required(AsistenciaSeccionComponent);
 
   protected readonly session = signal<ClassSession | null>(null);
   protected readonly studentId = signal('');
@@ -184,7 +194,9 @@ export class SesionModalComponent {
   private readonly now = signal(new Date());
 
   constructor() {
-    // Sólo tickea si hay un hold que contar. El modal vive montado toda la visita a
+    // Sólo tickea si hay alguna reserva en `held` — vencidas incluidas, porque holdsOf() filtra
+    // por estado y no por vencimiento, y la fila vencida sigue mostrando "Venció" en Pendientes.
+    // El modal vive montado toda la visita a
     // /reservas —el <dialog> se cierra, el componente no se destruye—, así que sin esta
     // guarda era un set() y su ciclo de detección de cambios cada 30 s para siempre.
     const timer = setInterval(() => {
@@ -223,8 +235,13 @@ export class SesionModalComponent {
 
   /** studentId → nombre. Igual que planNames: el template lo llama una vez POR FILA, en dos
    *  listas, y sin el mapa cada fila barría el padrón entero en cada ciclo de detección. */
-  private readonly studentNames = computed(
+  protected readonly studentNames = computed(
     () => new Map(this.students().map((s) => [s.id, studentDisplayName(s)] as const)),
+  );
+
+  /** El roster de la clase abierta. Lo mismo que leen anotados() y holds(). */
+  protected readonly rosterActual = computed(() =>
+    this.facade.reservationsOf(this.session()?.id ?? ''),
   );
 
   /**
@@ -307,6 +324,7 @@ export class SesionModalComponent {
     this.planId.set('');
     this.plans.set([]);
     this.cerrarCobro();
+    this.asistencia().reset();
     this.facade.clearError();
     void this.facade.open(session.id);
     this.modal().open();
@@ -420,5 +438,22 @@ export class SesionModalComponent {
 
   protected onQuitar(entryId: string): void {
     this.conSesion((sessionId) => this.facade.quitar(sessionId, entryId));
+  }
+
+  /**
+   * Pasa por conSesion() como los otros cinco: su docstring dice que el freno "se arregla en
+   * cuatro lugares y se olvida en el quinto", y éste es el sexto. Acá el doble submit es
+   * inofensivo —el endpoint es un upsert— pero el segundo run() limpiaría el error y los
+   * fallidos del primero.
+   *
+   * El error del POST entero se le pasa a la sección para que lo pinte al lado del botón: el
+   * errorText() de arriba del modal queda fuera de la vista con cinco secciones por encima y
+   * un .modal-body que scrollea.
+   */
+  protected onAsistencia(marks: readonly SessionAttendanceMark[]): void {
+    this.conSesion(async (sessionId) => {
+      const results = await this.facade.tomarAsistencia(sessionId, marks);
+      this.asistencia().resultado(results, this.errorText());
+    });
   }
 }

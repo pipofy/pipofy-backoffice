@@ -1,0 +1,29 @@
+/* Planilla de asistencia. Feature-local y encapsulado.
+
+   ponytail: .att-list/.att-row/.att-who/.segpick/.segp están DUPLICADOS de
+   features/grupos/components/attendance-modal.component.css. Con dos consumidores ya cumplen la
+   regla de admisión de components.css ("vocabulario del DS, con un consumidor real"), pero
+   promoverlos obliga a sacarlos del css de Grupos —una maqueta que este slice no toca— y a
+   arriesgar una regresión visual ahí para no ganar nada hoy. Techo: una tercera pantalla con
+   segmented picker. Salida: mover .segpick/.segp a styles/components.css y borrar las dos copias.
+
+   .hint también se define acá: en components.css sólo existe como `.field .hint`, y esta no vive
+   dentro de un .field. */
+
+.hint { font-size: var(--text-xs); color: var(--color-fg-subtle); margin-top: var(--space-xs); }
+
+.att-list { border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; margin: var(--space-sm) 0 var(--space-md); }
+.att-row { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); flex-wrap: wrap; }
+.att-row + .att-row { border-top: 1px solid var(--color-border); }
+.att-who { flex: 1; font-weight: 600; font-size: var(--text-sm); min-width: 0; }
+
+.segpick { display: flex; background: var(--color-muted); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 2px; flex: 0 0 auto; }
+.segp { font-size: var(--text-xs); font-weight: 600; padding: var(--space-sm); border-radius: var(--radius-sm); color: var(--color-fg-muted); cursor: pointer; transition: background var(--duration) var(--ease), color var(--duration) var(--ease); }
+.segp.on-p { background: var(--color-accent-strong); color: #fff; }
+.segp.on-a { background: var(--color-destructive); color: #fff; }
+
+.att-actions { display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; }
+
+@media (pointer: coarse) {
+  .segp { min-height: 44px; }
+}

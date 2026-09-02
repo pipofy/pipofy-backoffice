@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection} from '@angular/core';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { SesionFacade } from './sesion.facade';
 import { ReservasFacade } from './reservas.facade';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
@@ -9,6 +9,7 @@ import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { ReservationDraft } from '@domain/entities/reservation';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { SessionAttendanceResult } from '@domain/entities/session-attendance';
 
 const entry: WaitingListEntry = { id: '77', studentId: '4', requestedAt: null };
 const input = { sessionId: '10', studentId: '4', studentPlanId: '9' };
@@ -20,6 +21,10 @@ const CATALOGS_DOUBLE = {
 function setup(
   over: Partial<ReservationsRepository> = {},
   rows: readonly SessionReservation[] = [],
+  // Parámetros propios y no un Partial<ClassSessionsRepository>: un override entero perdería el
+  // calls.push() del doble, que es justo lo que fija "relee sólo en el parcial".
+  asistencia: () => Promise<SessionAttendanceResult[]> = async () => [],
+  relecturaFalla = false,
 ) {
   const calls: string[] = [];
   // Estado mutable y compartido entre los dos dobles, igual que en
@@ -39,6 +44,7 @@ function setup(
     },
     reservations: async () => {
       calls.push('reservations');
+      if (relecturaFalla) throw new Error('la relectura también falló');
       return [...state];
     },
     joinWaitingList: async () => {
@@ -49,15 +55,25 @@ function setup(
     },
     cancel: async () => undefined,
     cancelDay: async () => undefined,
+    markAttendance: async () => {
+      calls.push('markAttendance');
+      return asistencia();
+    },
   } as ClassSessionsRepository;
 
   const reservations = {
     reserve: async (draft: ReservationDraft) => {
       calls.push('reserve');
-      state = [...state, {
-        id: '55', studentId: draft.studentId, studentPlanId: draft.studentPlanId,
-        status: 'held', holdExpiresAt: null,
-      }];
+      state = [
+        ...state,
+        {
+          id: '55',
+          studentId: draft.studentId,
+          studentPlanId: draft.studentPlanId,
+          status: 'held',
+          holdExpiresAt: null,
+        },
+      ];
     },
     confirm: async (id: string) => {
       calls.push('confirm');
@@ -142,12 +158,27 @@ describe('SesionFacade', () => {
   });
 });
 
-const HOLD_VIVO = { id: '55', studentId: '4', studentPlanId: '9', status: 'held',
-                    holdExpiresAt: '2099-01-01T00:00:00.000Z' } as const;
-const CONFIRMADA = { id: '56', studentId: '7', studentPlanId: '9', status: 'confirmed',
-                     holdExpiresAt: null } as const;
-const CANCELADA = { id: '57', studentId: '8', studentPlanId: null, status: 'cancelled',
-                    holdExpiresAt: null } as const;
+const HOLD_VIVO = {
+  id: '55',
+  studentId: '4',
+  studentPlanId: '9',
+  status: 'held',
+  holdExpiresAt: '2099-01-01T00:00:00.000Z',
+} as const;
+const CONFIRMADA = {
+  id: '56',
+  studentId: '7',
+  studentPlanId: '9',
+  status: 'confirmed',
+  holdExpiresAt: null,
+} as const;
+const CANCELADA = {
+  id: '57',
+  studentId: '8',
+  studentPlanId: null,
+  status: 'cancelled',
+  holdExpiresAt: null,
+} as const;
 
 describe('SesionFacade · roster desde la API', () => {
   it('open() carga las reservas además de la lista de espera', async () => {
@@ -212,5 +243,68 @@ describe('SesionFacade · roster desde la API', () => {
     await facade.cancelar('10', '55');
 
     expect(calls.filter((c) => c === 'reservations')).toHaveLength(base + 4);
+  });
+});
+
+describe('SesionFacade.tomarAsistencia', () => {
+  const MARCAS = [{ reservationId: '55', status: 'asistio' as const }];
+  const OK = { reservationId: '55', ok: true, status: 'asistio' as const, error: null };
+  const FALLO = {
+    reservationId: '55',
+    ok: false,
+    status: null,
+    error: 'Solo se puede marcar asistencia sobre reservas confirmadas',
+  };
+
+  it('devuelve el resultado por ítem y NO relee: la asistencia no cambia el roster', async () => {
+    // AttendanceService escribe la tabla `attendance` y nada más: la reserva sigue confirmed,
+    // el cupo no cambia, la lista de espera no cambia. Releer sería un GET al pedo que
+    // devolvería exactamente lo que ya está en pantalla.
+    const { facade, calls } = setup({}, [], async () => [OK]);
+    expect(await facade.tomarAsistencia('10', MARCAS)).toEqual([OK]);
+    expect(calls).toEqual(['markAttendance']);
+  });
+
+  it('con un fallo per-ítem SÍ relee: la fila muerta tiene que salir de la planilla', async () => {
+    // El fallo más probable es que la reserva haya dejado de estar `confirmed` entre la carga
+    // del roster y el Guardar. Ésa no va a entrar nunca, por más que se reintente.
+    const { facade, calls } = setup({}, [], async () => [FALLO]);
+    expect(await facade.tomarAsistencia('10', MARCAS)).toEqual([FALLO]);
+    expect(calls).toEqual(['markAttendance', 'reservations']);
+  });
+
+  it('si la relectura del parcial falla, NO pisa el resultado ni ensucia error()', async () => {
+    // La relectura es una comodidad, no la operación: su fallo es de segundo orden y taparía el
+    // bloque de fallidos, que es el que cuenta el problema real.
+    const { facade } = setup({}, [], async () => [FALLO], true);
+    const res = await facade.tomarAsistencia('10', MARCAS);
+    expect(res).toEqual([FALLO]);
+    expect(facade.error()).toBeNull();
+  });
+
+  it('devuelve null y deja el error cuando falla el POST ENTERO', async () => {
+    const { facade } = setup({}, [], async () => {
+      throw { kind: 'forbidden' };
+    });
+    expect(await facade.tomarAsistencia('10', MARCAS)).toBeNull();
+    expect(facade.error()).toEqual({ kind: 'forbidden' });
+  });
+
+  it('sin marcas NO llama al repo y deja el error de dominio', async () => {
+    const { facade, calls } = setup();
+    expect(await facade.tomarAsistencia('10', [])).toBeNull();
+    expect(calls).toEqual([]);
+    expect(facade.error()).toEqual({
+      kind: 'domain',
+      message: 'Marcá al menos un alumno antes de guardar.',
+    });
+  });
+
+  it('deja loading en false al terminar, pase lo que pase', async () => {
+    const { facade } = setup({}, [], async () => {
+      throw new Error('boom');
+    });
+    await facade.tomarAsistencia('10', MARCAS);
+    expect(facade.loading()).toBe(false);
   });
 });

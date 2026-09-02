@@ -6,14 +6,27 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClassSessionsRepository } from './http-class-sessions.repository';
 import { ApiClient } from '../http/api-client';
 
-interface Call { readonly method: string; readonly path: string; readonly body?: unknown }
+interface Call {
+  readonly method: string;
+  readonly path: string;
+  readonly body?: unknown;
+}
 
 function setup(responses: Partial<Record<'get' | 'post' | 'delete', Observable<unknown>>> = {}) {
   const calls: Call[] = [];
   const api = {
-    get: (path: string) => { calls.push({ method: 'get', path }); return responses.get ?? of([]); },
-    post: (path: string, body: unknown) => { calls.push({ method: 'post', path, body }); return responses.post ?? of({}); },
-    delete: (path: string, body: unknown) => { calls.push({ method: 'delete', path, body }); return responses.delete ?? of({}); },
+    get: (path: string) => {
+      calls.push({ method: 'get', path });
+      return responses.get ?? of([]);
+    },
+    post: (path: string, body: unknown) => {
+      calls.push({ method: 'post', path, body });
+      return responses.post ?? of({});
+    },
+    delete: (path: string, body: unknown) => {
+      calls.push({ method: 'delete', path, body });
+      return responses.delete ?? of({});
+    },
   } as unknown as ApiClient;
 
   TestBed.configureTestingModule({
@@ -27,8 +40,14 @@ function setup(responses: Partial<Record<'get' | 'post' | 'delete', Observable<u
 }
 
 const session = (over: Record<string, unknown> = {}) => ({
-  id: '10', courtId: '2', coachId: '5', categoryGroupId: '3',
-  startAt: '2026-08-19T21:00:00.000Z', capacity: 4, availableSpots: 1, ...over,
+  id: '10',
+  courtId: '2',
+  coachId: '5',
+  categoryGroupId: '3',
+  startAt: '2026-08-19T21:00:00.000Z',
+  capacity: 4,
+  availableSpots: 1,
+  ...over,
 });
 
 describe('HttpClassSessionsRepository.list', () => {
@@ -105,8 +124,13 @@ describe('HttpClassSessionsRepository — lista de espera', () => {
 });
 
 const reserva = (over: Record<string, unknown> = {}) => ({
-  id: '55', studentId: '4', studentPlanId: '9', holdExpiresAt: null, deletedAt: null,
-  reservationStatus: { name: 'confirmed' }, ...over,
+  id: '55',
+  studentId: '4',
+  studentPlanId: '9',
+  holdExpiresAt: null,
+  deletedAt: null,
+  reservationStatus: { name: 'confirmed' },
+  ...over,
 });
 
 describe('HttpClassSessionsRepository.reservations', () => {
@@ -117,12 +141,20 @@ describe('HttpClassSessionsRepository.reservations', () => {
   });
 
   it('aplana el estado embebido y conserva el hold', async () => {
-    const held = reserva({ id: '56', holdExpiresAt: '2026-08-19T21:30:00.000Z',
-                           reservationStatus: { name: 'held' } });
+    const held = reserva({
+      id: '56',
+      holdExpiresAt: '2026-08-19T21:30:00.000Z',
+      reservationStatus: { name: 'held' },
+    });
     const { repo } = setup({ get: of([held]) });
     expect(await repo.reservations('10')).toEqual([
-      { id: '56', studentId: '4', studentPlanId: '9', status: 'held',
-        holdExpiresAt: '2026-08-19T21:30:00.000Z' },
+      {
+        id: '56',
+        studentId: '4',
+        studentPlanId: '9',
+        status: 'held',
+        holdExpiresAt: '2026-08-19T21:30:00.000Z',
+      },
     ]);
   });
 
@@ -176,8 +208,9 @@ describe('HttpClassSessionsRepository.cancel', () => {
     const { repo } = setup({
       delete: throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' })),
     });
-    await expect(repo.cancel('10', { notify: false, reason: null }))
-      .rejects.toMatchObject({ kind: 'not-found' });
+    await expect(repo.cancel('10', { notify: false, reason: null })).rejects.toMatchObject({
+      kind: 'not-found',
+    });
   });
 });
 
@@ -196,5 +229,52 @@ describe('HttpClassSessionsRepository.cancelDay', () => {
     await repo.cancelDay('2026-08-26', { notify: true, reason: 'Paro de transporte' });
     expect(calls).toHaveLength(1);
     expect(calls[0].body).toEqual({ notify: true, reason: 'Paro de transporte' });
+  });
+});
+
+describe('HttpClassSessionsRepository.markAttendance', () => {
+  it('postea al path de la CLASE con el body exacto que acepta el DTO', async () => {
+    const { repo, calls } = setup({ post: of([]) });
+    await repo.markAttendance('10', [{ reservationId: '55', status: 'asistio' }]);
+    expect(calls[0]).toEqual({
+      method: 'post',
+      path: '/class-sessions/10/attendance',
+      body: { items: [{ reservationId: '55', status: 'asistio' }] },
+    });
+  });
+
+  it('mapea el array MIXTO: un ítem que entró y uno que falló', async () => {
+    const { repo } = setup({
+      post: of([
+        { reservationId: '55', ok: true, status: 'asistio' },
+        {
+          reservationId: '56',
+          ok: false,
+          error: 'Solo se puede marcar asistencia sobre reservas confirmadas',
+        },
+      ]),
+    });
+    const res = await repo.markAttendance('10', [
+      { reservationId: '55', status: 'asistio' },
+      { reservationId: '56', status: 'ausente' },
+    ]);
+    expect(res).toEqual([
+      { reservationId: '55', ok: true, status: 'asistio', error: null },
+      {
+        reservationId: '56',
+        ok: false,
+        status: null,
+        error: 'Solo se puede marcar asistencia sobre reservas confirmadas',
+      },
+    ]);
+  });
+
+  it('un 403 sale normalizado: el endpoint exige admin, encargado o superprofesor', async () => {
+    const { repo } = setup({
+      post: throwError(() => new HttpErrorResponse({ status: 403 })),
+    });
+    await expect(
+      repo.markAttendance('10', [{ reservationId: '55', status: 'asistio' }]),
+    ).rejects.toEqual({ kind: 'forbidden' });
   });
 });

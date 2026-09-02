@@ -2,6 +2,7 @@ import { ClassSession } from '../entities/class-session';
 import { WaitingListEntry } from '../entities/waiting-list';
 import { SessionReservation } from '../entities/session-reservation';
 import { CancelClassDraft } from '../entities/class-cancellation';
+import { SessionAttendanceMark, SessionAttendanceResult } from '../entities/session-attendance';
 
 /**
  * Las clases de la agenda y su lista de espera. Clase abstracta por el mismo motivo que el
@@ -32,6 +33,27 @@ export abstract class ClassSessionsRepository {
    * el recorte por vencimiento lo hace la pantalla, que ya tiene `minutosRestantes()`.
    */
   abstract reservations(sessionId: string): Promise<SessionReservation[]>;
+
+  /**
+   * Marca la asistencia de VARIAS reservas de una clase, de una sola vez.
+   *
+   * Vive acá y no en `ReservationsRepository` aunque la asistencia se escriba POR RESERVA y el
+   * backend también exponga `POST /reservations/:id/attendance`. `reservations.repository.ts`
+   * documenta el criterio contrario —"el contrato se corta por CONCEPTO", que es por lo que
+   * `reserve()` vive allá aunque pegue a /class-sessions/:id/reservations— y por concepto esto
+   * es de la CLASE: `markBulk` valida que cada reserva pertenezca a ese classSessionId, y la
+   * unidad de trabajo del mostrador es "tomar asistencia de esta clase", no "marcar a Rita".
+   *
+   * ÚNICA escritura del contrato que devuelve algo, y no es un capricho: el backend responde
+   * con un resultado POR ÍTEM —el éxito parcial es lo normal, no un borde— y ninguna relectura
+   * lo recupera, porque `listReservations` no incluye `attendance`. Ya hay precedente de
+   * escrituras que devuelven: `groups.repository.ts` (saveAttendance → snapshot completo) y
+   * `schedules.repository.ts` (generateSessions → SessionGenerationResult).
+   */
+  abstract markAttendance(
+    sessionId: string,
+    marks: readonly SessionAttendanceMark[],
+  ): Promise<SessionAttendanceResult[]>;
 
   /**
    * Cancelar UNA clase y cancelar el día entero: la misma operación con distinto alcance, por

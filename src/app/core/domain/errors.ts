@@ -10,8 +10,15 @@ export type DomainError =
   | { kind: 'unknown'; cause?: unknown };
 
 const DOMAIN_ERROR_KINDS = new Set([
-  'not-found', 'unauthorized', 'forbidden', 'invalid-credentials',
-  'email-not-verified', 'network', 'validation', 'domain', 'unknown',
+  'not-found',
+  'unauthorized',
+  'forbidden',
+  'invalid-credentials',
+  'email-not-verified',
+  'network',
+  'validation',
+  'domain',
+  'unknown',
 ]);
 
 // Type guard so mapping is idempotent: an already-normalized DomainError passes through unchanged.
@@ -78,15 +85,24 @@ export class SessionCancelledError extends DomainRuleError {
  */
 export function domainErrorMessage(err: DomainError): string {
   switch (err.kind) {
-    case 'not-found':    return 'No encontramos lo que buscabas.';
-    case 'unauthorized': return 'Tu sesión expiró. Volvé a iniciar sesión.';
-    case 'forbidden':   return 'No tenés permisos para hacer esto. Pedí acceso al administrador del club.';
-    case 'invalid-credentials': return 'Email o contraseña incorrectos.';
-    case 'email-not-verified':  return 'Falta verificar tu email para poder entrar.';
-    case 'network':      return 'No pudimos conectar con el servidor. Revisá tu conexión.';
-    case 'validation':   return err.issues.length ? err.issues.join(' ') : 'Los datos enviados no son válidos.';
-    case 'domain':       return err.message;
-    case 'unknown':      return 'Ocurrió un error inesperado. Intentá de nuevo.';
+    case 'not-found':
+      return 'No encontramos lo que buscabas.';
+    case 'unauthorized':
+      return 'Tu sesión expiró. Volvé a iniciar sesión.';
+    case 'forbidden':
+      return 'No tenés permisos para hacer esto. Pedí acceso al administrador del club.';
+    case 'invalid-credentials':
+      return 'Email o contraseña incorrectos.';
+    case 'email-not-verified':
+      return 'Falta verificar tu email para poder entrar.';
+    case 'network':
+      return 'No pudimos conectar con el servidor. Revisá tu conexión.';
+    case 'validation':
+      return err.issues.length ? err.issues.join(' ') : 'Los datos enviados no son válidos.';
+    case 'domain':
+      return err.message;
+    case 'unknown':
+      return 'Ocurrió un error inesperado. Intentá de nuevo.';
   }
 }
 
@@ -177,6 +193,17 @@ export class InvalidReservationError extends DomainRuleError {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidReservationError';
+  }
+}
+
+/**
+ * La tira `createSessionAttendanceDraft`. Vive acá porque TODAS las DomainRuleError viven acá:
+ * si se dispersan, `toDomainError` deja de tener un solo lugar donde mirar.
+ */
+export class InvalidAttendanceError extends DomainRuleError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidAttendanceError';
   }
 }
 

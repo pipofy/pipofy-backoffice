@@ -83,3 +83,41 @@ export const CancelClassRequestSchema = v.object({
   reason: v.optional(v.string()),
 });
 export type CancelClassRequest = v.InferOutput<typeof CancelClassRequestSchema>;
+
+/**
+ * Body de `POST /class-sessions/:id/attendance`. EXACTAMENTE esta forma y nada más: el
+ * ValidationPipe global corre con `whitelist: true, forbidNonWhitelisted: true`
+ * (app.module.ts), así que una clave de más es un 400 de la llamada entera.
+ *
+ * `status` va por NOMBRE y no por id: `AttendanceService` busca la fila de `attendance_status`
+ * por `name`. No hay catálogo que pedir — `GET /catalogs/*` no expone attendance-statuses.
+ */
+export const AttendanceRequestSchema = v.object({
+  items: v.array(
+    v.object({
+      reservationId: v.string(),
+      status: v.picklist(['asistio', 'ausente']),
+    }),
+  ),
+});
+export type AttendanceRequest = v.InferOutput<typeof AttendanceRequestSchema>;
+
+/**
+ * Lo que devuelve ese POST: 201 —no 200: `markBulk` no declara `@HttpCode` y rige el default de
+ * `@Post()` de Nest— con un array POR ÍTEM, aunque la mitad falle.
+ *
+ * `status` y `error` son opcionales Y nullables porque el backend manda uno o el otro según el
+ * `ok`: el éxito hace push de `{reservationId, ok:true, status}` y el fallo de
+ * `{reservationId, ok:false, error}`.
+ *
+ * `reservationId` vuelve como el string ORIGINAL del request: `markBulk` hace push de
+ * `item.reservationId`, no del BigInt que parseó. No hay que re-normalizarlo.
+ */
+export const AttendanceResultDtoSchema = v.object({
+  reservationId: v.string(),
+  ok: v.boolean(),
+  status: v.optional(v.nullable(v.string())),
+  error: v.optional(v.nullable(v.string())),
+});
+export const AttendanceResultListDtoSchema = v.array(AttendanceResultDtoSchema);
+export type AttendanceResultDto = v.InferOutput<typeof AttendanceResultDtoSchema>;

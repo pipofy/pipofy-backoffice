@@ -6,18 +6,26 @@ import { ClassSession } from '@domain/entities/class-session';
 import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { CancelClassDraft } from '@domain/entities/class-cancellation';
+import {
+  SessionAttendanceMark,
+  SessionAttendanceResult,
+} from '@domain/entities/session-attendance';
 import { isOnLocalDate, localDateKey } from '@domain/local-date';
 import {
   ClassSessionListDtoSchema,
   WaitingListDtoSchema,
   SessionReservationListDtoSchema,
   CancelClassRequestSchema,
+  AttendanceRequestSchema,
+  AttendanceResultListDtoSchema,
 } from '../dto/class-session.dto';
 import {
   toClassSession,
   toWaitingListEntry,
   toSessionReservation,
   toCancelClassRequest,
+  toAttendanceRequest,
+  toSessionAttendanceResult,
 } from '../mappers/class-session.mapper';
 import { toDomainError } from '../http/to-domain-error';
 import { ApiClient } from '../http/api-client';
@@ -67,12 +75,38 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
       const raw = await firstValueFrom(
         this.api.get<unknown>(`/class-sessions/${sessionId}/reservations`),
       );
-      return v
-        .parse(SessionReservationListDtoSchema, raw)
-        // El backend no filtra deletedAt en ningún list(); mismo recorte que el resto de los
-        // repositorios.
-        .filter((dto) => dto.deletedAt === null)
-        .map(toSessionReservation);
+      return (
+        v
+          .parse(SessionReservationListDtoSchema, raw)
+          // El backend no filtra deletedAt en ningún list(); mismo recorte que el resto de los
+          // repositorios.
+          .filter((dto) => dto.deletedAt === null)
+          .map(toSessionReservation)
+      );
+    } catch (err) {
+      throw toDomainError(err);
+    }
+  }
+
+  /**
+   * Responde 201, no 200: `markBulk` no declara `@HttpCode` y rige el default de `@Post()` de
+   * Nest. `HttpClient` lo trata como éxito igual.
+   *
+   * NO es atómico: `markBulk` itera y hace un upsert por ítem, cada uno con su propio try. Si
+   * el ítem 3 de 10 falla, los dos primeros ya están escritos. Reintentar es seguro —el upsert
+   * es idempotente y no toca créditos, cupo ni el estado de la reserva—, pero nadie debe
+   * asumir un todo-o-nada que no existe.
+   */
+  async markAttendance(
+    sessionId: string,
+    marks: readonly SessionAttendanceMark[],
+  ): Promise<SessionAttendanceResult[]> {
+    try {
+      const body = v.parse(AttendanceRequestSchema, toAttendanceRequest(marks));
+      const raw = await firstValueFrom(
+        this.api.post<unknown>(`/class-sessions/${sessionId}/attendance`, body),
+      );
+      return v.parse(AttendanceResultListDtoSchema, raw).map(toSessionAttendanceResult);
     } catch (err) {
       throw toDomainError(err);
     }
@@ -130,15 +164,13 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
    * la lectura (esa pide en UTC).
    *
    * La respuesta trae `affectedCount` y también se descarta: la pantalla no lo muestra
-   * todavía, y el toast que sí lo mostraría necesitaría un contrato que devuelva algo — hoy
-   * todas las escrituras devuelven void.
+   * todavía. `markAttendance` es la única escritura de este repositorio que SÍ devuelve algo, y
+   * por un motivo que acá no aplica: su resultado por ítem no se puede releer de ningún lado.
    */
   async cancelDay(dateKey: string, draft: CancelClassDraft): Promise<void> {
     try {
       const body = v.parse(CancelClassRequestSchema, toCancelClassRequest(draft));
-      await firstValueFrom(
-        this.api.delete<unknown>(`/class-sessions/day?date=${dateKey}`, body),
-      );
+      await firstValueFrom(this.api.delete<unknown>(`/class-sessions/day?date=${dateKey}`, body));
     } catch (err) {
       throw toDomainError(err);
     }

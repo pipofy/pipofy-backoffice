@@ -6,6 +6,11 @@ import { ReservationInput, createReservationDraft } from '@domain/entities/reser
 import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { ClassPaymentInput, createClassPaymentDraft } from '@domain/entities/payment';
+import {
+  SessionAttendanceMark,
+  SessionAttendanceResult,
+  createSessionAttendanceDraft,
+} from '@domain/entities/session-attendance';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
@@ -71,10 +76,9 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
     // Las dos lecturas son independientes: encadenadas, el modal esperaría la suma de los dos
     // viajes en vez del más lento.
     return this.run(
-      Promise.all([
-        this.sessions.waitingList(sessionId),
-        this.loadReservations(sessionId),
-      ]).then(([waiting]) => waiting),
+      Promise.all([this.sessions.waitingList(sessionId), this.loadReservations(sessionId)]).then(
+        ([waiting]) => waiting,
+      ),
       toDomainError,
     );
   }
@@ -143,6 +147,61 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
         .then(() => this.data() ?? []),
       toDomainError,
     );
+  }
+
+  /**
+   * Marca la asistencia de la clase abierta. Devuelve el resultado POR ÍTEM, o `null` si falló
+   * el POST entero.
+   *
+   * NO usa run(), y es a propósito: `run()` devuelve `Promise<void>` y publica en la tríada, así
+   * que un valor de retorno tendría que salir por una variable de closure y el `[]` del catch
+   * quedaría indistinguible de "salió todo bien". El patrón del repo para una escritura que
+   * devuelve algo es setLoading/setError a mano con un centinela explícito —`signal-store.base.ts`
+   * documenta `setLoading` justamente para "los flujos que NO caben en run()"— y el análogo
+   * exacto es `HorariosFacade.generate()`: otra escritura cuyo resultado por ítem ninguna
+   * relectura recupera.
+   *
+   * `createSessionAttendanceDraft` se llama DERECHO, sin el `Promise.resolve().then()` que usan
+   * `reservar()` y `cobrar()`: ésos lo necesitan porque su try/catch vive dentro de run(), en
+   * otro método; acá está en esta misma función, así que el throw síncrono ya cae donde tiene
+   * que caer.
+   *
+   * NO RELEE cuando sale todo bien: `AttendanceService` escribe la tabla `attendance` y nada más
+   * —la reserva sigue confirmed, el cupo no cambia, la lista de espera no cambia—, así que una
+   * relectura devolvería exactamente lo que ya está en pantalla.
+   */
+  async tomarAsistencia(
+    sessionId: string,
+    marks: readonly SessionAttendanceMark[],
+  ): Promise<readonly SessionAttendanceResult[] | null> {
+    this.setLoading(true);
+    this.setError(null);
+    try {
+      const results = await this.sessions.markAttendance(
+        sessionId,
+        createSessionAttendanceDraft(marks),
+      );
+      if (results.some((r) => !r.ok)) {
+        // El fallo más probable es que la reserva haya dejado de estar `confirmed` entre la
+        // carga del roster y el Guardar: se confirmó un hold y el roster se releyó, o el alumno
+        // canceló por WhatsApp. Esa fila no va a entrar por más que se reintente, y la
+        // relectura la saca de la planilla dejando en pantalla exactamente lo reintentable.
+        //
+        // Su fallo se TRAGA: la planilla queda como está y el bloque de fallidos ya cuenta el
+        // problema real. Un error acá lo taparía con uno de segundo orden.
+        try {
+          await this.loadReservations(sessionId);
+        } catch {
+          /* ver arriba */
+        }
+      }
+      return results;
+    } catch (err) {
+      this.setError(toDomainError(err));
+      return null;
+    } finally {
+      this.setLoading(false);
+    }
   }
 
   /**

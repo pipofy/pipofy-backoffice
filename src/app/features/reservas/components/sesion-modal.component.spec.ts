@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideZonelessChangeDetection} from '@angular/core';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { SesionModalComponent } from './sesion-modal.component';
 import { SesionFacade } from '../sesion.facade';
 import { ReservasFacade } from '../reservas.facade';
@@ -14,26 +14,53 @@ import { StudentPlan } from '@domain/entities/student-plan';
 import { Plan } from '@domain/entities/plan';
 import { ReservationDraft } from '@domain/entities/reservation';
 import { SessionReservation } from '@domain/entities/session-reservation';
+import {
+  SessionAttendanceMark,
+  SessionAttendanceResult,
+} from '@domain/entities/session-attendance';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const session: ClassSession = {
-  id: '10', courtId: '2', coachId: '5', categoryGroupId: '3',
-  startAt: '2026-08-19T21:00:00.000Z', capacity: 4, availableSpots: 1,
+  id: '10',
+  courtId: '2',
+  coachId: '5',
+  categoryGroupId: '3',
+  startAt: '2026-08-19T21:00:00.000Z',
+  capacity: 4,
+  availableSpots: 1,
 };
 
 const student: Student = {
-  id: '4', phone: '1155667788', firstName: 'Bruno', lastName: 'Torres',
-  birthDate: null, categoryId: '3', studentStatusId: '2',
-  dominantHand: null, ranking: null, notes: null,
+  id: '4',
+  phone: '1155667788',
+  firstName: 'Bruno',
+  lastName: 'Torres',
+  birthDate: null,
+  categoryId: '3',
+  studentStatusId: '2',
+  dominantHand: null,
+  ranking: null,
+  notes: null,
 };
 
 const studentPlan: StudentPlan = {
-  id: '9', planId: 'p1', purchasedAt: null, creditsTotal: 8, creditsRemaining: 8, expiresAt: null,
+  id: '9',
+  planId: 'p1',
+  purchasedAt: null,
+  creditsTotal: 8,
+  creditsRemaining: 8,
+  expiresAt: null,
 };
 
 const plan: Plan = {
-  id: 'p1', name: 'Mensual x8', planTypeId: 't1', coachId: null, classCount: 8,
-  price: null, validityDays: null, active: true,
+  id: 'p1',
+  name: 'Mensual x8',
+  planTypeId: 't1',
+  coachId: null,
+  classCount: 8,
+  price: null,
+  validityDays: null,
+  active: true,
 };
 
 const HOLD_VIVO = new Date(Date.now() + 30 * 60_000).toISOString();
@@ -48,6 +75,7 @@ const CATALOGS_DOUBLE = {
 function mount(
   over: { holdExpiresAt?: string } = {},
   rows: readonly SessionReservation[] = [],
+  asistencia: () => Promise<SessionAttendanceResult[]> = async () => [],
 ) {
   const calls: string[] = [];
   // Estado mutable y compartido con el doble de ClassSessionsRepository de abajo: desde la
@@ -58,10 +86,16 @@ function mount(
   const reservations = {
     reserve: async (draft: ReservationDraft) => {
       calls.push('reserve');
-      state = [...state, {
-        id: RESERVA_CREADA_ID, studentId: draft.studentId, studentPlanId: draft.studentPlanId,
-        status: 'held', holdExpiresAt: over.holdExpiresAt ?? HOLD_VIVO,
-      }];
+      state = [
+        ...state,
+        {
+          id: RESERVA_CREADA_ID,
+          studentId: draft.studentId,
+          studentPlanId: draft.studentPlanId,
+          status: 'held',
+          holdExpiresAt: over.holdExpiresAt ?? HOLD_VIVO,
+        },
+      ];
     },
     confirm: async (id: string) => {
       calls.push('confirm');
@@ -83,24 +117,47 @@ function mount(
       SesionFacade,
       { provide: CatalogsRepository, useValue: CATALOGS_DOUBLE },
       ReservasFacade,
-      { provide: ClassSessionsRepository, useValue: {
-          list: async () => [session], waitingList: async () => [],
+      {
+        provide: ClassSessionsRepository,
+        useValue: {
+          list: async () => [session],
+          waitingList: async () => [],
           reservations: async () => [...state],
-          joinWaitingList: async () => undefined, leaveWaitingList: async () => undefined,
-          cancel: async () => undefined, cancelDay: async () => undefined,
-        } as ClassSessionsRepository },
+          joinWaitingList: async () => undefined,
+          leaveWaitingList: async () => undefined,
+          cancel: async () => undefined,
+          cancelDay: async () => undefined,
+          markAttendance: async (_id: string, marks: readonly SessionAttendanceMark[]) => {
+            calls.push(
+              `markAttendance:${marks.map((m) => m.reservationId + '=' + m.status).join(',')}`,
+            );
+            return asistencia();
+          },
+        } as ClassSessionsRepository,
+      },
       { provide: ReservationsRepository, useValue: reservations },
-      { provide: StudentsRepository, useValue: {
-          list: async () => [student], plans: async () => [studentPlan],
-          create: async () => undefined, update: async () => undefined, remove: async () => undefined,
+      {
+        provide: StudentsRepository,
+        useValue: {
+          list: async () => [student],
+          plans: async () => [studentPlan],
+          create: async () => undefined,
+          update: async () => undefined,
+          remove: async () => undefined,
           purchasePlan: async () => undefined,
-        } as StudentsRepository },
-      { provide: PlansRepository, useValue: {
+        } as StudentsRepository,
+      },
+      {
+        provide: PlansRepository,
+        useValue: {
           list: async () => [plan],
-          create: async () => undefined, update: async () => undefined, remove: async () => undefined,
+          create: async () => undefined,
+          update: async () => undefined,
+          remove: async () => undefined,
           addCategory: async () => undefined,
           removeCategory: async () => undefined,
-        } as PlansRepository },
+        } as PlansRepository,
+      },
     ],
   });
 
@@ -129,7 +186,10 @@ async function abrir(fixture: ComponentFixture<SesionModalComponent>): Promise<v
 }
 
 /** Elige el alumno y su plan usable, esperando a que se resuelva GET /students/:id/plans. */
-async function elegirAlumnoYPlan(fixture: ComponentFixture<SesionModalComponent>, el: HTMLElement): Promise<void> {
+async function elegirAlumnoYPlan(
+  fixture: ComponentFixture<SesionModalComponent>,
+  el: HTMLElement,
+): Promise<void> {
   const alumno = el.querySelector<HTMLSelectElement>('#res-alumno')!;
   alumno.value = student.id;
   alumno.dispatchEvent(new Event('change'));
@@ -143,7 +203,9 @@ async function elegirAlumnoYPlan(fixture: ComponentFixture<SesionModalComponent>
 }
 
 function boton(el: HTMLElement, texto: string): HTMLButtonElement {
-  const hit = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === texto);
+  const hit = Array.from(el.querySelectorAll('button')).find(
+    (b) => b.textContent?.trim() === texto,
+  );
   if (!hit) throw new Error(`No se encontró el botón "${texto}"`);
   return hit;
 }
@@ -213,7 +275,9 @@ describe('SesionModalComponent', () => {
     fixture.detectChanges();
     await settle(fixture);
 
-    const opcion = el.querySelector<HTMLOptionElement>(`#res-plan option[value="${studentPlan.id}"]`)!;
+    const opcion = el.querySelector<HTMLOptionElement>(
+      `#res-plan option[value="${studentPlan.id}"]`,
+    )!;
     expect(opcion.textContent).toContain('Mensual x8');
     expect(opcion.textContent).toContain('8 créditos');
   });
@@ -269,7 +333,9 @@ describe('SesionModalComponent · cobrar', () => {
     fixture.detectChanges();
 
     expect(el.querySelector('[data-test="cobro-form"]')).not.toBeNull();
-    const opciones = Array.from(el.querySelectorAll('[data-test="cobro-form"] option')).map((o) => o.textContent?.trim());
+    const opciones = Array.from(el.querySelectorAll('[data-test="cobro-form"] option')).map((o) =>
+      o.textContent?.trim(),
+    );
     expect(opciones).toEqual(['Elegí un medio…', 'Efectivo']);
   });
 
@@ -323,7 +389,9 @@ describe('SesionModalComponent · cobrar', () => {
     expect(calls).not.toContain('confirmPayment');
     expect(el.querySelector('[role="alert"]')!.textContent).toContain('Elegí un medio de pago');
     // La fila sigue abierta con el monto tipeado: es donde se corrige.
-    expect(el.querySelector<HTMLInputElement>('[data-test="cobro-form"] input')!.value).toBe('12000');
+    expect(el.querySelector<HTMLInputElement>('[data-test="cobro-form"] input')!.value).toBe(
+      '12000',
+    );
   });
 });
 
@@ -374,8 +442,7 @@ describe('SesionModalComponent · Anotados', () => {
 
   it('un hold vigente aparece en las DOS secciones', async () => {
     const { fixture, el } = mount({}, [
-      { id: '55', studentId: '4', studentPlanId: '9', status: 'held',
-        holdExpiresAt: VENCE_EN_30 },
+      { id: '55', studentId: '4', studentPlanId: '9', status: 'held', holdExpiresAt: VENCE_EN_30 },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).toContain('Bruno');
@@ -386,8 +453,13 @@ describe('SesionModalComponent · Anotados', () => {
     // No ocupa cupo: el backend no lo cuenta en countOccupiedSpots. Mostrarlo entre los
     // anotados diría que el lugar está tomado.
     const { fixture, el } = mount({}, [
-      { id: '55', studentId: '4', studentPlanId: '9', status: 'held',
-        holdExpiresAt: VENCIDO_HACE_5 },
+      {
+        id: '55',
+        studentId: '4',
+        studentPlanId: '9',
+        status: 'held',
+        holdExpiresAt: VENCIDO_HACE_5,
+      },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).not.toContain('Bruno');
@@ -409,8 +481,13 @@ describe('SesionModalComponent · Anotados', () => {
     // haría invisible en el panel. holdExpiresAt: null a propósito — no expira por el mecanismo
     // de hold normal — así que no puede ir a "Pendientes", que muestra cuenta regresiva.
     const { fixture, el } = mount({}, [
-      { id: '58', studentId: '4', studentPlanId: null, status: 'pending_review',
-        holdExpiresAt: null },
+      {
+        id: '58',
+        studentId: '4',
+        studentPlanId: null,
+        status: 'pending_review',
+        holdExpiresAt: null,
+      },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).toContain('Bruno');
@@ -423,5 +500,83 @@ describe('SesionModalComponent · Anotados', () => {
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).toContain('Todavía no se anotó nadie');
     expect(seccion(el, 'Pendientes de confirmar')).toContain('Ninguna reserva pendiente');
+  });
+});
+
+describe('SesionModalComponent · Asistencia', () => {
+  const confirmada = (id: string, studentId: string): SessionReservation => ({
+    id,
+    studentId,
+    studentPlanId: null,
+    status: 'confirmed',
+    holdExpiresAt: null,
+  });
+
+  it('la sección se cablea con el roster y manda lo marcado', async () => {
+    const { fixture, el, calls } = mount({}, [confirmada('55', '4')]);
+    await abrir(fixture);
+    el.querySelectorAll<HTMLButtonElement>('.att-row button')[0].click(); // Presente
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!.click();
+    await settle(fixture);
+    expect(calls).toContain('markAttendance:55=asistio');
+  });
+
+  it('el éxito deja el resumen en pantalla', async () => {
+    const { fixture, el } = mount({}, [confirmada('55', '4')], async () => [
+      { reservationId: '55', ok: true, status: 'asistio', error: null },
+    ]);
+    await abrir(fixture);
+    el.querySelectorAll<HTMLButtonElement>('.att-row button')[0].click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!.click();
+    await settle(fixture);
+    expect(el.textContent).toContain('Asistencia guardada: 1 presente.');
+  });
+
+  it('un 403 se pinta DENTRO de la sección, al lado del botón que se apretó', async () => {
+    // El .modal-body scrollea y el errorText() de arriba queda fuera de la vista con cinco
+    // secciones por encima.
+    const { fixture, el } = mount({}, [confirmada('55', '4')], async () => {
+      throw { kind: 'forbidden' };
+    });
+    await abrir(fixture);
+    el.querySelectorAll<HTMLButtonElement>('.att-row button')[0].click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!.click();
+    await settle(fixture);
+    const seccion = el.querySelector('app-asistencia-seccion')!;
+    expect(seccion.textContent).toContain('No tenés permisos');
+  });
+
+  it('reabrir la clase deja la planilla en blanco: la asistencia no se recuerda', async () => {
+    const { fixture, el } = mount({}, [confirmada('55', '4')]);
+    await abrir(fixture);
+    el.querySelectorAll<HTMLButtonElement>('.att-row button')[0].click();
+    fixture.detectChanges();
+    await abrir(fixture);
+    expect(el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!.disabled).toBe(
+      true,
+    );
+  });
+
+  it('un segundo submit con loading() en true no llama a la facade', async () => {
+    // §7: el mismo freno que los otros cinco handlers de conSesion() (ver el test de Reservar
+    // más arriba). Acá la consecuencia de no tenerlo es peor que un 409 cosmético: el segundo
+    // run() pisaría los `fallos`/`resumen` que dejó el primero.
+    //
+    // Sin detectChanges() entre los dos clicks, a propósito: mismo argumento que en Reservar,
+    // si no jsdom descartaría el segundo click por [disabled] antes de correr el handler.
+    const { fixture, el, calls } = mount({}, [confirmada('55', '4')]);
+    await abrir(fixture);
+    el.querySelectorAll<HTMLButtonElement>('.att-row button')[0].click(); // Presente
+    fixture.detectChanges();
+
+    const guardar = el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!;
+    guardar.click();
+    guardar.click();
+
+    await settle(fixture);
+    expect(calls.filter((c) => c.startsWith('markAttendance'))).toHaveLength(1);
   });
 });

@@ -3,10 +3,16 @@ import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { CancelClassDraft } from '@domain/entities/class-cancellation';
 import {
+  SessionAttendanceMark,
+  SessionAttendanceResult,
+} from '@domain/entities/session-attendance';
+import {
   ClassSessionDto,
   WaitingListEntryDto,
   SessionReservationDto,
   CancelClassRequest,
+  AttendanceRequest,
+  AttendanceResultDto,
 } from '../dto/class-session.dto';
 
 export function toClassSession(dto: ClassSessionDto): ClassSession {
@@ -42,5 +48,23 @@ export function toCancelClassRequest(draft: CancelClassDraft): CancelClassReques
   return {
     notify: draft.notify,
     ...(draft.reason !== null ? { reason: draft.reason } : {}),
+  };
+}
+
+export function toAttendanceRequest(marks: readonly SessionAttendanceMark[]): AttendanceRequest {
+  return { items: marks.map((m) => ({ reservationId: m.reservationId, status: m.status })) };
+}
+
+/**
+ * `status` se ESTRECHA al union del dominio y queda en null si el backend devuelve cualquier
+ * otra cosa. Ver el ponytail de session-attendance.ts: la tabla tiene cinco status posibles y
+ * este panel conoce dos.
+ */
+export function toSessionAttendanceResult(dto: AttendanceResultDto): SessionAttendanceResult {
+  return {
+    reservationId: dto.reservationId,
+    ok: dto.ok,
+    status: dto.status === 'asistio' || dto.status === 'ausente' ? dto.status : null,
+    error: dto.error ?? null,
   };
 }

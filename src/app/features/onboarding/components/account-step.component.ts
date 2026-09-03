@@ -46,6 +46,15 @@ import { strengthInfo } from '../password-strength';
         <app-field-error [show]="isErr('email')" [message]="msg('email', EMAIL_MSGS)" />
       </div>
 
+      <div class="field" [class.err]="isErr('phone')" [class.ok]="isOk('phone')">
+        <label for="phone">Teléfono <span class="req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <input id="phone" type="tel" inputmode="tel" formControlName="phone" autocomplete="tel" placeholder="Ej: +54 9 11 5555-1234" [attr.aria-invalid]="isErr('phone') || null" />
+          <span class="ok-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+        </div>
+        <app-field-error [show]="isErr('phone')" [message]="msg('phone', PHONE_MSGS)" />
+      </div>
+
       <div class="field" [class.err]="isErr('password')">
         <label for="password">Contraseña <span class="req" aria-hidden="true">*</span></label>
         <div class="control">
@@ -101,6 +110,7 @@ export class AccountStepComponent {
   protected readonly APELLIDO_MSGS: Record<string, string> = { required: 'Ingresá tu apellido.', trimmedMinLength: 'El apellido es demasiado corto.' };
   protected readonly CLUB_MSGS: Record<string, string> = { required: 'Ingresá el nombre del club.', trimmedMinLength: 'El nombre del club es demasiado corto.' };
   protected readonly EMAIL_MSGS: Record<string, string> = { required: 'Ingresá tu email.', pattern: 'Ese email no parece válido — revisá que tenga @ y un dominio (ej: nombre@club.com).' };
+  protected readonly PHONE_MSGS: Record<string, string> = { required: 'Ingresá un teléfono de contacto.', pattern: 'Ese teléfono no parece válido — usá sólo números, espacios, + y guiones.' };
   protected readonly PASSWORD_MSGS: Record<string, string> = { required: 'Elegí una contraseña.', minlength: 'La contraseña necesita al menos 8 caracteres.' };
 
   protected onPw(value: string): void { this.pwValue.set(value); }

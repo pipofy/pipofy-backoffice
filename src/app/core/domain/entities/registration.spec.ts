@@ -9,6 +9,7 @@ function baseInput(): RegistrationInput {
     apellido: ' Rivas ',
     email: ' martin@club.com ',
     password: 'unaClave123',
+    phone: ' +54 9 11 5555-1234 ',
     nombreClub: ' Club Solaris ',
     acceptedTerms: true,
   };
@@ -23,6 +24,7 @@ describe('createRegistration', () => {
       apellido: 'Rivas',
       email: 'martin@club.com',
       password: 'unaClave123',
+      phone: '+54 9 11 5555-1234',
       nombreClub: 'Club Solaris',
       acceptedTerms: true,
     });
@@ -46,6 +48,11 @@ describe('createRegistration', () => {
 
   it('un club sin nombre de club tira InvalidRegistrationError', () => {
     expect(() => createRegistration({ ...baseInput(), nombreClub: '   ' }))
+      .toThrow(InvalidRegistrationError);
+  });
+
+  it('sin teléfono tira InvalidRegistrationError', () => {
+    expect(() => createRegistration({ ...baseInput(), phone: '   ' }))
       .toThrow(InvalidRegistrationError);
   });
 

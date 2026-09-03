@@ -9,6 +9,13 @@ export function trimmedMinLength(min: number): ValidatorFn {
   };
 }
 
+/**
+ * Teléfono tolerante: + opcional, dígitos, espacios, guiones y paréntesis, entre 8 y 20
+ * caracteres. No se normaliza a E.164 — la API lo guarda como string libre.
+ * ponytail: sin validación por país; si hace falta, entra libphonenumber-js.
+ */
+export const PHONE_RE = /^\+?[\d\s()-]{8,20}$/;
+
 /** Validador de grupo (account): password === confirm. Confirm vacío -> lo maneja required. */
 export const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
   const password = group.get('password')?.value;

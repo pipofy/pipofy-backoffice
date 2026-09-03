@@ -13,6 +13,7 @@ export function toSignupDto(reg: Registration): SignupRequest {
     tipo: reg.role === 'club' ? 'club' : 'particular',
     nombre: reg.nombre,
     apellido: reg.apellido,
+    phone: reg.phone,
     // Se OMITE cuando no corresponde en vez de mandarlo vacío: el club se crea con
     // `dto.tipo === 'club' ? dto.nombreClub : dto.nombre`, y un string vacío dejaría
     // el club sin nombre.

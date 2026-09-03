@@ -4,7 +4,7 @@ import { OnboardingPersistenceService, OnboardingFormValue } from './onboarding-
 function formValue(): OnboardingFormValue {
   return {
     role: 'club',
-    account: { nombre: 'Ana', apellido: 'Diaz', email: 'ana@club.com', password: 'secreta123', confirm: 'secreta123', nombreClub: 'Club Solaris' },
+    account: { nombre: 'Ana', apellido: 'Diaz', email: 'ana@club.com', phone: '1155551234', password: 'secreta123', confirm: 'secreta123', nombreClub: 'Club Solaris' },
     acceptedTerms: true,
   };
 }
@@ -20,7 +20,7 @@ describe('OnboardingPersistenceService', () => {
 
     const snap = svc.restore()!;
     expect(snap).not.toBeNull();
-    expect(snap.account).toEqual({ nombre: 'Ana', apellido: 'Diaz', email: 'ana@club.com', nombreClub: 'Club Solaris' });
+    expect(snap.account).toEqual({ nombre: 'Ana', apellido: 'Diaz', email: 'ana@club.com', phone: '1155551234', nombreClub: 'Club Solaris' });
     expect('password' in (snap.account as object)).toBe(false);
     expect(snap.step).toBe('account');
   });

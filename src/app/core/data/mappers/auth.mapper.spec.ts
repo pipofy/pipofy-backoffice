@@ -6,14 +6,14 @@ import { Registration } from '@domain/entities/registration';
 
 const club: Registration = {
   role: 'club', nombre: 'Martín', apellido: 'Rivas',
-  email: 'martin@club.com', password: 'unaClave123',
+  email: 'martin@club.com', password: 'unaClave123', phone: '+54 9 11 5555-1234',
   nombreClub: 'Club Solaris', acceptedTerms: true,
 };
 
 describe('toSignupDto', () => {
   it('traduce role:"club" a tipo:"club" e incluye nombreClub', () => {
     expect(toSignupDto(club)).toEqual({
-      email: 'martin@club.com', password: 'unaClave123', tipo: 'club',
+      email: 'martin@club.com', password: 'unaClave123', phone: '+54 9 11 5555-1234', tipo: 'club',
       nombre: 'Martín', apellido: 'Rivas', nombreClub: 'Club Solaris',
     });
   });

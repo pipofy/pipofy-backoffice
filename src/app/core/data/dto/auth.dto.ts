@@ -20,6 +20,9 @@ export const SignupRequestSchema = v.object({
   tipo: v.picklist(['club', 'particular']),
   nombre: v.string(),
   apellido: v.string(),
+  // Obligatorio del lado de la API desde que SignupDto lo marca @IsString() sin
+  // @IsOptional(): omitirlo devuelve 400 "phone must be a string".
+  phone: v.string(),
   nombreClub: v.optional(v.string()),
 });
 export type SignupRequest = v.InferOutput<typeof SignupRequestSchema>;

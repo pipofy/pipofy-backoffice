@@ -99,6 +99,7 @@ describe('OnboardingWizardComponent', () => {
     set(root, '#nombre', 'Martín');
     set(root, '#apellido', 'Rivas');
     set(root, '#email', 'martin@club.com');
+    set(root, '#phone', '+54 9 11 5555-1234');
     set(root, '#password', 'unaClave123');
     set(root, '#confirm', 'unaClave123');
     set(root, '#nombreClub', 'Club Solaris');
@@ -115,7 +116,7 @@ describe('OnboardingWizardComponent', () => {
     expect(recibido).toEqual({
       role: 'club', nombre: 'Martín', apellido: 'Rivas',
       email: 'martin@club.com', password: 'unaClave123',
-      nombreClub: 'Club Solaris', acceptedTerms: true,
+      phone: '+54 9 11 5555-1234', nombreClub: 'Club Solaris', acceptedTerms: true,
     });
     expect(TestBed.inject(Router).url).toContain('/revisa-tu-mail');
   });
@@ -136,6 +137,7 @@ describe('OnboardingWizardComponent', () => {
     set(root, '#nombre', 'Martín');
     set(root, '#apellido', 'Rivas');
     set(root, '#email', 'martin@club.com');
+    set(root, '#phone', '+54 9 11 5555-1234');
     set(root, '#password', 'unaClave123');
     set(root, '#confirm', 'unaClave123');
     h.fixture.detectChanges();
@@ -159,7 +161,7 @@ describe('OnboardingWizardComponent', () => {
     // siga siendo válido: tiene que revalidar todos los pasos, no sólo acceptedTerms.
     const snapshot: OnboardingSnapshot = {
       role: 'club',
-      account: { nombre: 'Martín', apellido: 'Rivas', email: 'martin@club.com', nombreClub: 'Club Solaris' },
+      account: { nombre: 'Martín', apellido: 'Rivas', email: 'martin@club.com', phone: '1155551234', nombreClub: 'Club Solaris' },
       acceptedTerms: false,
       step: 'confirm',
     };

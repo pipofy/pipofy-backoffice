@@ -12,6 +12,7 @@ function validInput(): RegistrationInput {
     apellido: 'Diaz',
     email: 'ana@club.com',
     password: 'Sup3rSecret!',
+    phone: '1155551234',
     nombreClub: '',
     acceptedTerms: true,
   };

@@ -8,7 +8,7 @@ import { BrandmarkComponent } from '@shared/ui/brandmark.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { OnboardingFacade } from '../onboarding.facade';
 import { OnboardingPersistenceService, OnboardingFormValue } from '../onboarding-persistence.service';
-import { passwordsMatch, trimmedMinLength } from '../onboarding.validators';
+import { passwordsMatch, trimmedMinLength, PHONE_RE } from '../onboarding.validators';
 import { EMAIL_RE } from '@shared/validators/email';
 import { StepperComponent } from '../components/stepper.component';
 import { RoleStepComponent } from '../components/role-step.component';
@@ -51,6 +51,7 @@ export class OnboardingWizardComponent {
       nombre:     this.fb.control('', [Validators.required, trimmedMinLength(2)]),
       apellido:   this.fb.control('', [Validators.required, trimmedMinLength(2)]),
       email:      this.fb.control('', [Validators.required, Validators.pattern(EMAIL_RE)]),
+      phone:      this.fb.control('', [Validators.required, Validators.pattern(PHONE_RE)]),
       password:   this.fb.control('', [Validators.required, Validators.minLength(8)]),
       confirm:    this.fb.control('', [Validators.required]),
       nombreClub: this.fb.control(''),      // requerido condicional, ver constructor
@@ -109,6 +110,7 @@ export class OnboardingWizardComponent {
           nombre: snap.account.nombre,
           apellido: snap.account.apellido,
           email: snap.account.email,
+          phone: snap.account.phone ?? '',
           nombreClub: snap.account.nombreClub,
         },
         acceptedTerms: snap.acceptedTerms,
@@ -166,6 +168,7 @@ export class OnboardingWizardComponent {
       apellido: v.account.apellido ?? '',
       email: v.account.email ?? '',
       password: v.account.password ?? '',
+      phone: v.account.phone ?? '',
       nombreClub: v.account.nombreClub ?? '',
       acceptedTerms: v.acceptedTerms ?? false,
     };

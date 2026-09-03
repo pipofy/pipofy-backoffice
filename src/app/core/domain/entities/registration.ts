@@ -8,6 +8,8 @@ export interface Registration {
   apellido: string;
   email: string;
   password: string;
+  /** Obligatorio en la API (SignupDto.phone es @IsString() sin @IsOptional). */
+  phone: string;
   /** Solo para role === 'club'. Va como `nombreClub` al signup de la API. */
   nombreClub?: string;
   acceptedTerms: true;
@@ -20,6 +22,7 @@ export interface RegistrationInput {
   apellido: string;
   email: string;
   password: string;
+  phone: string;
   nombreClub: string;
   acceptedTerms: boolean;
 }
@@ -39,12 +42,17 @@ export function createRegistration(input: RegistrationInput): Registration {
   if (!input.acceptedTerms) {
     throw new InvalidRegistrationError('Tenés que aceptar los términos para crear la cuenta.');
   }
+  const phone = input.phone.trim();
+  if (!phone) {
+    throw new InvalidRegistrationError('Ingresá un teléfono de contacto.');
+  }
   const base = {
     role: input.role,
     nombre: input.nombre.trim(),
     apellido: input.apellido.trim(),
     email: input.email.trim(),
     password: input.password,
+    phone,
     acceptedTerms: true as const,
   };
   if (input.role === 'club') {

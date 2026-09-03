@@ -9,7 +9,7 @@ import { Registration } from '@domain/entities/registration';
 
 const club: Registration = {
   role: 'club', nombre: 'Martín', apellido: 'Rivas',
-  email: 'martin@club.com', password: 'unaClave123',
+  email: 'martin@club.com', password: 'unaClave123', phone: '+54 9 11 5555-1234',
   nombreClub: 'Club Solaris', acceptedTerms: true,
 };
 
@@ -61,7 +61,8 @@ describe('HttpAuthRepository.signup', () => {
     await expect(r.signup(club)).resolves.toBeUndefined();
     expect(body).toEqual({
       email: 'martin@club.com', password: 'unaClave123', tipo: 'club',
-      nombre: 'Martín', apellido: 'Rivas', nombreClub: 'Club Solaris',
+      nombre: 'Martín', apellido: 'Rivas', phone: '+54 9 11 5555-1234',
+      nombreClub: 'Club Solaris',
     });
   });
 

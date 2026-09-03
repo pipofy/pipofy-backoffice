@@ -4,14 +4,14 @@ import { Role } from '@domain/entities/registration';
 /** Forma cruda del FormGroup del wizard (incluye password/confirm — NO se persisten). */
 export interface OnboardingFormValue {
   role: Role | null;
-  account: { nombre: string; apellido: string; email: string; password: string; confirm: string; nombreClub: string };
+  account: { nombre: string; apellido: string; email: string; phone: string; password: string; confirm: string; nombreClub: string };
   acceptedTerms: boolean;
 }
 
 /** Lo que se guarda en sessionStorage: todo menos password/confirm. */
 export interface OnboardingSnapshot {
   role: Role | null;
-  account: { nombre: string; apellido: string; email: string; nombreClub: string };
+  account: { nombre: string; apellido: string; email: string; phone: string; nombreClub: string };
   acceptedTerms: boolean;
   step: string;
 }
@@ -31,6 +31,7 @@ export class OnboardingPersistenceService {
         nombre: value.account.nombre,
         apellido: value.account.apellido,
         email: value.account.email,
+        phone: value.account.phone,
         nombreClub: value.account.nombreClub,
       },
       acceptedTerms: value.acceptedTerms,

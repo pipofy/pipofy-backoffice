@@ -80,6 +80,7 @@ export class ConfirmStepComponent {
       { k: 'Rol', v: v.role === 'club' ? 'Dueño de club' : 'Profesor' },
       { k: 'Nombre', v: `${v.account.nombre} ${v.account.apellido}`.trim() },
       { k: 'Email', v: v.account.email },
+      { k: 'Teléfono', v: v.account.phone },
       { k: 'Contraseña', v: '•'.repeat(Math.max((v.account.password ?? '').length, 8)) },
     ];
     if (v.role === 'club') {

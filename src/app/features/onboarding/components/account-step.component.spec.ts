@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { AccountStepComponent } from './account-step.component';
-import { passwordsMatch, trimmedMinLength } from '../onboarding.validators';
+import { passwordsMatch, trimmedMinLength, PHONE_RE } from '../onboarding.validators';
 import { EMAIL_RE } from '@shared/validators/email';
 
 function accountGroup() {
@@ -11,6 +11,7 @@ function accountGroup() {
     nombre: new FormControl('', [Validators.required, trimmedMinLength(2)]),
     apellido: new FormControl('', [Validators.required, trimmedMinLength(2)]),
     email: new FormControl('', [Validators.required, Validators.pattern(EMAIL_RE)]),
+    phone: new FormControl('', [Validators.required, Validators.pattern(PHONE_RE)]),
     password: new FormControl('', [Validators.required, Validators.minLength(8)]),
     confirm: new FormControl('', [Validators.required]),
     nombreClub: new FormControl(''),
@@ -32,6 +33,7 @@ describe('AccountStepComponent', () => {
     expect(el.querySelector('#nombre')).not.toBeNull();
     expect(el.querySelector('#apellido')).not.toBeNull();
     expect(el.querySelector('#email')).not.toBeNull();
+    expect(el.querySelector('#phone')).not.toBeNull();
     expect(el.querySelector('#password')).not.toBeNull();
     expect(el.querySelector('#confirm')).not.toBeNull();
   });

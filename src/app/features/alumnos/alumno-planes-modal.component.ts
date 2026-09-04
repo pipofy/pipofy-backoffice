@@ -5,6 +5,8 @@ import { StudentPlan } from '@domain/entities/student-plan';
 import { domainErrorMessage } from '@domain/errors';
 import { catalogLabel } from '@data/catalog-labels';
 import { AlumnoPlanesFacade } from './alumno-planes.facade';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
  * Planes y créditos de un alumno. Se carga al ABRIR y no con la tabla: un pedido por alumno
@@ -15,7 +17,7 @@ import { AlumnoPlanesFacade } from './alumno-planes.facade';
 @Component({
   selector: 'app-alumno-planes-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent, PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Planes y créditos" [subtitle]="nombre()" icon="primary">
@@ -23,18 +25,18 @@ import { AlumnoPlanesFacade } from './alumno-planes.facade';
            puede tapar el formulario que es donde se corrige. El @else if data() de abajo es
            lo que mantiene oculta la tabla cuando lo que falló fue la CARGA. -->
       @if (errorText()) {
-        <p class="notice hold form-error" role="alert">{{ errorText() }}</p>
+        <app-notice tone="bad">{{ errorText() }}</app-notice>
       }
 
       @if (facade.loading()) {
-        <p role="status">Cargando planes…</p>
+        <app-placeholder tone="loading" title="Cargando planes…" />
       } @else if (facade.data()) {
         <p class="creditos" data-test="creditos-totales">
           <strong>{{ facade.credits() }}</strong> créditos disponibles hoy
         </p>
 
         @if (planes().length === 0) {
-          <p class="a-empty">Este alumno todavía no compró ningún plan.</p>
+          <app-placeholder title="Este alumno todavía no compró ningún plan" />
         } @else {
           <!-- Sin clase ni CSS de tabla: los selectores de elemento de styles/components.css
                ya estilan table/th/td en toda la app, igual que en roster-table. -->
@@ -110,7 +112,6 @@ import { AlumnoPlanesFacade } from './alumno-planes.facade';
     .creditos{font-size:var(--text-md);margin-bottom:var(--space-md)}
     .creditos strong{font-size:var(--text-xl);color:var(--color-primary)}
     .vencido{color:var(--color-destructive);font-weight:600}
-    .form-error{margin-bottom:var(--space-md)}
     h4{margin:var(--space-md) 0 var(--space-sm)}
   `],
 })

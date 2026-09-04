@@ -46,7 +46,17 @@
 .foot .spacer{flex:1}
 /* .btn* y @keyframes spin subieron a styles/components.css (primitivos globales del DS). */
 
-.foot-error{padding:var(--space-sm) var(--space-lg);color:var(--color-on-destructive-soft);font-size:var(--text-sm);font-weight:600}
+/* app-notice reemplazó al párrafo de error que había acá antes, con padding:var(--space-sm)
+   var(--space-lg) -alineado con el padding horizontal de .foot-. El primitivo sólo trae
+   padding:var(--space-sm), así que sin esto queda desalineado con la barra de botones. Además
+   es el último hijo de form.card (overflow:hidden crea BFC, sin padding propio): el
+   margin-bottom del :host no se propaga hacia afuera y pinta una franja blanca entre el aviso
+   y el borde de la tarjeta. Reemplazamos el margen atrapado por padding real, que sí ocupa
+   espacio dentro del contenedor. */
+.card app-notice {
+  padding: var(--space-sm) var(--space-lg);
+  margin-bottom: 0;
+}
 
 /* ═══════════════ LEGAL (líneas 235-236) ═══════════════ */
 .legal{width:100%;max-width:640px;text-align:center;font-size:var(--text-xs);color:var(--color-fg-subtle);margin-top:var(--space-lg)}

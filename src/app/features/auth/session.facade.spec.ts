@@ -100,6 +100,6 @@ describe('SessionFacade', () => {
 
     expect(facade.error()).toEqual({ kind: 'invalid-credentials' });
     expect(store.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem('setpoint:session:v1')).toBeNull();
+    expect(localStorage.getItem('PipoFy:session:v1')).toBeNull();
   });
 });

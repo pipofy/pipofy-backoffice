@@ -9,14 +9,15 @@
   </div>
 
   <!-- BANNER, no una rama del chain: la facade también ESCRIBE, y un error de guardado no puede
-       reemplazar la tabla que data() sigue teniendo intacta. Mismo role="alert" que
-       grupos-list-page.component.html:4. -->
+       reemplazar la tabla que data() sigue teniendo intacta. El rol lo pone el primitivo
+       (app-notice), no este call site: mismo patrón que grupos-list-page.component.html:4
+       (app-placeholder). -->
   @if (errorText()) {
-    <p class="notice hold" role="alert">{{ errorText() }}</p>
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
   }
 
   @if (facade.loading()) {
-    <p class="a-body">Cargando canchas…</p>
+    <app-placeholder tone="loading" title="Cargando canchas…" />
   } @else if (filtered().length) {
     <div class="table-scroll">
       <table>
@@ -50,13 +51,7 @@
   } @else if (facade.data()) {
     <!-- El vacío sólo cuando la lista LLEGÓ vacía: si data() es null la carga falló y lo que
          corresponde es el banner de arriba, no "todavía no cargaste ninguna cancha". -->
-    <div class="a-empty">
-      @if (query()) {
-        Ninguna cancha coincide con la búsqueda.
-      } @else {
-        Todavía no cargaste ninguna cancha.
-      }
-    </div>
+    <app-placeholder [title]="emptyTitle()" />
   }
 </section>
 

@@ -5,6 +5,7 @@ import { dominantHandLabel } from './hand-label';
 import { Category } from '@domain/entities/category';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { catalogLabel } from '@data/catalog-labels';
+import { NoticeComponent } from '@shared/ui/notice.component';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(alumno)` es edición.
@@ -15,14 +16,14 @@ import { catalogLabel } from '@data/catalog-labels';
 @Component({
   selector: 'app-alumno-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="student() ? 'Editar alumno' : 'Nuevo alumno'" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css:254). Acá es donde se corrige,
            y con el 409 por teléfono duplicado eso importa especialmente. -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <div class="field field-dense">
         <label for="alumno-telefono">Teléfono</label>
@@ -137,7 +138,6 @@ import { catalogLabel } from '@data/catalog-labels';
       </div>
     </app-modal>
   `,
-  styles: [`.form-error{margin-bottom:var(--space-md)}`],
 })
 export class AlumnoFormModalComponent {
   readonly categories = input.required<readonly Category[]>();

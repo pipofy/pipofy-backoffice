@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { Plan, PlanInput } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
 import { CatalogItem } from '@data/dto/catalogs.dto';
@@ -14,13 +15,13 @@ import { catalogLabel } from '@data/catalog-labels';
 @Component({
   selector: 'app-plan-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="plan() ? 'Editar plan' : 'Nuevo plan'" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css:254). -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <div class="field field-dense">
         <label for="plan-nombre">Nombre</label>
@@ -119,7 +120,6 @@ import { catalogLabel } from '@data/catalog-labels';
       </div>
     </app-modal>
   `,
-  styles: [`.form-error{margin-bottom:var(--space-md)}`],
 })
 export class PlanFormModalComponent {
   readonly planTypes = input.required<readonly CatalogItem[]>();

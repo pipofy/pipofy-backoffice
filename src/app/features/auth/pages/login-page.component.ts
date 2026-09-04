@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { formMessage } from '../form-message';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { EMAIL_RE } from '@shared/validators/email';
@@ -10,7 +11,7 @@ import { SessionFacade } from '../session.facade';
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent],
+  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page">
@@ -36,7 +37,7 @@ import { SessionFacade } from '../session.facade';
         </div>
 
         @if (message(); as msg) {
-          <p class="error" role="alert">{{ msg }}</p>
+          <app-notice tone="bad">{{ msg }}</app-notice>
         }
 
         @if (facade.error()?.kind === 'email-not-verified') {
@@ -59,7 +60,6 @@ import { SessionFacade } from '../session.facade';
     .step-head h2{font-size:var(--text-xl)}
     .step-head p{font-size:var(--text-sm);color:var(--color-fg-muted);margin-top:var(--space-xs)}
     .field input:focus-visible{outline:2.5px solid var(--color-ring);outline-offset:2px}
-    .error{font-size:var(--text-sm);color:var(--color-destructive);font-weight:600}
     .legal{font-size:var(--text-sm);color:var(--color-fg-muted);text-align:center}
     .legal a{color:var(--color-primary);font-weight:600}
   `],

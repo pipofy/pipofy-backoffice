@@ -44,6 +44,7 @@ const guardar = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('app-ca
 const cancelar = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('app-categoria-form-modal .modal-foot .btn-ghost')!;
 const avisoModal = (el: HTMLElement) => el.querySelector('app-categoria-form-modal .notice');
 const filas = (el: HTMLElement) => el.querySelectorAll('tbody tr');
+const buscador = (el: HTMLElement) => el.querySelector<HTMLInputElement>('#categorias-q')!;
 
 function escribir(el: HTMLElement, texto: string): void {
   const input = nombre(el);
@@ -115,7 +116,7 @@ describe('CategoriasPageComponent', () => {
     await settle(fixture);
     guardar(el).click();                       // nombre vacío → invariante de dominio
     await settle(fixture);
-    expect(el.querySelector('.panel > [role="alert"]')).not.toBeNull();   // precondición: hay error
+    expect(el.querySelector('.panel [role="alert"]')).not.toBeNull();   // precondición: hay error
 
     // Simula volver a la tab: la página se destruye y se reconstruye, pero la facade —provista
     // en la ruta padre, no en esta página— es la MISMA instancia (mismo TestBed, sin reconfigurar).
@@ -125,18 +126,31 @@ describe('CategoriasPageComponent', () => {
     await settle(fixture2);
     const el2 = fixture2.nativeElement as HTMLElement;
 
-    expect(el2.querySelector('.panel > [role="alert"]')).toBeNull();
+    expect(el2.querySelector('.panel [role="alert"]')).toBeNull();
+  });
+
+  it('el vacío real y el de búsqueda muestran textos distintos', async () => {
+    const { fixture, el } = await mount({ list: async () => [] });
+    // Sin query(): vacío real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Todavía no cargaste ninguna categoría');
+
+    buscador(el).value = 'zzzz';
+    buscador(el).dispatchEvent(new Event('input'));
+    await settle(fixture);
+    // Con query(): vacío de búsqueda, no el real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Ninguna categoría coincide con la búsqueda');
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ninguna categoría');
   });
 
   it('un error de CARGA se ve en la página pero no viaja al modal recién abierto', async () => {
     const { fixture, el } = await mount({ list: () => Promise.reject({ kind: 'network' as const }) });
-    expect(el.querySelector('.panel > [role="alert"]')!.textContent)
+    expect(el.querySelector('.panel [role="alert"]')!.textContent)
       .toContain('No pudimos conectar con el servidor.');
-    expect(el.querySelector('.a-empty')).toBeNull();
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ninguna categoría');
 
     nueva(el).click();
     await settle(fixture);
     expect(avisoModal(el)).toBeNull();
-    expect(el.querySelector('.panel > [role="alert"]')).toBeNull();   // openNew() lo limpió
+    expect(el.querySelector('.panel [role="alert"]')).toBeNull();   // openNew() lo limpió
   });
 });

@@ -80,7 +80,7 @@ describe('SessionStore', () => {
   });
 
   it('un localStorage con basura no rompe la construcción', () => {
-    localStorage.setItem('setpoint:session:v1', 'no-es-json');
+    localStorage.setItem('PipoFy:session:v1', 'no-es-json');
     expect(store().isAuthenticated()).toBe(false);
   });
 });

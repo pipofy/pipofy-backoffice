@@ -4,11 +4,13 @@ import { KpiRowComponent } from '../components/kpi-row.component';
 import { CourtGridComponent } from '../components/court-grid.component';
 import { WaitlistCardComponent } from '../components/waitlist-card.component';
 import { SessionStore } from '@data/auth/session-store';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
+import { domainErrorMessage } from '@domain/errors';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [KpiRowComponent, CourtGridComponent, WaitlistCardComponent],
+  imports: [KpiRowComponent, CourtGridComponent, WaitlistCardComponent, PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.css',
@@ -16,6 +18,12 @@ import { SessionStore } from '@data/auth/session-store';
 export class DashboardPageComponent {
   protected readonly facade = inject(DashboardFacade);
   private readonly session = inject(SessionStore);
+
+  /** El dashboard imprimía `err.kind` crudo; el resto de la app usa domainErrorMessage. */
+  protected errorText(): string {
+    const err = this.facade.error();
+    return err ? domainErrorMessage(err) : '';
+  }
 
   constructor() {
     // El club sale del access token, no de una constante: `SessionStore.clubId` lo deriva del JWT

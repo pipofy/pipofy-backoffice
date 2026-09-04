@@ -8,11 +8,13 @@ import { Court, CourtInput } from '@domain/entities/court';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-canchas-page',
   standalone: true,
-  imports: [CanchaFormModalComponent, ConfirmDeleteModalComponent],
+  imports: [CanchaFormModalComponent, ConfirmDeleteModalComponent, PlaceholderComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './canchas-page.component.html',
   styleUrl: './canchas-page.component.css',
@@ -60,6 +62,11 @@ export class CanchasPageComponent {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
   }
+
+  /** El vacío de búsqueda y el vacío real dicen cosas distintas. */
+  protected readonly emptyTitle = computed(() =>
+    this.query() ? 'Ninguna cancha coincide con la búsqueda' : 'Todavía no cargaste ninguna cancha',
+  );
 
   protected onSearch(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);

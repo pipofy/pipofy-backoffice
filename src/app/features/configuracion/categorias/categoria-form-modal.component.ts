@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { Category, CategoryInput } from '@domain/entities/category';
 
 /**
@@ -10,13 +11,13 @@ import { Category, CategoryInput } from '@domain/entities/category';
 @Component({
   selector: 'app-categoria-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="category() ? 'Editar categoría' : 'Nueva categoría'" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css:254). Acá es donde se corrige. -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <div class="field">
         <label for="categoria-nombre">Nombre</label>
@@ -38,7 +39,6 @@ import { Category, CategoryInput } from '@domain/entities/category';
       </div>
     </app-modal>
   `,
-  styles: [`.form-error{margin-bottom:var(--space-md)}`],
 })
 export class CategoriaFormModalComponent {
   /** Copy ya traducido del error que dejó la facade; '' cuando no hay. */

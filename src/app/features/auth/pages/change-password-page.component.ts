@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { formMessage } from '../form-message';
 import { PasswordFacade } from '../password.facade';
 
@@ -17,7 +18,7 @@ import { PasswordFacade } from '../password.facade';
 @Component({
   selector: 'app-change-password-page',
   standalone: true,
-  imports: [ReactiveFormsModule, BrandmarkComponent],
+  imports: [ReactiveFormsModule, BrandmarkComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page">
@@ -48,7 +49,7 @@ import { PasswordFacade } from '../password.facade';
         </div>
 
         @if (message(); as msg) {
-          <p class="error" role="alert">{{ msg }}</p>
+          <app-notice tone="bad">{{ msg }}</app-notice>
         }
 
         <button type="submit" class="btn btn-cta" [disabled]="facade.loading()">
@@ -62,7 +63,6 @@ import { PasswordFacade } from '../password.facade';
     .step-head h2{font-size:var(--text-xl)}
     .step-head p{font-size:var(--text-sm);color:var(--color-fg-muted);margin-top:var(--space-xs)}
     .field input:focus-visible{outline:2.5px solid var(--color-ring);outline-offset:2px}
-    .error{font-size:var(--text-sm);color:var(--color-destructive);font-weight:600}
   `],
   providers: [PasswordFacade],
 })

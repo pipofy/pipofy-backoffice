@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Role, RegistrationInput } from '@domain/entities/registration';
 import { domainErrorMessage } from '@domain/errors';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { OnboardingFacade } from '../onboarding.facade';
 import { OnboardingPersistenceService, OnboardingFormValue } from '../onboarding-persistence.service';
@@ -25,7 +26,7 @@ const STEP_LABELS = ['Rol', 'Cuenta', 'Confirmar'];
   selector: 'app-onboarding-wizard',
   standalone: true,
   imports: [
-    ReactiveFormsModule, RouterLink, BrandmarkComponent, SiteFooterComponent,
+    ReactiveFormsModule, RouterLink, BrandmarkComponent, SiteFooterComponent, NoticeComponent,
     StepperComponent, RoleStepComponent, AccountStepComponent, ConfirmStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -15,7 +15,7 @@ describe('OnboardingPersistenceService', () => {
   it('guarda y restaura, pero NUNCA persiste la contraseña', () => {
     const svc = new OnboardingPersistenceService();
     svc.save(formValue(), 'account');
-    const raw = sessionStorage.getItem('setpoint:onboarding:v2') ?? '';
+    const raw = sessionStorage.getItem('PipoFy:onboarding:v2') ?? '';
     expect(raw).not.toContain('secreta123');
 
     const snap = svc.restore()!;

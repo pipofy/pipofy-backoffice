@@ -223,6 +223,15 @@ describe('GrupoDetailPageComponent', () => {
     expect(el.querySelector('a[href="/grupos"]')).toBeTruthy();
   });
 
+  it('el error del detalle habla del grupo, no de los grupos', async () => {
+    const { el } = await mount('1', {
+      getGroups: () => Promise.reject({ kind: 'network' as const }),
+      saveAttendance: () => Promise.reject(new Error('no')),
+    });
+    expect(el.textContent).toContain('No se pudo cargar el grupo');
+    expect(el.textContent).not.toContain('los grupos');
+  });
+
   it('si el repo falla al guardar, el modal QUEDA ABIERTO y sale el toast en español', async () => {
     const base = new InMemoryGroupsRepository(0);
     const repo: GroupsRepository = {

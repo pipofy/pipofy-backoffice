@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import {
   SessionAttendanceMark,
@@ -36,6 +37,7 @@ function resumenDe(results: readonly SessionAttendanceResult[]): string {
 @Component({
   selector: 'app-asistencia-seccion',
   standalone: true,
+  imports: [NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './asistencia-seccion.component.css',
   template: `
@@ -50,11 +52,11 @@ function resumenDe(results: readonly SessionAttendanceResult[]): string {
       }
 
       @if (errorGlobal()) {
-        <p class="notice hold" role="alert">{{ errorGlobal() }}</p>
+        <app-notice tone="bad">{{ errorGlobal() }}</app-notice>
       }
 
       @for (f of fallosAgrupados(); track f.mensaje) {
-        <p class="notice hold" role="alert">{{ f.nombres }}: {{ f.mensaje }}</p>
+        <app-notice tone="bad">{{ f.nombres }}: {{ f.mensaje }}</app-notice>
       }
 
       @if (confirmadas().length) {

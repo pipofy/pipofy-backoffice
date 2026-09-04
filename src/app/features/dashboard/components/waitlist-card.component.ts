@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { WaitlistEntry } from '@domain/entities/dashboard-snapshot';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-waitlist-card',
   standalone: true,
+  imports: [PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="acard">
@@ -20,7 +22,7 @@ import { WaitlistEntry } from '@domain/entities/dashboard-snapshot';
             <div class="a-main"><div class="a-title">{{ e.title }}</div><div class="a-meta">{{ e.meta }}</div></div>
           </div>
         } @empty {
-          <div class="a-empty">Sin lista de espera</div>
+          <app-placeholder title="Sin lista de espera" />
         }
       </div>
     </div>

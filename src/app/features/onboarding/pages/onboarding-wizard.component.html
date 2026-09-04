@@ -54,7 +54,7 @@
     </div>
 
     @if (facade.error(); as err) {
-      <p class="foot-error" role="alert">{{ domainErrorMessage(err) }}</p>
+      <app-notice tone="bad">{{ domainErrorMessage(err) }}</app-notice>
     }
   </form>
 

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { FieldErrorComponent } from './field-error.component';
+import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { OnboardingFormValue } from '../onboarding-persistence.service';
 
 interface SummaryRow { k: string; v: string }
@@ -43,7 +43,7 @@ interface SummaryBlock { title: string; edit: 'account'; rows: SummaryRow[] }
 
     <label class="terms" [class.err]="termsErr()" [formGroup]="form()">
       <input type="checkbox" formControlName="acceptedTerms" />
-      <span class="t-txt">Acepto los <a href="#" (click)="$event.preventDefault()">Términos del servicio</a> y la <a href="#" (click)="$event.preventDefault()">Política de privacidad</a> de SetPoint.</span>
+      <span class="t-txt">Acepto los <a href="#" (click)="$event.preventDefault()">Términos del servicio</a> y la <a href="#" (click)="$event.preventDefault()">Política de privacidad</a> de PipoFy.</span>
     </label>
     <app-field-error [show]="termsErr()" message="Tenés que aceptar los términos para crear la cuenta." />
   `,

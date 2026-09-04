@@ -18,7 +18,7 @@ export interface OnboardingSnapshot {
 
 // v2: el wizard perdió los pasos professional y club. Un snapshot v1 hidrataría campos
 // que ya no existen, así que se descarta cambiando la clave — sin código de migración.
-const SS_KEY = 'setpoint:onboarding:v2';
+const SS_KEY = 'PipoFy:onboarding:v2';
 
 @Injectable()
 export class OnboardingPersistenceService {

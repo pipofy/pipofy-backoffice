@@ -54,6 +54,7 @@ const guardar = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('app-ca
 const cancelar = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('app-cancha-form-modal .modal-foot .btn-ghost')!;
 const avisoModal = (el: HTMLElement) => el.querySelector('app-cancha-form-modal .notice');
 const filas = (el: HTMLElement) => el.querySelectorAll('tbody tr');
+const buscador = (el: HTMLElement) => el.querySelector<HTMLInputElement>('#canchas-q')!;
 
 function escribir(el: HTMLElement, texto: string): void {
   const input = nombre(el);
@@ -130,15 +131,28 @@ describe('CanchasPageComponent', () => {
     expect(filas(el)).toHaveLength(1);
   });
 
+  it('el vacío real y el de búsqueda muestran textos distintos', async () => {
+    const { fixture, el } = await mount({ list: async () => [] });
+    // Sin query(): vacío real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Todavía no cargaste ninguna cancha');
+
+    buscador(el).value = 'zzzz';
+    buscador(el).dispatchEvent(new Event('input'));
+    await settle(fixture);
+    // Con query(): vacío de búsqueda, no el real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Ninguna cancha coincide con la búsqueda');
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ninguna cancha');
+  });
+
   it('un error de CARGA se ve en la página pero no viaja al modal recién abierto', async () => {
     const { fixture, el } = await mount({ list: () => Promise.reject({ kind: 'network' as const }) });
-    const aviso = el.querySelector('.panel > [role="alert"]');
+    const aviso = el.querySelector('.panel [role="alert"]');
     expect(aviso!.textContent).toContain('No pudimos conectar con el servidor.');
-    expect(el.querySelector('.a-empty')).toBeNull();
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ninguna cancha');
 
     nueva(el).click();
     await settle(fixture);
     expect(avisoModal(el)).toBeNull();
-    expect(el.querySelector('.panel > [role="alert"]')).toBeNull();   // openNew() lo limpió
+    expect(el.querySelector('.panel [role="alert"]')).toBeNull();   // openNew() lo limpió
   });
 });

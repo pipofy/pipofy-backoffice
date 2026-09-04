@@ -6,11 +6,13 @@ import { Coach, CoachInput } from '@domain/entities/coach';
 import { NewUserInput } from '@domain/entities/new-user';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-profesores-page',
   standalone: true,
-  imports: [ProfesorFormModalComponent, ProfesorNuevoModalComponent],
+  imports: [ProfesorFormModalComponent, ProfesorNuevoModalComponent, PlaceholderComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesores-page.component.html',
   styleUrl: './profesores-page.component.css',

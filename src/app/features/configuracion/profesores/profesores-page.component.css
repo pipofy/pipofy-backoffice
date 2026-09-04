@@ -1,5 +1,5 @@
-/* Los primitivos (.panel, .panel-head, .table-scroll, .a-empty, .notice, .btn*) viven en
-   styles/components.css. Esta tabla no tiene overrides propios: a diferencia de las otras
-   cuatro (Canchas, Categorías, Grupos de categoría, Planes), la fila de acciones tiene un
-   solo botón (Editar, sin Eliminar — §2.3), así que la regla `.cell-end .btn + .btn` de
-   esas cuatro no tendría ningún hermano al que aplicarse acá. */
+/* Los primitivos (.panel, .panel-head, .table-scroll, app-notice, app-placeholder, .btn*)
+   viven en styles/components.css o en shared/ui. Esta tabla no tiene overrides propios: a
+   diferencia de las otras cuatro (Canchas, Categorías, Grupos de categoría, Planes), la
+   fila de acciones tiene un solo botón (Editar, sin Eliminar — §2.3), así que la regla
+   `.cell-end .btn + .btn` de esas cuatro no tendría ningún hermano al que aplicarse acá. */

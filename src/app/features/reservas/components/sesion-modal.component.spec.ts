@@ -400,7 +400,7 @@ const VENCIDO_HACE_5 = new Date(Date.now() - 5 * 60_000).toISOString();
 
 /** Texto de la sección que arranca en el <h4> con ese título y termina en el siguiente <h4>. */
 function seccion(el: HTMLElement, titulo: string): string {
-  const nodos = Array.from(el.querySelectorAll('h4, .arow, .a-empty'));
+  const nodos = Array.from(el.querySelectorAll('h4, .arow, app-placeholder'));
   const desde = nodos.findIndex((n) => n.tagName === 'H4' && n.textContent?.trim() === titulo);
   if (desde === -1) throw new Error(`No se encontró la sección "${titulo}"`);
   const resto = nodos.slice(desde + 1);

@@ -74,6 +74,14 @@ export const routes: Routes = [
         data: { title: 'Configuración del club', crumb: 'Gestión' },
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      // La wildcard cuelga del shell a propósito: la URL desconocida llega con la
+      // sidebar puesta, y sin sesión el authGuard del shell la manda al login antes.
+      {
+        path: '**',
+        loadComponent: () =>
+          import('@shared/ui/not-found-page.component').then((m) => m.NotFoundPageComponent),
+        data: { title: 'Página no encontrada', crumb: 'Error' },
+      },
     ],
   },
 ];

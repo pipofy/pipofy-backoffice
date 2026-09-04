@@ -28,7 +28,7 @@ describe('GrupoItemsStore', () => {
   it('un valor corrupto en storage devuelve [] en vez de tirar', () => {
     // La pista es decorativa: si el storage quedó sucio, la pantalla arranca sin pista y se
     // corrige al primer click. Tirar acá tumbaría el modal entero por un dato de adorno.
-    localStorage.setItem('setpoint:grupo-items:v1', '{no es json');
+    localStorage.setItem('PipoFy:grupo-items:v1', '{no es json');
     expect(new GrupoItemsStore().read('7')).toEqual([]);
   });
 });

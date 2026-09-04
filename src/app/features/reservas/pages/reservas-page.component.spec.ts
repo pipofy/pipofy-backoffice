@@ -103,7 +103,7 @@ describe('ReservasPageComponent', () => {
   });
 
   it('si la carga del día FALLA muestra el banner y NO la tabla ni el vacío', async () => {
-    // Escopado a .panel: el modal de sesión trae sus propios [role="alert"] y .a-empty
+    // Escopado a .panel: el modal de sesión trae sus propios [role="alert"] y app-placeholder
     // (dos: "Ninguna reserva pendiente…" y "Sin lista de espera."), siempre en el DOM aunque
     // el <dialog> esté cerrado (Angular no lo desmonta). Mismo precedente que
     // alumnos-page.component.spec.ts / grupos-categoria-page.component.spec.ts.
@@ -112,7 +112,7 @@ describe('ReservasPageComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.panel [role="alert"]')).not.toBeNull();
     expect(el.querySelector('.panel table')).toBeNull();
-    expect(el.querySelector('.panel .a-empty')).toBeNull();
+    expect(el.querySelector('.panel')?.textContent).not.toContain('No hay clases generadas');
   });
 
   it('una lista vacía muestra el vacío de "no hay clases generadas"', async () => {
@@ -121,7 +121,7 @@ describe('ReservasPageComponent', () => {
     const fixture = setup({ list: async () => [] });
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.panel .a-empty')!.textContent).toContain('No hay clases generadas');
+    expect(el.querySelector('.panel')?.textContent).toContain('No hay clases generadas');
     expect(el.querySelector('.panel [role="alert"]')).toBeNull();
   });
 
@@ -131,7 +131,7 @@ describe('ReservasPageComponent', () => {
     const fixture = setup({ list: () => Promise.reject({ kind: 'network' as const }) });
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.panel .a-empty')).toBeNull();
+    expect(el.querySelector('.panel')?.textContent).not.toContain('No hay clases generadas');
     expect(el.querySelector('.panel [role="alert"]')).not.toBeNull();
   });
 

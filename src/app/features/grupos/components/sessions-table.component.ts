@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { GroupSession, SessionStatus } from '@domain/entities/group';
 import { formatAttendance } from '../grupos-format';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /** Labels y clase CSS por estado. Origen: index-v2.html:1768. */
 const LABEL: Record<SessionStatus, string> = {
@@ -26,6 +27,7 @@ const PILL: Record<SessionStatus, string> = {
 @Component({
   selector: 'app-sessions-table',
   standalone: true,
+  imports: [PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './sessions-table.component.css',
   template: `
@@ -68,7 +70,7 @@ const PILL: Record<SessionStatus, string> = {
           </table>
         </div>
       } @else {
-        <div class="a-empty">Este grupo todavía no tiene sesiones</div>
+        <app-placeholder title="Este grupo todavía no tiene sesiones" />
       }
     </div>
   `,

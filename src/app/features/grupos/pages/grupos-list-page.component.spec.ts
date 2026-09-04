@@ -87,10 +87,19 @@ describe('GruposListPageComponent', () => {
     expect(seisTa.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('sin resultados muestra el empty state', async () => {
+  it('sin resultados de búsqueda muestra su propio vacío', async () => {
     const { fixture, el } = await mount();
     buscar(fixture, el, 'zzzz');
-    expect(el.textContent).toContain('Sin grupos para esa búsqueda');
+    expect(el.textContent).toContain('Ningún grupo coincide con la búsqueda');
+  });
+
+  it('sin ningún grupo en el club muestra el vacío real, no el de búsqueda', async () => {
+    const { el } = await mount({
+      getGroups: async (clubId: string) => ({ clubId, groups: [] }),
+      saveAttendance: () => Promise.reject(new Error('no')),
+    });
+    expect(el.textContent).toContain('Todavía no hay grupos en este club');
+    expect(el.textContent).not.toContain('Ningún grupo coincide con la búsqueda');
   });
 
   it('el click en una fila navega al detalle', async () => {
@@ -123,7 +132,7 @@ describe('GruposListPageComponent', () => {
       getGroups: () => Promise.reject({ kind: 'network' as const }),
       saveAttendance: () => Promise.reject(new Error('no')),
     });
-    expect(el.textContent).toContain('No se pudo cargar los grupos');
+    expect(el.textContent).toContain('No se pudieron cargar los grupos');
     expect(el.textContent).toContain('Revisá tu conexión');
     expect(el.textContent).not.toContain('network');
   });

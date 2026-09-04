@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { domainErrorMessage } from '@domain/errors';
 import { EMAIL_RE } from '@shared/validators/email';
 import { VerificationFacade } from '../verification.facade';
@@ -11,7 +13,7 @@ const COOLDOWN_MS = 60_000;
 @Component({
   selector: 'app-verification-sent-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent],
+  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent, NoticeComponent, FieldErrorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page">
@@ -25,26 +27,22 @@ const COOLDOWN_MS = 60_000;
 
         @if (email()) {
           <p>Te mandamos un link de verificación a <b>{{ email() }}</b>. Abrilo para activar tu cuenta.</p>
-          @if (prefilledInvalid()) {
-            <p class="field-err" role="alert">Ingresá un email válido.</p>
-          }
+          <app-field-error [show]="prefilledInvalid()" message="Ingresá un email válido." />
         } @else {
           <p>Ingresá tu email y te reenviamos el link de verificación.</p>
           <div class="field">
             <label for="email">Email</label>
             <input id="email" type="email" inputmode="email" [formControl]="emailCtrl"
                    autocapitalize="off" spellcheck="false" placeholder="martin@clubsolaris.com" />
-            @if (emailCtrl.invalid && emailCtrl.touched) {
-              <p class="field-err" role="alert">Ingresá un email válido.</p>
-            }
+            <app-field-error [show]="emailCtrl.invalid && emailCtrl.touched" message="Ingresá un email válido." />
           </div>
         }
 
         @if (facade.sent()) {
-          <p class="ok" role="status">Si ese email está registrado, te reenviamos el link.</p>
+          <app-notice tone="ok">Si ese email está registrado, te reenviamos el link.</app-notice>
         }
         @if (facade.error(); as err) {
-          <p class="error" role="alert">{{ domainErrorMessage(err) }}</p>
+          <app-notice tone="bad">{{ domainErrorMessage(err) }}</app-notice>
         }
 
         <button type="button" class="btn btn-ghost" [disabled]="facade.loading() || cooldown()"
@@ -64,9 +62,6 @@ const COOLDOWN_MS = 60_000;
     .card h2{font-size:var(--text-xl)}
     .card p{font-size:var(--text-sm);color:var(--color-fg-muted)}
     .field{text-align:left}
-    .ok{color:var(--color-accent-strong);font-weight:600}
-    .error{color:var(--color-destructive);font-weight:600}
-    .field-err{font-size:var(--text-xs);color:var(--color-destructive);font-weight:600;margin-top:2px}
   `],
   providers: [VerificationFacade],
 })

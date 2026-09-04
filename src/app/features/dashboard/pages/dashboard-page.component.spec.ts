@@ -74,4 +74,40 @@ describe('DashboardPageComponent', () => {
     await mount({ getSnapshot }, null);
     expect(getSnapshot).not.toHaveBeenCalled();
   });
+
+  it('mientras carga muestra el estado de carga', async () => {
+    // Promesa que nunca resuelve: run() marca loading() = true en forma síncrona antes del
+    // primer await, así que alcanza con no dejarla resolver para quedarse en ese estado.
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        DashboardFacade,
+        {
+          provide: DashboardRepository,
+          useValue: { getSnapshot: () => new Promise<never>(() => undefined) },
+        },
+        { provide: ClubRepository, useValue: { isActive: async () => true } },
+        { provide: SessionStore, useValue: { clubId: signal<string | null>('c1') } },
+      ],
+    });
+    const fixture = TestBed.createComponent(DashboardPageComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Cargando panel…');
+  });
+
+  it('si falla la carga muestra el mensaje en español, sin el kind crudo', async () => {
+    // getSnapshot rechaza con un DomainError ya normalizado (isDomainError lo deja pasar tal
+    // cual en toDomainError). Antes el template imprimía "(network)"; ahora tiene que pasar
+    // por domainErrorMessage y mostrar la copy en español, no el kind.
+    const { el } = await mount({
+      getSnapshot: async () => {
+        throw { kind: 'network' };
+      },
+    });
+    expect(el.textContent).toContain('No se pudo cargar el panel');
+    expect(el.textContent).toContain('No pudimos conectar con el servidor. Revisá tu conexión.');
+    expect(el.textContent).not.toContain('kind');
+    expect(el.textContent).not.toContain('network');
+  });
 });

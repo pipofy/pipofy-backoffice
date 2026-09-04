@@ -7,6 +7,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { NewUserInput } from '@domain/entities/new-user';
 import { EMAIL_RE } from '@shared/validators/email';
 
@@ -24,14 +26,14 @@ import { EMAIL_RE } from '@shared/validators/email';
 @Component({
   selector: 'app-profesor-nuevo-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent, FieldErrorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Nuevo profesor" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css). -->
       @if (error()) {
-        <p class="notice hold form-error" role="alert">{{ error() }}</p>
+        <app-notice tone="bad">{{ error() }}</app-notice>
       }
 
       <div class="field field-dense">
@@ -46,9 +48,7 @@ import { EMAIL_RE } from '@shared/validators/email';
           (input)="email.set(value($event))"
         />
         <!-- eslint-enable @angular-eslint/template/no-autofocus -->
-        @if (emailInvalido()) {
-          <p class="hint" role="alert">Ingresá un email válido.</p>
-        }
+        <app-field-error [show]="emailInvalido()" message="Ingresá un email válido." />
       </div>
 
       <div class="field field-dense">
@@ -93,13 +93,6 @@ import { EMAIL_RE } from '@shared/validators/email';
       </div>
     </app-modal>
   `,
-  styles: [
-    `
-      .form-error {
-        margin-bottom: var(--space-md);
-      }
-    `,
-  ],
 })
 export class ProfesorNuevoModalComponent {
   /** Copy ya traducido del error que dejó la facade; '' cuando no hay. */

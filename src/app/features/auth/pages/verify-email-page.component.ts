@@ -2,6 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
+import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { domainErrorMessage } from '@domain/errors';
 import { EMAIL_RE } from '@shared/validators/email';
 import { VerificationFacade } from '../verification.facade';
@@ -9,7 +12,7 @@ import { VerificationFacade } from '../verification.facade';
 @Component({
   selector: 'app-verify-email-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent],
+  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent, NoticeComponent, PlaceholderComponent, FieldErrorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page">
@@ -17,32 +20,30 @@ import { VerificationFacade } from '../verification.facade';
 
       <section class="card">
         @if (verifying()) {
-          <p role="status">Verificando tu email…</p>
+          <app-placeholder tone="loading" title="Verificando tu email…" />
         } @else if (facade.verified()) {
           <div class="badge ok" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </div>
           <h2>Tu email está verificado</h2>
-          <p>Ya podés entrar a SetPoint.</p>
+          <p>Ya podés entrar a PipoFy.</p>
           <a class="btn btn-cta" routerLink="/login">Iniciar sesión</a>
         } @else {
           <div class="badge err" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v6M12 17v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" /></svg>
           </div>
           <h2>No pudimos verificar tu email</h2>
-          <p role="alert">{{ errorMessage() }}</p>
+          <app-notice tone="bad">{{ errorMessage() }}</app-notice>
 
           <div class="field">
             <label for="email">Tu email</label>
             <input id="email" type="email" inputmode="email" [formControl]="emailCtrl"
                    autocapitalize="off" spellcheck="false" placeholder="martin@clubsolaris.com" />
-            @if (emailCtrl.invalid && emailCtrl.touched) {
-              <p class="field-err" role="alert">Ingresá un email válido.</p>
-            }
+            <app-field-error [show]="emailCtrl.invalid && emailCtrl.touched" message="Ingresá un email válido." />
           </div>
 
           @if (resending()) {
-            <p role="status">Reenviando el link…</p>
+            <app-placeholder tone="loading" title="Reenviando el link…" />
           }
           <button type="button" class="btn btn-cta" [disabled]="facade.loading()" (click)="resend()">
             Reenviar el link
@@ -61,7 +62,6 @@ import { VerificationFacade } from '../verification.facade';
     .card h2{font-size:var(--text-xl)}
     .card p{font-size:var(--text-sm);color:var(--color-fg-muted)}
     .field{text-align:left}
-    .field-err{font-size:var(--text-xs);color:var(--color-destructive);font-weight:600;margin-top:2px}
   `],
   providers: [VerificationFacade],
 })

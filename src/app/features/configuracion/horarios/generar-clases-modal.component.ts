@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { SessionGenerationInput } from '@domain/entities/schedule';
 
 /**
@@ -14,7 +15,7 @@ import { SessionGenerationInput } from '@domain/entities/schedule';
 @Component({
   selector: 'app-generar-clases-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Generar clases" icon="primary">
@@ -40,7 +41,7 @@ import { SessionGenerationInput } from '@domain/entities/schedule';
       <!-- El error va DENTRO del modal, en su propio .notice: el de la página queda detrás
            del ::backdrop, que tiene scrim + blur(4px) (styles/components.css:254). -->
       @if (error()) {
-        <p class="notice hold" role="alert">{{ error() }}</p>
+        <app-notice tone="bad">{{ error() }}</app-notice>
       }
 
       <div class="modal-foot" modal-foot>

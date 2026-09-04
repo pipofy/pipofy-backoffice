@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+/**
+ * El lockup de marca. El texto "Pipofy" ya está convertido a trazados dentro del
+ * SVG, así que no se duplica en HTML: dos copias se desalinearían. El alt mantiene
+ * el nombre accesible y el aria-label del enlace describe el destino.
+ *
+ * ponytail: un <img> no hereda currentColor, así que sobre una superficie oscura el
+ * logo navy desaparece. Hoy no hay ninguna. Cuando la haya, la salida es la variante
+ * 01b-isotipo-blanco del brandboard, que todavía no está en assets/.
+ */
 @Component({
   selector: 'app-brandmark',
   standalone: true,
@@ -8,17 +17,11 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="brandmark" [routerLink]="link()" [attr.aria-label]="ariaLabel()">
-      <span class="bm-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6" />
-          <path d="M4 8c4 2 12 2 16 0M4 16c4-2 12-2 16 0" stroke="#4ADE80" stroke-width="1.6" />
-        </svg>
-      </span>
-      <span><span class="bm-name">SetPoint</span><span class="bm-sub">Club Ops</span></span>
+      <img class="bm-img" src="brand/logo-horizontal.svg" alt="Pipofy" />
     </a>
   `,
 })
 export class BrandmarkComponent {
   readonly link = input<string>('/');
-  readonly ariaLabel = input<string>('SetPoint · ir al panel');
+  readonly ariaLabel = input<string>('Pipofy · ir al panel');
 }

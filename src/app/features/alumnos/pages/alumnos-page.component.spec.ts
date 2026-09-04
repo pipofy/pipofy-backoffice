@@ -124,8 +124,18 @@ describe('AlumnosPageComponent', () => {
   it('si la carga FALLA muestra el banner y NO el vacío', async () => {
     const { el } = await mount({ list: () => Promise.reject({ kind: 'forbidden' as const }) });
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
-    // Acotado al panel: el modal de planes tiene su propio .a-empty y vive fuera del <section>.
-    expect(el.querySelector('.panel .a-empty')).toBeNull();
+    // Acotado al panel: el modal de planes tiene su propio vacío y vive fuera del <section>.
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ningún alumno');
+  });
+
+  it('el vacío distingue "sin datos" de "sin resultados"', async () => {
+    const { fixture, el } = await mount({ list: async () => [] });
+    expect(el.textContent).toContain('Todavía no cargaste ningún alumno');
+
+    buscador(el).value = 'nadie coincide';
+    buscador(el).dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Ningún alumno coincide con la búsqueda');
   });
 
   it('un error de guardado NO reemplaza la tabla y deja el modal abierto', async () => {

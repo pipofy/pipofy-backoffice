@@ -1,5 +1,5 @@
 /* Ficha del grupo. Fuente: index-v2.html:320-330 (ficha), 342 (.back-btn), 392-394 (tags del
-   hero) y el @media de 741. Los primitivos (.panel, .acard, .a-empty, .avatar-sm, .btn) viven
+   hero) y el @media de 741. Los primitivos (.panel, .acard, .avatar-sm, .btn) viven
    en styles/components.css. */
 
 .stu-wrap{display:grid;grid-template-columns:1fr;gap:var(--space-md);align-items:start}
@@ -22,7 +22,6 @@
 
 @media (min-width:1024px){ .stu-wrap{grid-template-columns:300px 1fr;gap:var(--space-lg)} }
 
-.grupos-status { padding: var(--space-lg); color: var(--color-fg-muted); }
 .detail-main { display: flex; flex-direction: column; gap: 18px; }
 /* Variante ámbar del avatar, sólo para la lista de espera. NO sube al design system: un solo
    consumidor. La maqueta la aplica con style= inline (index-v2.html:1760) usando los alias

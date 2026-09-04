@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RosterMember } from '@domain/entities/group';
 import { attendanceState, occupancyState } from '../grupos-format';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
  * Tabla de inscriptos del detalle. Origen: el bloque `rosterRows` y su <table> dentro de
@@ -12,6 +13,7 @@ import { attendanceState, occupancyState } from '../grupos-format';
 @Component({
   selector: 'app-roster-table',
   standalone: true,
+  imports: [PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './roster-table.component.css',
   template: `
@@ -57,7 +59,7 @@ import { attendanceState, occupancyState } from '../grupos-format';
           </table>
         </div>
       } @else {
-        <div class="a-empty">Nadie inscripto todavía</div>
+        <app-placeholder title="Nadie inscripto todavía" />
       }
     </div>
   `,

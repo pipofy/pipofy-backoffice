@@ -11,7 +11,7 @@ import { Role } from '@domain/entities/registration';
   template: `
     <div class="step-head">
       <p class="eyebrow">Paso 1 de 3</p>
-      <h2>¿Cómo vas a usar SetPoint?</h2>
+      <h2>¿Cómo vas a usar PipoFy?</h2>
       <p>Elegí tu rol para adaptar el registro. Podés cambiarlo más adelante desde tu cuenta.</p>
     </div>
     <div class="role-grid" role="radiogroup" aria-label="Elegí tu rol">

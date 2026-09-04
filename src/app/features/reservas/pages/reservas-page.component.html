@@ -15,11 +15,11 @@
   <!-- BANNER, no una rama del chain: la facade también ESCRIBE (vía SesionFacade), y un error
        de guardado no puede reemplazar la tabla que data() sigue teniendo intacta. -->
   @if (errorText()) {
-    <p class="notice hold" role="alert">{{ errorText() }}</p>
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
   }
 
   @if (facade.loading()) {
-    <p class="a-body">Cargando clases…</p>
+    <app-placeholder tone="loading" title="Cargando clases…" />
   } @else if (facade.sorted().length) {
     <div class="table-scroll">
       <table>
@@ -62,7 +62,7 @@
   } @else if (facade.data()) {
     <!-- El vacío sólo cuando la lista LLEGÓ vacía: si data() es null la carga falló y lo que
          corresponde es el banner de arriba. -->
-    <div class="a-empty">No hay clases generadas para esta fecha.</div>
+    <app-placeholder title="No hay clases generadas para esta fecha" />
   }
 </section>
 

@@ -1,7 +1,7 @@
 @if (facade.loading()) {
-  <p class="dash-status">Cargando panel…</p>
-} @else if (facade.error(); as err) {
-  <p class="dash-status" role="alert">No se pudo cargar el panel ({{ err.kind }}).</p>
+  <app-placeholder tone="loading" size="page" title="Cargando panel…" />
+} @else if (facade.error()) {
+  <app-placeholder tone="error" size="page" title="No se pudo cargar el panel" [body]="errorText()" />
 } @else if (facade.data(); as snap) {
   <section id="view-dashboard">
     <app-kpi-row [kpis]="snap.kpis" />

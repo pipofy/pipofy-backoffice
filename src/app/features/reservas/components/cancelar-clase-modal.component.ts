@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { CancelClassInput } from '@domain/entities/class-cancellation';
 
 /**
@@ -24,13 +25,13 @@ export interface CancelScope {
 @Component({
   selector: 'app-cancelar-clase-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Cancelar" icon="danger">
       <!-- El error va DENTRO del modal por lo mismo que en el form de alumnos: el .notice de
            la página queda detrás del ::backdrop, que tiene scrim + blur. -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <p>¿Cancelar {{ scope().what }}? Esto no se puede deshacer.</p>
 
@@ -73,7 +74,6 @@ export interface CancelScope {
       </div>
     </app-modal>
   `,
-  styles: [`.form-error{margin-bottom:var(--space-md)}`],
 })
 export class CancelarClaseModalComponent {
   /** Copy ya traducido del error que dejó la facade; '' cuando no hay. */

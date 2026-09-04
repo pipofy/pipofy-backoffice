@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   SETPOINT · TOKENS COMPARTIDOS
+   PIPOFY · TOKENS COMPARTIDOS
    Fundamento del design system común a index-v2.html y onboarding.html.
    Implementa design-system/pipofy-club-ops/MASTER.md.
 
@@ -13,10 +13,16 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 :root{
-  /* ── Paleta de MASTER.md ── */
-  --color-primary:#2563EB; --color-on-primary:#FFFFFF; --color-secondary:#3B82F6;
-  --color-accent:#059669; --color-background:#F8FAFC; --color-foreground:#0F172A;
-  --color-muted:#F1F5FD; --color-border:#E4ECFC; --color-destructive:#DC2626; --color-ring:#2563EB;
+  /* ── Paleta del brandboard Pipofy (assets/LEEME.md) ──
+     Primary #082658 = "textos, la P, fondos oscuros".
+     Web Blue #2267AC = "enlaces y acentos de interfaz" → es el --color-primary de la UI.
+     Accent #6DB5E5 da 2.24:1 sobre blanco: SÓLO sobre navy, nunca texto claro.
+     Neutral #ABB4BD da 2.10:1 sobre blanco: SÓLO bordes, nunca texto.
+     --color-destructive y la familia --color-warning-* NO son de marca: son
+     semánticos y quedan como estaban. */
+  --color-primary:#2267AC; --color-on-primary:#FFFFFF; --color-secondary:#2E78C0;
+  --color-accent:#2E78C0; --color-background:#F7F9FC; --color-foreground:#082658;
+  --color-muted:#EEF3F9; --color-border:#DDE5EE; --color-destructive:#DC2626; --color-ring:#2267AC;
 
   /* ── Espaciado (Density 5/10 — Standard) ── */
   --space-xs:.25rem; --space-sm:.5rem; --space-md:1rem; --space-lg:1.5rem;
@@ -29,9 +35,14 @@
   --shadow-xl:0 20px 25px rgba(0,0,0,.15);
 
   /* ── Tipografía ── */
-  --font-heading:"Fira Code",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --font-body:"Fira Sans","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
-  --font-mono:var(--font-heading);
+  /* El brandboard nombra "Pipofy Sans", que no existe publicada. assets/LEEME.md
+     resuelve en Poppins (SIL OFL), geométrica y libre. */
+  --font-heading:"Poppins","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --font-body:var(--font-heading);
+  /* --font-mono deja de ser --font-heading: Poppins es proporcional y .mono lo usa
+     para tabular-nums en ids y números, donde una proporcional rompe la alineación.
+     Stack de sistema: no descarga nada. */
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 
   /* ── Radios (Component Specs de MASTER) ── */
   --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-full:999px;
@@ -42,31 +53,36 @@
   /* Capa de toasts: por encima de TODO (--z-header:30, --z-drawer:50). Fuente: index-v2.html:45 */
   --z-toast:200;
 
-  --color-border-strong:#E2E8F0;  /* borde del spec .input de MASTER */
+  /* Neutral #ABB4BD del brandboard, tal cual. 2.10:1 sobre blanco: bordes, nunca texto. */
+  --color-border-strong:#ABB4BD;
 
   /* ── Movimiento ── */
   --duration:200ms; --ease:ease;
   --duration-page:400ms; --ease-inout:cubic-bezier(.45,0,.55,1); /* ≈ power2.inOut */
 
-  /* ── Derivados — MASTER no los define; contraste verificado ── */
   --color-surface:#FFFFFF; --color-surface-2:var(--color-muted);
-  --color-fg:var(--color-foreground);   /* 17.9:1 */
-  --color-fg-muted:#475569;             /*  7.6:1 */
-  --color-fg-subtle:#586675;            /*  5.9:1 sobre blanco, 5.4:1 sobre muted */
+  --color-fg:var(--color-foreground);   /* 14.70:1 sobre blanco, 13.94:1 sobre background */
+  --color-fg-muted:#4A5B73;             /*  6.92:1 sobre blanco, 6.20:1 sobre muted */
+  --color-fg-subtle:#5A6B82;            /*  5.44:1 sobre blanco, 4.88:1 sobre muted */
 
-  --color-primary-hover:#1D4ED8;        /* blanco: 6.30:1 */
-  --color-primary-strong:#1E3A8A;       /* blanco: 10.4:1 */
-  --color-primary-soft:#EFF4FE; --color-on-primary-soft:#1D4ED8;   /* 6.08:1 sobre soft */
+  --color-primary-hover:#1B5595;        /* blanco: 7.55:1 — tono medio del degradado del icono */
+  --color-primary-strong:#082658;       /* blanco: 14.70:1 — Primary de marca, superficies oscuras */
+  --color-primary-soft:#EAF2FA; --color-on-primary-soft:#1B5595;   /* 6.68:1 sobre soft */
 
-  /* accent #059669 = 3.77:1 con blanco: no llega a AA. Sólido = #047857. */
-  --color-accent-strong:#047857;        /* blanco: 5.48:1 */
-  --color-accent-hover:#036B4B;         /* blanco: 6.55:1 */
+  /* ponytail: el estado "ok" y el color primario son ahora el mismo azul — un badge
+     "confirmado" no se distingue de un botón primario. Es la consecuencia aceptada de
+     "todo azul": el brandboard no tiene verde. Si esa distinción hace falta, entra una
+     familia --color-success-* con un verde armonizado al navy y estos alias apuntan
+     ahí; los 17 consumidores de --color-accent-* no cambian. */
+  --color-accent-strong:#2267AC;        /* blanco: 5.83:1 */
+  --color-accent-hover:#1B5595;         /* blanco: 7.55:1 */
   --color-accent-mark:var(--color-accent);   /* sólo marcas/barras */
-  --color-accent-soft:#E7F6EF; --color-on-accent-soft:#046C4E;    /* 5.77:1 sobre soft */
-  --color-accent-soft-border:#BEE6D4;   /* el borde del par soft (.sess.open) */
+  --color-accent-soft:#EAF2FA; --color-on-accent-soft:#1B5595;    /* 6.68:1 sobre soft */
+  --color-accent-soft-border:#C5DCF0;   /* el borde del par soft (.sess.open) */
 
   --color-destructive-hover:#B91C1C;
   --color-destructive-soft:#FEECEC; --color-on-destructive-soft:#B91C1C; /* 5.68:1 */
+  --color-destructive-soft-border:#F7CECE;  /* el borde del par soft (.notice.bad) */
 
   --color-warning:#B45309; --color-warning-mark:#F59E0B;
   --color-warning-soft:#FEF3C7; --color-on-warning-soft:#78350F;   /* 8.15:1 */
@@ -114,6 +130,10 @@ h1,h2,h3,h4{font-family:var(--font-heading);font-weight:600;line-height:var(--le
 
 /* ═══════════════ MARCA (lockup compartido) ═══════════════ */
 .brandmark{display:inline-flex;align-items:center;gap:var(--space-sm);text-decoration:none;color:inherit}
+.brandmark .bm-img{height:36px;width:auto;display:block}
+/* .bm-logo / .bm-name / .bm-sub ya no las usa la app: BrandmarkComponent renderiza
+   un <img>. Se conservan porque index-v2.html y onboarding.html —maquetas estáticas
+   de la raíz, fuera del build— siguen siendo consumidores reales. */
 .brandmark .bm-logo{
   width:34px;height:34px;border-radius:var(--radius-sm);flex:0 0 auto;display:grid;place-items:center;
   background:linear-gradient(135deg,var(--color-accent),var(--color-primary));

@@ -7,11 +7,19 @@ import { weekdayLabel } from './weekday-label';
 import { Schedule, ScheduleInput, SessionGenerationInput } from '@domain/entities/schedule';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-horarios-page',
   standalone: true,
-  imports: [HorarioFormModalComponent, GenerarClasesModalComponent, ConfirmDeleteModalComponent],
+  imports: [
+    HorarioFormModalComponent,
+    GenerarClasesModalComponent,
+    ConfirmDeleteModalComponent,
+    PlaceholderComponent,
+    NoticeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './horarios-page.component.html',
   styleUrl: './horarios-page.component.css',

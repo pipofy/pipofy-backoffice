@@ -45,7 +45,7 @@ export class ShellComponent {
   protected readonly items = NAV_ITEMS;
 
   protected readonly sideOpen = signal(false);
-  protected readonly title = signal('SetPoint');
+  protected readonly title = signal('PipoFy');
   protected readonly crumb = signal('');
 
   /** '' mientras carga y si la request falla — ver loadUser(). */
@@ -125,7 +125,7 @@ export class ShellComponent {
 
   private syncRouteMeta(): void {
     const data = this.mergedData();
-    this.title.set((data['title'] as string | undefined) ?? 'SetPoint');
+    this.title.set((data['title'] as string | undefined) ?? 'PipoFy');
     this.crumb.set((data['crumb'] as string | undefined) ?? '');
   }
 

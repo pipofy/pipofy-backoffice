@@ -10,11 +10,11 @@
 
   <!-- BANNER, no una rama del chain: un error de guardado no puede reemplazar la tabla. -->
   @if (errorText()) {
-    <p class="notice hold" role="alert">{{ errorText() }}</p>
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
   }
 
   @if (facade.loading()) {
-    <p class="a-body">Cargando planes…</p>
+    <app-placeholder tone="loading" title="Cargando planes…" />
   } @else if (filtered().length) {
     <div class="table-scroll">
       <table>
@@ -53,13 +53,7 @@
     </div>
   } @else if (facade.data()) {
     <!-- El vacío sólo cuando la lista LLEGÓ vacía: si data() es null la carga falló. -->
-    <div class="a-empty">
-      @if (query()) {
-        Ningún plan coincide con la búsqueda.
-      } @else {
-        Todavía no cargaste ningún plan.
-      }
-    </div>
+    <app-placeholder [title]="emptyTitle()" />
   }
 </section>
 

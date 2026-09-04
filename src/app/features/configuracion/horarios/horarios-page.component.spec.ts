@@ -211,12 +211,12 @@ describe('HorariosPageComponent', () => {
   it('un error de CARGA se ve en la página pero no viaja al modal recién abierto', async () => {
     const fixture = await setupConError();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.panel > [role="alert"]')).toBeTruthy();
+    expect(el.querySelector('.panel [role="alert"]')).toBeTruthy();
 
     nueva(el).click();
     await settle(fixture);
     expect(avisoModal(el)).toBeNull();
-    expect(el.querySelector('.panel > [role="alert"]')).toBeNull(); // openNew() lo limpió
+    expect(el.querySelector('.panel [role="alert"]')).toBeNull(); // openNew() lo limpió
   });
 
   it('generar OK cierra el modal y el toast dice las DOS cifras', async () => {

@@ -9,5 +9,5 @@ import { IdSetHintStore } from '@shared/hint-store/id-set-hint-store';
  */
 @Injectable()
 export class GrupoItemsStore extends IdSetHintStore {
-  protected readonly key = 'setpoint:grupo-items:v1';
+  protected readonly key = 'PipoFy:grupo-items:v1';
 }

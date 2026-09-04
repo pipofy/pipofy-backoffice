@@ -1,5 +1,6 @@
-/* Los primitivos (.panel, .panel-head, .table-scroll, .a-empty, .notice, .btn*, .mono)
-   viven en styles/components.css y tokens.css. Acá va SÓLO lo específico de esta tabla. */
+/* Los primitivos (.panel, .panel-head, .table-scroll, .btn*, .mono) viven en
+   styles/components.css y tokens.css; el vacío y el error usan app-placeholder / app-notice
+   (shared/ui). Acá va SÓLO lo específico de esta tabla. */
 .cell-end .btn + .btn {
   margin-left: var(--space-sm);
 }

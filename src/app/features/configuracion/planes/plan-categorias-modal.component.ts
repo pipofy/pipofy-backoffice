@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 import { Category } from '@domain/entities/category';
 import { Plan } from '@domain/entities/plan';
 import { domainErrorMessage } from '@domain/errors';
@@ -16,11 +18,11 @@ import { PlanCategoriasFacade } from './plan-categorias.facade';
 @Component({
   selector: 'app-plan-categorias-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent, PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Categorías del plan" [subtitle]="plan()?.name ?? ''" icon="primary">
-      @if (errorText()) { <p class="notice hold form-error" role="alert">{{ errorText() }}</p> }
+      @if (errorText()) { <app-notice tone="bad">{{ errorText() }}</app-notice> }
 
       <!-- FUERA de .field a propósito: .field input es un selector de descendencia y
            convertiría el checkbox en una caja de texto. El primitivo .checkbox-row de
@@ -35,7 +37,7 @@ import { PlanCategoriasFacade } from './plan-categorias.facade';
           {{ cat.name || '(sin nombre)' }}
         </label>
       } @empty {
-        <p class="a-empty">Todavía no cargaste ninguna categoría.</p>
+        <app-placeholder title="Todavía no cargaste ninguna categoría" />
       }
 
       <p class="m-sub hint">
@@ -50,7 +52,6 @@ import { PlanCategoriasFacade } from './plan-categorias.facade';
     </app-modal>
   `,
   styles: [`
-    .form-error{margin-bottom:var(--space-md)}
     .hint{margin-top:var(--space-md)}
   `],
 })

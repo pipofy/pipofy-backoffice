@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { Schedule, ScheduleInput } from '@domain/entities/schedule';
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
@@ -17,7 +18,7 @@ import { WEEKDAY_OPTIONS } from './weekday-label';
 @Component({
   selector: 'app-horario-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="schedule() ? 'Editar horario' : 'Nuevo horario'" icon="primary">
@@ -27,7 +28,7 @@ import { WEEKDAY_OPTIONS } from './weekday-label';
       <div #body class="horario-body">
         <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
              que tiene scrim + blur(4px) (styles/components.css:254). -->
-        @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+        @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
         <div class="field field-dense">
           <label for="horario-cancha">Cancha</label>
@@ -172,7 +173,6 @@ import { WEEKDAY_OPTIONS } from './weekday-label';
        contra los 668 que permite max-height:min(90dvh,900px) (components.css:251), y
        scrollea hasta en un monitor 4K. Con dos columnas baja a ~592 y entra en desktop. */
     .field-pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)}
-    .form-error{margin-bottom:var(--space-md)}
   `],
 })
 export class HorarioFormModalComponent {

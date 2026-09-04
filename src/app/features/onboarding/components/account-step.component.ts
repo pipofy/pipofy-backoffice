@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { FieldErrorComponent } from './field-error.component';
+import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { firstErrorMessage } from '../onboarding.validators';
 import { strengthInfo } from '../password-strength';
 
@@ -15,7 +15,7 @@ import { strengthInfo } from '../password-strength';
     <div class="step-head">
       <p class="eyebrow">Paso 2 de 3</p>
       <h2>Creá tu cuenta</h2>
-      <p>Con estos datos vas a ingresar a SetPoint.</p>
+      <p>Con estos datos vas a ingresar a PipoFy.</p>
     </div>
 
     <div class="fg" [formGroup]="group()">

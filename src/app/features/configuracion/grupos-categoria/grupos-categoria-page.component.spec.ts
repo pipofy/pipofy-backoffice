@@ -76,21 +76,21 @@ describe('GruposCategoriaPageComponent', () => {
     buscador(el).value = 'zzz';
     buscador(el).dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    // Escopado a .panel: el modal de categorías tiene su propio .a-empty, siempre en el DOM
-    // aunque el <dialog> esté cerrado (Angular no lo desmonta), y colisiona con este selector.
-    expect(el.querySelector('.panel .a-empty')!.textContent).toContain('Ningún grupo coincide');
+    // Escopado a .panel: el modal de categorías vive fuera de .panel y tiene su propio vacío,
+    // siempre en el DOM aunque el <dialog> esté cerrado (Angular no lo desmonta).
+    expect(el.querySelector('.panel app-placeholder')!.textContent).toContain('Ningún grupo coincide');
   });
 
   it('una lista vacía muestra el vacío de "todavía no cargaste"', async () => {
     const { el } = await mount({ list: async () => [] });
-    expect(el.querySelector('.panel .a-empty')!.textContent).toContain('Todavía no cargaste');
+    expect(el.querySelector('.panel app-placeholder')!.textContent).toContain('Todavía no cargaste');
   });
 
   it('si la carga FALLA muestra el banner y NO el vacío', async () => {
     // Con data() en null la carga falló: decir "todavía no cargaste ningún grupo" sería mentir.
     const { el } = await mount({ list: () => Promise.reject({ kind: 'forbidden' as const }) });
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
-    expect(el.querySelector('.panel .a-empty')).toBeNull();
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ningún grupo');
   });
 
   /**

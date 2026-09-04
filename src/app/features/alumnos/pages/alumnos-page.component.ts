@@ -8,11 +8,19 @@ import { Student, StudentInput, studentDisplayName } from '@domain/entities/stud
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { catalogLabel } from '@data/catalog-labels';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-alumnos-page',
   standalone: true,
-  imports: [AlumnoFormModalComponent, ConfirmDeleteModalComponent, AlumnoPlanesModalComponent],
+  imports: [
+    AlumnoFormModalComponent,
+    ConfirmDeleteModalComponent,
+    AlumnoPlanesModalComponent,
+    PlaceholderComponent,
+    NoticeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './alumnos-page.component.html',
   styleUrl: './alumnos-page.component.css',
@@ -54,6 +62,13 @@ export class AlumnosPageComponent {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
   }
+
+  /** El vacío de búsqueda y el vacío real dicen cosas distintas. */
+  protected readonly emptyTitle = computed(() =>
+    this.query()
+      ? 'Ningún alumno coincide con la búsqueda'
+      : 'Todavía no cargaste ningún alumno',
+  );
 
   protected onSearch(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);

@@ -8,11 +8,11 @@
 
   <!-- BANNER, no una rama del chain: un error de guardado no puede reemplazar la tabla. -->
   @if (errorText()) {
-    <p class="notice hold" role="alert">{{ errorText() }}</p>
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
   }
 
   @if (facade.loading()) {
-    <p class="a-body">Cargando horarios…</p>
+    <app-placeholder tone="loading" title="Cargando horarios…" />
   } @else if (facade.sorted().length) {
     <div class="table-scroll">
       <table>
@@ -49,9 +49,7 @@
     </div>
   } @else if (facade.data()) {
     <!-- El vacío sólo cuando la lista LLEGÓ vacía: si data() es null la carga falló. -->
-    <div class="a-empty">
-      Todavía no cargaste ningún horario.
-    </div>
+    <app-placeholder title="Todavía no cargaste ningún horario" />
   }
 </section>
 

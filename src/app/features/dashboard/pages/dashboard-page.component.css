@@ -1,7 +1,6 @@
 /* Sólo estilos de elementos que viven en ESTE template. Los KPIs, la grilla y las
    cards se estilan dentro de sus propios componentes (la encapsulación de vista de
    Angular no deja que este CSS llegue a los hijos). */
-.dash-status { padding: var(--space-lg); color: var(--color-fg-muted); font-size: var(--text-sm); }
 
 /* ═══════════════ OPS (grilla + rail) ═══════════════ */
 .ops { display: grid; grid-template-columns: 1fr; gap: var(--space-md); align-items: start; }

@@ -5,6 +5,7 @@ import { domainErrorMessage } from '@domain/errors';
 import { CupoCellComponent } from '../components/cupo-cell.component';
 import { GruposFacade } from '../grupos.facade';
 import { SessionStore } from '@data/auth/session-store';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 const TODAS = 'Todas';
 
@@ -21,7 +22,7 @@ const TODAS = 'Todas';
 @Component({
   selector: 'app-grupos-list-page',
   standalone: true,
-  imports: [CupoCellComponent],
+  imports: [CupoCellComponent, PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './grupos-list-page.component.html',
   styleUrl: './grupos-list-page.component.css',

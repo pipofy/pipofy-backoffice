@@ -1,7 +1,7 @@
 @if (facade.loading()) {
-  <p class="grupos-status">Cargando grupo…</p>
+  <app-placeholder tone="loading" size="page" title="Cargando grupo…" />
 } @else if (facade.error()) {
-  <p class="grupos-status" role="alert">No se pudo cargar los grupos. {{ errorText() }}</p>
+  <app-placeholder tone="error" size="page" title="No se pudo cargar el grupo" [body]="errorText()" />
 } @else if (group(); as g) {
   <a class="btn btn-ghost btn-sm back-btn" routerLink="/grupos">
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -70,12 +70,7 @@
               </div>
             </div>
           } @empty {
-            <div class="a-empty">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              <br>Nadie esperando · el grupo cubre su cupo
-            </div>
+            <app-placeholder title="Nadie esperando" body="El grupo cubre su cupo." />
           }
         </div>
       </div>
@@ -89,5 +84,7 @@
     <app-attendance-modal [target]="t" (confirmed)="onConfirmed($event)" />
   }
 } @else {
-  <p class="grupos-status">No encontramos ese grupo. <a routerLink="/grupos">Volver a la lista</a></p>
+  <app-placeholder tone="error" size="page" title="No encontramos ese grupo">
+    <a class="btn btn-ghost" routerLink="/grupos">Volver a la lista</a>
+  </app-placeholder>
 }

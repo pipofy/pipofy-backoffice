@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { Coach, CoachInput } from '@domain/entities/coach';
 
 /**
@@ -14,13 +15,13 @@ import { Coach, CoachInput } from '@domain/entities/coach';
 @Component({
   selector: 'app-profesor-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Editar profesor" [subtitle]="coach()?.displayName ?? ''" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css:254). -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <div class="field field-dense">
         <label for="profesor-descripcion">Descripción</label>
@@ -37,7 +38,6 @@ import { Coach, CoachInput } from '@domain/entities/coach';
       </div>
     </app-modal>
   `,
-  styles: [`.form-error{margin-bottom:var(--space-md)}`],
 })
 export class ProfesorFormModalComponent {
   /** Copy ya traducido del error que dejó la facade; '' cuando no hay. */

@@ -21,7 +21,7 @@ import { BrandmarkComponent } from './brandmark.component';
         <div class="sf-legal">
           <!-- ponytail: sin nombre de club. El token trae clubId, no el nombre, y no vale la pena
                un GET /clubs/me acá solo para el pie. Salida: ya lo consume Configuración › Club. -->
-          <span>© 2026 SetPoint</span>
+          <span>© 2026 PipoFy</span>
           <!-- ponytail: los tres sin handler, no llevan a ninguna parte todavía. Techo: un
                producto real necesita estas páginas y hoy no existen. Salida: crearlas
                (Términos, Privacidad, Soporte) y reemplazar el href="#" por routerLink. -->

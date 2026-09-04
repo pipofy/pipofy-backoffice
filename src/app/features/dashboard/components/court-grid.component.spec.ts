@@ -119,6 +119,31 @@ describe('CourtGridComponent', () => {
     expect(rule).not.toMatch(/repeat\(\d/);
   });
 
+  it('sin canchas cargadas muestra el placeholder de vacío con la ruta a Configuración', () => {
+    const emptyGrid: CourtGrid = { courts: [], hours: [], sessions: [] };
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(CourtGridComponent);
+    fixture.componentRef.setInput('grid', emptyGrid);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Todavía no hay canchas cargadas');
+    expect(el.textContent).toContain('Configuración → Canchas');
+  });
+
+  it('con canchas pero sin horas muestra el placeholder de "no hay clases hoy"', () => {
+    const noHoursGrid: CourtGrid = {
+      courts: [{ name: 'Cancha 1', meta: 'Cemento · Techada' }],
+      hours: [],
+      sessions: [],
+    };
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(CourtGridComponent);
+    fixture.componentRef.setInput('grid', noHoursGrid);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('No hay clases programadas para hoy');
+  });
+
   it('el texto accesible de la celda menciona cancha, hora y profesor', () => {
     // El profesor vive en .s-prof, dentro del .sess que quedó aria-hidden: si no está también
     // en el .sr-only, un lector de pantalla deja de anunciarlo (regresión sobre la regresión).

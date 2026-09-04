@@ -41,3 +41,10 @@
   background: var(--color-surface);
   font-size: var(--text-md);
 }
+/* .card separa con gap, no con márgenes. En flexbox el margin-bottom de app-notice
+   (:host, notice.component.ts) se SUMA al gap del contenedor en vez de colapsar contra
+   él -como sí pasa en flujo normal-, así que cada aviso dejaba el doble de separación.
+   El contenedor que elige gap es el que tiene que anular el margen de sus hijos. */
+app-notice {
+  margin-bottom: 0;
+}

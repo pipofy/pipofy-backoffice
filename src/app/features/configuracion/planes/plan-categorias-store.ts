@@ -7,5 +7,5 @@ import { IdSetHintStore } from '@shared/hint-store/id-set-hint-store';
  */
 @Injectable()
 export class PlanCategoriasStore extends IdSetHintStore {
-  protected readonly key = 'setpoint:plan-categorias:v1';
+  protected readonly key = 'PipoFy:plan-categorias:v1';
 }

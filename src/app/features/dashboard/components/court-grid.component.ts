@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CourtGrid, CourtSession, SessionState } from '@domain/entities/dashboard-snapshot';
 import { occupancyPercent } from '@domain/occupancy';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /** Estado de la sesión en palabras, para el texto accesible de la celda (ver label()). */
 const STATE_LABEL: Record<SessionState, string> = {
@@ -12,6 +13,7 @@ const STATE_LABEL: Record<SessionState, string> = {
 @Component({
   selector: 'app-court-grid',
   standalone: true,
+  imports: [PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './court-grid.component.css',
   template: `
@@ -19,11 +21,12 @@ const STATE_LABEL: Record<SessionState, string> = {
          canchas y una grilla poblada. Sin canchas, además, repeat(0, ...) es un valor
          inválido y el navegador descarta grid-template-columns entero. -->
     @if (grid().courts.length === 0) {
-      <p class="grid-empty">
-        Todavía no hay canchas cargadas. Se agregan desde Configuración → Canchas.
-      </p>
+      <app-placeholder
+        title="Todavía no hay canchas cargadas"
+        body="Se agregan desde Configuración → Canchas."
+      />
     } @else if (grid().hours.length === 0) {
-      <p class="grid-empty">No hay clases programadas para hoy.</p>
+      <app-placeholder title="No hay clases programadas para hoy" />
     } @else {
     <div class="grid-wrap">
       <div class="grid-scroll">

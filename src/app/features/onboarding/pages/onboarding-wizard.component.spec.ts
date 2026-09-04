@@ -150,7 +150,7 @@ describe('OnboardingWizardComponent', () => {
     await h.fixture.whenStable();
     h.fixture.detectChanges();
 
-    const errorText = root.querySelector('.foot-error')?.textContent ?? '';
+    const errorText = root.querySelector('.notice')?.textContent ?? '';
     expect(errorText).toContain('Ese email ya está registrado.');
     expect(errorText).not.toContain('domain');
   });
@@ -165,7 +165,7 @@ describe('OnboardingWizardComponent', () => {
       acceptedTerms: false,
       step: 'confirm',
     };
-    sessionStorage.setItem('setpoint:onboarding:v2', JSON.stringify(snapshot));
+    sessionStorage.setItem('PipoFy:onboarding:v2', JSON.stringify(snapshot));
 
     const h = await harness();
     const root: HTMLElement = h.fixture.nativeElement;

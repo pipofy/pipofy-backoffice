@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { Court, CourtInput } from '@domain/entities/court';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { catalogLabel } from '@data/catalog-labels';
@@ -13,13 +14,13 @@ import { catalogLabel } from '@data/catalog-labels';
 @Component({
   selector: 'app-cancha-form-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="court() ? 'Editar cancha' : 'Nueva cancha'" icon="primary">
       <!-- El error va DENTRO del modal: el .notice de la página queda detrás del ::backdrop,
            que tiene scrim + blur(4px) (styles/components.css:254). Acá es donde se corrige. -->
-      @if (error()) { <p class="notice hold form-error" role="alert">{{ error() }}</p> }
+      @if (error()) { <app-notice tone="bad">{{ error() }}</app-notice> }
 
       <div class="field">
         <label for="cancha-nombre">Nombre</label>
@@ -84,9 +85,6 @@ import { catalogLabel } from '@data/catalog-labels';
       </div>
     </app-modal>
   `,
-  styles: [`
-    .form-error{margin-bottom:var(--space-md)}
-  `],
 })
 export class CanchaFormModalComponent {
   readonly surfaceTypes = input.required<readonly CatalogItem[]>();

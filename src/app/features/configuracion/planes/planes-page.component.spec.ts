@@ -94,9 +94,9 @@ describe('PlanesPageComponent', () => {
   it('si la carga FALLA muestra el banner y NO el vacío', async () => {
     const { el } = await mount({ list: () => Promise.reject({ kind: 'forbidden' as const }) });
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
-    // Escopado a .panel: el modal de categorías tiene su propio .a-empty, siempre en el DOM
-    // esté el <dialog> abierto o no (ModalComponent no usa @if), y colisiona con este selector.
-    expect(el.querySelector('.panel .a-empty')).toBeNull();
+    // Escopado a .panel: el modal de categorías vive fuera de .panel y tiene su propio vacío,
+    // siempre en el DOM esté el <dialog> abierto o no (ModalComponent no usa @if).
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ningún plan');
   });
 
   it('un error de guardado NO reemplaza la tabla', async () => {
@@ -112,6 +112,20 @@ describe('PlanesPageComponent', () => {
     await settle(fixture);
     expect(filas(el)).toHaveLength(1);
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('el vacío real y el de búsqueda muestran textos distintos', async () => {
+    const { fixture, el } = await mount({ list: async () => [] });
+    // Sin query(): vacío real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Todavía no cargaste ningún plan');
+
+    const q = el.querySelector<HTMLInputElement>('#planes-q')!;
+    q.value = 'zzzz';
+    q.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    // Con query(): vacío de búsqueda, no el real.
+    expect(el.querySelector('.panel')!.textContent).toContain('Ningún plan coincide con la búsqueda');
+    expect(el.querySelector('.panel')!.textContent).not.toContain('Todavía no cargaste ningún plan');
   });
 });
 

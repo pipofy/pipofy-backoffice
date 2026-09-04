@@ -2,7 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Session } from '@domain/entities/session';
 import { readClubId, readRoles } from './jwt-claims';
 
-const LS_KEY = 'setpoint:session:v1';
+const LS_KEY = 'PipoFy:session:v1';
 
 interface Persisted {
   accessToken: string;

@@ -12,11 +12,19 @@ import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Category } from '@domain/entities/category';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-planes-page',
   standalone: true,
-  imports: [PlanFormModalComponent, PlanCategoriasModalComponent, ConfirmDeleteModalComponent],
+  imports: [
+    PlanFormModalComponent,
+    PlanCategoriasModalComponent,
+    ConfirmDeleteModalComponent,
+    PlaceholderComponent,
+    NoticeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './planes-page.component.html',
   styleUrl: './planes-page.component.css',
@@ -68,6 +76,11 @@ export class PlanesPageComponent {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
   }
+
+  /** El vacío de búsqueda y el vacío real dicen cosas distintas. */
+  protected readonly emptyTitle = computed(() =>
+    this.query() ? 'Ningún plan coincide con la búsqueda' : 'Todavía no cargaste ningún plan',
+  );
 
   protected onSearch(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);

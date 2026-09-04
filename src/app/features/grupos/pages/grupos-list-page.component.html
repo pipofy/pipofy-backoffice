@@ -1,7 +1,7 @@
 @if (facade.loading()) {
-  <p class="grupos-status">Cargando grupos…</p>
+  <app-placeholder tone="loading" size="page" title="Cargando grupos…" />
 } @else if (facade.error()) {
-  <p class="grupos-status" role="alert">No se pudo cargar los grupos. {{ errorText() }}</p>
+  <app-placeholder tone="error" size="page" title="No se pudieron cargar los grupos" [body]="errorText()" />
 } @else {
   <section id="view-grupos">
     <p class="notice hold">
@@ -61,13 +61,13 @@
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="6" class="grupos-empty">Sin grupos para esa búsqueda</td></tr>
+                <tr><td colspan="6"><app-placeholder title="Ningún grupo coincide con la búsqueda" /></td></tr>
               }
             </tbody>
           </table>
         </div>
       } @else {
-        <div class="a-empty">Todavía no hay grupos en el club</div>
+        <app-placeholder title="Todavía no hay grupos en este club" />
       }
     </div>
   </section>

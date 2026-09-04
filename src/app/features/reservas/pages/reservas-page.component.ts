@@ -12,11 +12,13 @@ import { CancelClassInput } from '@domain/entities/class-cancellation';
 import { domainErrorMessage } from '@domain/errors';
 import { localHhMm } from '@domain/local-date';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-reservas-page',
   standalone: true,
-  imports: [SesionModalComponent, CancelarClaseModalComponent],
+  imports: [SesionModalComponent, CancelarClaseModalComponent, PlaceholderComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reservas-page.component.html',
   styleUrl: './reservas-page.component.css',

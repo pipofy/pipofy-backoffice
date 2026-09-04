@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   SETPOINT · PRIMITIVOS DEL DESIGN SYSTEM
+   PipoFy · PRIMITIVOS DEL DESIGN SYSTEM
    Capa 2 de 3: tokens (tokens.css) → PRIMITIVOS (este archivo) → CSS de feature.
 
    Global A PROPÓSITO, igual que los tokens: estas clases describen QUÉ ES un
@@ -147,10 +147,6 @@
    `.arow{transition}` y `.arow:hover` al portarse (regresión que ya vivía en el
    dashboard; este slice la corrige. Spec §5.5).
    Excepciones al "viene de la maqueta" (ver la desviación D4 del plan):
-     · .a-empty conserva la geometría del archivo PORTADO (space-lg / text-2xs).
-       Adoptar la de la maqueta sería un cambio visual sin nombrar en §14.2.
-     · .a-empty svg entra ahora: la lista de espera del detalle (Tarea 13) es su
-       primer consumidor real (index-v2.html:1765).
    .rail (layout del dashboard), .mini-btn y .pay-mini también viven en 245-282
    pero NO entran: el primero es feature-local, los otros no tienen consumidor. */
 .acard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);overflow:hidden}
@@ -168,8 +164,6 @@
 .arow .a-main{flex:1;min-width:0}
 .arow .a-title{font-size:var(--text-xs);font-weight:600;color:var(--color-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .arow .a-meta{font-size:var(--text-2xs);color:var(--color-fg-muted);margin-top:1px}
-.a-empty{padding:var(--space-lg);text-align:center;color:var(--color-fg-subtle);font-size:var(--text-2xs)}
-.a-empty svg{width:26px;height:26px;margin-bottom:var(--space-sm);opacity:.6}
 .count{font-family:var(--font-mono);font-weight:700;font-size:var(--text-sm);padding:3px var(--space-sm);border-radius:var(--radius-sm);flex:0 0 auto;font-variant-numeric:tabular-nums}
 .count.warn{background:var(--color-warning-soft);color:var(--color-on-warning-soft)}
 /* Sin parpadeo infinito: distrae y viola WCAG 2.2.2 */
@@ -302,6 +296,7 @@ dialog.modal[open]::backdrop{animation:fadein var(--duration) var(--ease)}
    su consumidor. Misma regla de admisión que `.m-ic` (y que dejó afuera a .btn-wa). */
 .notice{border-radius:var(--radius-sm);padding:var(--space-sm);font-size:var(--text-xs);display:flex;gap:var(--space-sm);align-items:flex-start;margin-top:var(--space-xs);line-height:var(--leading-snug)}
 .notice.hold{background:var(--color-warning-soft);border:1px solid var(--color-warning-soft-border);color:var(--color-on-warning-soft)}
+.notice.bad{background:var(--color-destructive-soft);border:1px solid var(--color-destructive-soft-border);color:var(--color-on-destructive-soft)}
 .notice.ok{background:var(--color-accent-soft);border:1px solid var(--color-accent-soft-border);color:var(--color-on-accent-soft)}
 
 /* Utilidades de alineación de celdas. La maqueta usa style= inline (index-v2.html:1810, 1831, 1772). */

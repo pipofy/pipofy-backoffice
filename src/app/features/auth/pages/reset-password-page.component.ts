@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
 import { formMessage } from '../form-message';
 import { EMAIL_RE } from '@shared/validators/email';
 import { PasswordFacade } from '../password.facade';
@@ -18,7 +19,7 @@ import { PasswordFacade } from '../password.facade';
 @Component({
   selector: 'app-reset-password-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent],
+  imports: [ReactiveFormsModule, RouterLink, BrandmarkComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page">
@@ -69,7 +70,7 @@ import { PasswordFacade } from '../password.facade';
           }
 
           @if (message(); as msg) {
-            <p class="error" role="alert">{{ msg }}</p>
+            <app-notice tone="bad">{{ msg }}</app-notice>
           }
 
           <button type="submit" class="btn btn-cta" [disabled]="facade.loading()">
@@ -88,7 +89,6 @@ import { PasswordFacade } from '../password.facade';
     .card>h2{font-size:var(--text-xl)}
     .card>p{font-size:var(--text-sm);color:var(--color-fg-muted)}
     .field input:focus-visible{outline:2.5px solid var(--color-ring);outline-offset:2px}
-    .error{font-size:var(--text-sm);color:var(--color-destructive);font-weight:600}
     .legal{font-size:var(--text-sm);color:var(--color-fg-muted);text-align:center}
     .legal a{color:var(--color-primary);font-weight:600}
   `],

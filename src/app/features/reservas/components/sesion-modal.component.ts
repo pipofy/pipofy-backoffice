@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal, viewChild,
 } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 import { ClassSession } from '@domain/entities/class-session';
 import { Student, studentDisplayName } from '@domain/entities/student';
 import { StudentPlan, studentPlanIsUsable } from '@domain/entities/student-plan';
@@ -20,11 +22,11 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
 @Component({
   selector: 'app-sesion-modal',
   standalone: true,
-  imports: [ModalComponent, AsistenciaSeccionComponent],
+  imports: [ModalComponent, AsistenciaSeccionComponent, NoticeComponent, PlaceholderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal title="Clase" [subtitle]="subtitle()" icon="primary">
-      @if (errorText()) { <p class="notice hold form-error" role="alert">{{ errorText() }}</p> }
+      @if (errorText()) { <app-notice tone="bad">{{ errorText() }}</app-notice> }
 
       <h4>Inscribir</h4>
       <p class="hint">Sólo aparecen los alumnos con categoría cargada. Si la API rechaza la
@@ -68,7 +70,7 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
           </div>
         </div>
       } @empty {
-        <p class="a-empty">Todavía no se anotó nadie.</p>
+        <app-placeholder title="Todavía no se anotó nadie" />
       }
 
       <app-asistencia-seccion
@@ -139,7 +141,7 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
           </div>
         }
       } @empty {
-        <p class="a-empty">Ninguna reserva pendiente.</p>
+        <app-placeholder title="Ninguna reserva pendiente" />
       }
 
       <h4>Lista de espera</h4>
@@ -150,7 +152,7 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
                   (click)="onQuitar(e.id)">Quitar</button>
         </div>
       } @empty {
-        <p class="a-empty">Sin lista de espera.</p>
+        <app-placeholder title="Sin lista de espera" />
       }
       <button type="button" class="btn btn-ghost" [disabled]="!studentId() || facade.loading()"
               (click)="onAnotar()">Anotar al alumno elegido</button>
@@ -161,7 +163,6 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
     </app-modal>
   `,
   styles: [`
-    .form-error{margin-bottom:var(--space-md)}
     h4{margin:var(--space-md) 0 var(--space-sm)}
     .cobro{padding:var(--space-sm) var(--space-md);border-left:2px solid var(--color-primary)}
   `],

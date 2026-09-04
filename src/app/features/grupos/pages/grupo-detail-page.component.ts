@@ -12,6 +12,7 @@ import { creditsToDiscount } from '@domain/use-cases/apply-attendance.use-case';
 import { nextSessionDate } from '../grupos-format';
 import { GruposFacade } from '../grupos.facade';
 import { SessionStore } from '@data/auth/session-store';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
  * Detalle de un grupo. Origen: index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
@@ -24,7 +25,14 @@ import { SessionStore } from '@data/auth/session-store';
 @Component({
   selector: 'app-grupo-detail-page',
   standalone: true,
-  imports: [RouterLink, CupoCellComponent, RosterTableComponent, SessionsTableComponent, AttendanceModalComponent],
+  imports: [
+    RouterLink,
+    CupoCellComponent,
+    RosterTableComponent,
+    SessionsTableComponent,
+    AttendanceModalComponent,
+    PlaceholderComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './grupo-detail-page.component.html',
   styleUrl: './grupo-detail-page.component.css',

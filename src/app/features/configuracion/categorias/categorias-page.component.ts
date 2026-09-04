@@ -5,11 +5,13 @@ import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/con
 import { Category, CategoryInput } from '@domain/entities/category';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 @Component({
   selector: 'app-categorias-page',
   standalone: true,
-  imports: [CategoriaFormModalComponent, ConfirmDeleteModalComponent],
+  imports: [CategoriaFormModalComponent, ConfirmDeleteModalComponent, PlaceholderComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './categorias-page.component.html',
   styleUrl: './categorias-page.component.css',
@@ -46,6 +48,11 @@ export class CategoriasPageComponent {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
   }
+
+  /** El vacío de búsqueda y el vacío real dicen cosas distintas. */
+  protected readonly emptyTitle = computed(() =>
+    this.query() ? 'Ninguna categoría coincide con la búsqueda' : 'Todavía no cargaste ninguna categoría',
+  );
 
   protected onSearch(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);

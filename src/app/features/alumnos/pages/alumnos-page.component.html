@@ -11,11 +11,17 @@
   <!-- BANNER, no una rama del chain: la facade también ESCRIBE, y un error de guardado no
        puede reemplazar la tabla que data() sigue teniendo intacta. -->
   @if (errorText()) {
-    <p class="notice hold" role="alert">{{ errorText() }}</p>
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
   }
 
+  <!-- ponytail: este chain @if(loading) / @else if(datos) / @else if(vacío) está
+       copiado en las 9 páginas de lista. Los primitivos no lo tocan. La salida es un
+       contenedor <app-async [facade]="facade"> que proyecte el contenido por
+       ng-template; se descartó ahora porque los vacíos no son uniformes —acá ramifica
+       por query(), en reservas por la fecha, en grupo-detail distingue "no existe" de
+       "está vacío"— y un tercio de los casos tendría que escaparse igual. -->
   @if (facade.loading()) {
-    <p class="a-body">Cargando alumnos…</p>
+    <app-placeholder tone="loading" title="Cargando alumnos…" />
   } @else if (filtered().length) {
     <div class="table-scroll">
       <table>
@@ -52,13 +58,7 @@
   } @else if (facade.data()) {
     <!-- El vacío sólo cuando la lista LLEGÓ vacía: si data() es null la carga falló y lo que
          corresponde es el banner de arriba, no "todavía no cargaste ningún alumno". -->
-    <div class="a-empty">
-      @if (query()) {
-        Ningún alumno coincide con la búsqueda.
-      } @else {
-        Todavía no cargaste ningún alumno.
-      }
-    </div>
+    <app-placeholder [title]="emptyTitle()" />
   }
 </section>
 

@@ -4,10 +4,7 @@
 
    OJO: la maqueta usa los alias --faint/--muted (index-v2.html:53-57) que NO existen en la app.
    Acá van los tokens reales. */
-.grupos-status { padding: var(--space-lg); color: var(--color-fg-muted); }
 .grp-cell { display: flex; align-items: center; gap: var(--space-sm); }
 .grp-name { font-weight: 600; }
 .grp-meta { font-size: var(--text-2xs); color: var(--color-fg-subtle); }
 .grp-prof { color: var(--color-fg-muted); }
-/* index-v2.html:1713 lo pinta con style="…color:var(--faint);padding:34px". */
-.grupos-empty { text-align: center; color: var(--color-fg-subtle); padding: 34px; }

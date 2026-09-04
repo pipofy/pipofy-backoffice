@@ -3,6 +3,8 @@ import { ClubFacade } from './club.facade';
 import { Club, ClubInput } from '@domain/entities/club';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { NoticeComponent } from '@shared/ui/notice.component';
+import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
  * La ÚNICA pantalla que edita in-place, sin <dialog>. De ahí salen sus dos rarezas:
@@ -17,6 +19,7 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 @Component({
   selector: 'app-club-page',
   standalone: true,
+  imports: [PlaceholderComponent, NoticeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './club-page.component.html',
   styleUrl: './club-page.component.css',

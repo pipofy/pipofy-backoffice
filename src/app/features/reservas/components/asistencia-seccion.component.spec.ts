@@ -17,6 +17,8 @@ const fila = (
   status,
   holdExpiresAt: null,
   attendanceStatus,
+  studentName: 'Ana Gómez',
+  studentCategoryId: null,
 });
 
 const NOMBRES = new Map([

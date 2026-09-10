@@ -81,6 +81,7 @@ describe('toSessionReservation', () => {
         deletedAt: null,
         reservationStatus: { name: 'held' },
         attendanceStatus: { id: '14', name: 'asistio' },
+        student: { firstName: 'Ana', lastName: 'Gómez', categoryId: null },
       }),
     ).toEqual({
       id: '55',
@@ -89,6 +90,8 @@ describe('toSessionReservation', () => {
       holdExpiresAt: null,
       status: 'held',
       attendanceStatus: 'asistio',
+      studentName: 'Ana Gómez',
+      studentCategoryId: null,
     });
   });
 
@@ -102,8 +105,41 @@ describe('toSessionReservation', () => {
         deletedAt: null,
         reservationStatus: { name: 'confirmed' },
         attendanceStatus: null,
+        student: { firstName: 'Ana', lastName: 'Gómez', categoryId: null },
       }).studentPlanId,
     ).toBeNull();
+  });
+});
+
+describe('toSessionReservation · student embebido', () => {
+  const base = {
+    id: '500',
+    studentId: '88',
+    studentPlanId: null,
+    holdExpiresAt: null,
+    deletedAt: null,
+    reservationStatus: { name: 'confirmed' },
+    attendanceStatus: null,
+  };
+
+  it('arma el nombre completo y trae la categoría del alumno', () => {
+    const r = toSessionReservation({
+      ...base,
+      student: { firstName: 'Lucía', lastName: 'Pereyra', categoryId: '3' },
+    });
+    expect(r.studentName).toBe('Lucía Pereyra');
+    expect(r.studentCategoryId).toBe('3');
+  });
+
+  // firstName y lastName son String? en Prisma: hay filas cargadas por WhatsApp con sólo el
+  // teléfono. El nombre queda vacío y lo resuelve la pantalla, no el mapper.
+  it('tolera nombre y apellido nulos sin dejar espacios sueltos', () => {
+    const r = toSessionReservation({
+      ...base,
+      student: { firstName: null, lastName: 'Vera', categoryId: null },
+    });
+    expect(r.studentName).toBe('Vera');
+    expect(r.studentCategoryId).toBeNull();
   });
 });
 

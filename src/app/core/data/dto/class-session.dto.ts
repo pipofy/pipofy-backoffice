@@ -65,9 +65,6 @@ export const WaitingListDtoSchema = v.array(WaitingListEntryDtoSchema);
  * Lo que devuelve `GET /class-sessions/:id/reservations`: filas crudas de Prisma con
  * `reservationStatus` embebido por el `include` del servicio.
  *
- * `student` también viene incluido y NO se declara: el modal ya tiene el padrón en memoria y
- * resuelve el nombre por `studentId`. valibot descarta lo que no está declarado.
- *
  * `deletedAt` SÍ se declara: es de los dos findMany que el backend NO filtra por borrados
  * (el otro es `students/:id/plans`), así que el recorte se hace en el cliente.
  */
@@ -79,6 +76,19 @@ export const SessionReservationDtoSchema = v.object({
   holdExpiresAt: v.nullable(v.string()),
   deletedAt: v.nullable(v.string()),
   reservationStatus: v.object({ name: v.string() }),
+  /**
+   * `listReservations` hace `include: { student: true }`, así que esto SIEMPRE viene. Se declara
+   * sólo lo que se usa: el detalle de grupos resuelve nombre y categoría desde acá en vez de
+   * pedir el padrón entero para cuatro filas.
+   *
+   * `firstName`/`lastName` son String? en Prisma —hay filas creadas por WhatsApp con sólo el
+   * teléfono—, así que van nullables y el mapper los normaliza. Mismo criterio que students.dto.
+   */
+  student: v.object({
+    firstName: v.nullable(v.string()),
+    lastName: v.nullable(v.string()),
+    categoryId: v.nullable(v.string()),
+  }),
   /**
    * null cuando el panel no tomó asistencia todavía. El backend lo aplana desde la tabla
    * `attendance` con la misma cache de catálogos que usa para `classSessionStatus`

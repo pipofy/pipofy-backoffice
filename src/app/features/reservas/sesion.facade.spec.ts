@@ -74,6 +74,8 @@ function setup(
           status: 'held',
           holdExpiresAt: null,
           attendanceStatus: null,
+          studentName: 'Ana Gómez',
+          studentCategoryId: null,
         },
       ];
     },
@@ -167,6 +169,8 @@ const HOLD_VIVO = {
   status: 'held',
   holdExpiresAt: '2099-01-01T00:00:00.000Z',
   attendanceStatus: null,
+  studentName: 'Ana Gómez',
+  studentCategoryId: null,
 } as const;
 const CONFIRMADA = {
   id: '56',
@@ -175,6 +179,8 @@ const CONFIRMADA = {
   status: 'confirmed',
   holdExpiresAt: null,
   attendanceStatus: null,
+  studentName: 'Ana Gómez',
+  studentCategoryId: null,
 } as const;
 const CANCELADA = {
   id: '57',
@@ -183,6 +189,8 @@ const CANCELADA = {
   status: 'cancelled',
   holdExpiresAt: null,
   attendanceStatus: null,
+  studentName: 'Ana Gómez',
+  studentCategoryId: null,
 } as const;
 
 describe('SesionFacade · roster desde la API', () => {

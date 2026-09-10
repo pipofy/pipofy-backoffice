@@ -46,6 +46,9 @@ export function toSessionReservation(dto: SessionReservationDto): SessionReserva
     holdExpiresAt: dto.holdExpiresAt,
     // Mismo aplanado y mismo motivo que `status`.
     attendanceStatus: dto.attendanceStatus?.name ?? null,
+    // `${a} ${b}`.trim() y no un join: con apellido vacío no deja el espacio colgando.
+    studentName: `${dto.student.firstName ?? ''} ${dto.student.lastName ?? ''}`.trim(),
+    studentCategoryId: dto.student.categoryId,
   };
 }
 

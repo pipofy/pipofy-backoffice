@@ -36,6 +36,8 @@ describe('asistenciaTomada', () => {
     status: 'confirmed',
     holdExpiresAt: null,
     attendanceStatus,
+    studentName: 'Ana Gómez',
+    studentCategoryId: null,
   });
 
   it('devuelve los dos estados que el panel escribe', () => {

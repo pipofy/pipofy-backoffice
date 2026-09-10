@@ -151,6 +151,7 @@ const reserva = (over: Record<string, unknown> = {}) => ({
   deletedAt: null,
   reservationStatus: { name: 'confirmed' },
   attendanceStatus: null,
+  student: { firstName: 'Ana', lastName: 'Gómez', categoryId: null },
   ...over,
 });
 
@@ -176,6 +177,8 @@ describe('HttpClassSessionsRepository.reservations', () => {
         status: 'held',
         holdExpiresAt: '2026-08-19T21:30:00.000Z',
         attendanceStatus: null,
+        studentName: 'Ana Gómez',
+        studentCategoryId: null,
       },
     ]);
   });

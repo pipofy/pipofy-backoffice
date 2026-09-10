@@ -29,6 +29,13 @@ export interface SessionReservation {
    * pide con `asistenciaTomada()`.
    */
   readonly attendanceStatus: string | null;
+  /**
+   * 'Nombre Apellido', ya armado desde el `student` embebido en la respuesta. Puede quedar
+   * vacío: los dos campos son nullables en la base. Quien lo muestre decide el placeholder.
+   */
+  readonly studentName: string;
+  /** El id de la categoría del alumno; el NOMBRE lo resuelve la pantalla contra /categories. */
+  readonly studentCategoryId: string | null;
 }
 
 /**

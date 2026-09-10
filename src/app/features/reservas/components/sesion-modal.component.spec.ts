@@ -98,6 +98,8 @@ function mount(
           status: 'held',
           holdExpiresAt: over.holdExpiresAt ?? HOLD_VIVO,
           attendanceStatus: null,
+          studentName: 'Ana Gómez',
+          studentCategoryId: null,
         },
       ];
     },
@@ -419,6 +421,7 @@ describe('SesionModalComponent · Anotados', () => {
       {
         id: '56', studentId: '4', studentPlanId: '9', status: 'confirmed',
         holdExpiresAt: null, attendanceStatus: null,
+        studentName: 'Ana Gómez', studentCategoryId: null,
       },
     ]);
     await abrir(fixture);
@@ -453,6 +456,7 @@ describe('SesionModalComponent · Anotados', () => {
       {
         id: '55', studentId: '4', studentPlanId: '9', status: 'held',
         holdExpiresAt: VENCE_EN_30, attendanceStatus: null,
+        studentName: 'Ana Gómez', studentCategoryId: null,
       },
     ]);
     await abrir(fixture);
@@ -471,6 +475,8 @@ describe('SesionModalComponent · Anotados', () => {
         status: 'held',
         holdExpiresAt: VENCIDO_HACE_5,
         attendanceStatus: null,
+        studentName: 'Ana Gómez',
+        studentCategoryId: null,
       },
     ]);
     await abrir(fixture);
@@ -483,6 +489,7 @@ describe('SesionModalComponent · Anotados', () => {
       {
         id: '57', studentId: '4', studentPlanId: null, status: 'cancelled',
         holdExpiresAt: null, attendanceStatus: null,
+        studentName: 'Ana Gómez', studentCategoryId: null,
       },
     ]);
     await abrir(fixture);
@@ -503,6 +510,8 @@ describe('SesionModalComponent · Anotados', () => {
         status: 'pending_review',
         holdExpiresAt: null,
         attendanceStatus: null,
+        studentName: 'Ana Gómez',
+        studentCategoryId: null,
       },
     ]);
     await abrir(fixture);
@@ -531,6 +540,8 @@ describe('SesionModalComponent · Asistencia', () => {
     status: 'confirmed',
     holdExpiresAt: null,
     attendanceStatus,
+    studentName: 'Ana Gómez',
+    studentCategoryId: null,
   });
 
   it('la sección se cablea con el roster y manda lo marcado', async () => {

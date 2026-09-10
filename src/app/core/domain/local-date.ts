@@ -43,3 +43,16 @@ export function isOnLocalDate(startAt: string | null, dateKey: string): boolean 
 export function localHhMm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+/**
+ * 'yyyy-MM-dd' ± n días, en el calendario LOCAL. `new Date(y, m, d)` normaliza el desborde de
+ * mes y de año solo.
+ *
+ * Vivía como `shiftDay` privado en `http-class-sessions.repository.ts`. Se subió acá cuando
+ * apareció el segundo llamador (la ventana de grupos): es lógica de fecha local, que es lo que
+ * este archivo concentra justamente para que no se resuelva dos veces y distinto.
+ */
+export function shiftDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return localDateKey(new Date(year, month - 1, day + days));
+}

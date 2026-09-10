@@ -26,6 +26,7 @@ const at = (h: number, m = 0, day = 5) => new Date(2026, 7, day, h, m, 0).toISOS
 
 const session = (over: Partial<ClassSession> = {}): ClassSession => ({
   id: '10',
+  scheduleTemplateId: null,
   courtId: '1',
   coachId: '2',
   categoryGroupId: '3',

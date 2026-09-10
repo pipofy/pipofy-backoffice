@@ -22,6 +22,7 @@ import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const session: ClassSession = {
   id: '10',
+  scheduleTemplateId: null,
   courtId: '2',
   coachId: '5',
   categoryGroupId: '3',
@@ -124,6 +125,7 @@ function mount(
         provide: ClassSessionsRepository,
         useValue: {
           list: async () => [session],
+          listRange: async () => [session],
           waitingList: async () => [],
           reservations: async () => [...state],
           joinWaitingList: async () => undefined,

@@ -38,6 +38,7 @@ function setup(
       calls.push('sessions.list');
       return [];
     },
+    listRange: async () => [],
     waitingList: async () => {
       calls.push('waitingList');
       return [entry];

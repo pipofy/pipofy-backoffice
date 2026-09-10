@@ -4,6 +4,7 @@ import { ClassSessionListDtoSchema, WaitingListDtoSchema } from './class-session
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: '10',
+  scheduleTemplateId: '7',
   courtId: '1',
   coachId: '2',
   categoryGroupId: '3',

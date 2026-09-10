@@ -7,6 +7,7 @@ import { ClassSession } from '@domain/entities/class-session';
 
 const late: ClassSession = {
   id: 'tarde',
+  scheduleTemplateId: null,
   courtId: '1',
   coachId: '1',
   categoryGroupId: '1',

@@ -10,7 +10,7 @@ import {
   SessionAttendanceMark,
   SessionAttendanceResult,
 } from '@domain/entities/session-attendance';
-import { isOnLocalDate, localDateKey } from '@domain/local-date';
+import { isOnLocalDate, shiftDateKey } from '@domain/local-date';
 import {
   ClassSessionListDtoSchema,
   WaitingListDtoSchema,
@@ -29,12 +29,6 @@ import {
 } from '../mappers/class-session.mapper';
 import { toDomainError } from '../http/to-domain-error';
 import { ApiClient } from '../http/api-client';
-
-/** 'yyyy-MM-dd' ± n días, en el calendario local. `new Date(y, m, d)` normaliza el desborde. */
-function shiftDay(dateKey: string, days: number): string {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  return localDateKey(new Date(year, month - 1, day + days));
-}
 
 /**
  * ApiClient ya normaliza los errores HTTP a DomainError, pero v.parse tira ValiError fuera del
@@ -56,8 +50,8 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
    */
   async list(dateKey: string): Promise<ClassSession[]> {
     try {
-      const from = shiftDay(dateKey, -1);
-      const to = shiftDay(dateKey, 1);
+      const from = shiftDateKey(dateKey, -1);
+      const to = shiftDateKey(dateKey, 1);
       const raw = await firstValueFrom(
         this.api.get<unknown>(`/class-sessions?from=${from}&to=${to}`),
       );
@@ -65,6 +59,25 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
         .parse(ClassSessionListDtoSchema, raw)
         .filter((dto) => isOnLocalDate(dto.startAt, dateKey))
         .map(toClassSession);
+    } catch (err) {
+      throw toDomainError(err);
+    }
+  }
+
+  /**
+   * Mismo ajuste de ventana que `list()` y por el mismo motivo —el backend arma el rango con
+   * `new Date(`${from}T00:00:00Z`)`, con la Z literal— pero SIN el recorte final: en una ventana
+   * de semanas, unas horas de más en cada borde no cambian nada, y filtrar costaría un
+   * `isOnLocalDate` por fila para nada.
+   */
+  async listRange(fromKey: string, toKey: string): Promise<ClassSession[]> {
+    try {
+      const from = shiftDateKey(fromKey, -1);
+      const to = shiftDateKey(toKey, 1);
+      const raw = await firstValueFrom(
+        this.api.get<unknown>(`/class-sessions?from=${from}&to=${to}`),
+      );
+      return v.parse(ClassSessionListDtoSchema, raw).map(toClassSession);
     } catch (err) {
       throw toDomainError(err);
     }

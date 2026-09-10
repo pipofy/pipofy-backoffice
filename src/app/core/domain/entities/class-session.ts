@@ -8,6 +8,8 @@
  */
 export interface ClassSession {
   readonly id: string;
+  /** El grupo del que salió, o null si la clase se creó suelta. */
+  readonly scheduleTemplateId: string | null;
   readonly courtId: string;
   readonly coachId: string;
   readonly categoryGroupId: string;

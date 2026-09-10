@@ -18,6 +18,7 @@ import {
 export function toClassSession(dto: ClassSessionDto): ClassSession {
   return {
     id: dto.id,
+    scheduleTemplateId: dto.scheduleTemplateId,
     courtId: dto.courtId,
     coachId: dto.coachId,
     categoryGroupId: dto.categoryGroupId,

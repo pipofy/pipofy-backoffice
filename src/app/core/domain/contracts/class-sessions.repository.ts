@@ -20,6 +20,14 @@ import { SessionAttendanceMark, SessionAttendanceResult } from '../entities/sess
  */
 export abstract class ClassSessionsRepository {
   abstract list(dateKey: string): Promise<ClassSession[]>;
+  /**
+   * Las clases de un RANGO de días locales. `list` sigue siendo lo que quiere el dashboard —un
+   * día exacto— y este método lo que quieren los grupos: una ventana de la que después se
+   * agrupa por plantilla.
+   *
+   * No recorta por día local. Ver la implementación por qué.
+   */
+  abstract listRange(fromKey: string, toKey: string): Promise<ClassSession[]>;
   abstract waitingList(sessionId: string): Promise<WaitingListEntry[]>;
   abstract joinWaitingList(sessionId: string, studentId: string): Promise<void>;
   /** `entryId` es el id de la ANOTACIÓN (`WaitingListEntry.id`), no el del alumno. */

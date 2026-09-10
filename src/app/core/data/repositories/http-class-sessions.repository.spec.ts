@@ -48,6 +48,7 @@ const session = (over: Record<string, unknown> = {}) => ({
   capacity: 4,
   availableSpots: 1,
   waitingCount: 0,
+  scheduleTemplateId: '7',
   classSessionStatus: { id: '1', name: 'programada' },
   ...over,
 });
@@ -83,6 +84,23 @@ describe('HttpClassSessionsRepository.list', () => {
   it('rechaza con un DomainError de validación si el payload deriva', async () => {
     const { repo } = setup({ get: of([{ id: 10 }]) });
     await expect(repo.list('2026-08-19')).rejects.toMatchObject({ kind: 'validation' });
+  });
+
+  it('listRange pide un día de más de cada lado y NO recorta', async () => {
+    const { repo, calls } = setup({
+      get: of([
+        session({ id: '1', startAt: '2026-08-31T02:00:00.000Z', scheduleTemplateId: '7' }),
+        session({ id: '2', startAt: '2026-10-01T21:00:00.000Z', scheduleTemplateId: null }),
+      ]),
+    });
+
+    const rows = await repo.listRange('2026-09-01', '2026-09-30');
+
+    expect(calls[0].path).toBe('/class-sessions?from=2026-08-31&to=2026-10-01');
+    // A diferencia de list(dateKey), acá no hay filtro por día local: en una ventana de 56 días
+    // unas horas de más en los bordes no cambian nada, y filtrar costaría un isOnLocalDate por fila.
+    expect(rows.map((r) => r.id)).toEqual(['1', '2']);
+    expect(rows.map((r) => r.scheduleTemplateId)).toEqual(['7', null]);
   });
 });
 

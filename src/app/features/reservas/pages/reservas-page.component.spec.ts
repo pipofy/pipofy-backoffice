@@ -15,7 +15,7 @@ import { ClassSession } from '@domain/entities/class-session';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 
 const session: ClassSession = {
-  id: '10', courtId: '2', coachId: '5', categoryGroupId: '3',
+  id: '10', scheduleTemplateId: null, courtId: '2', coachId: '5', categoryGroupId: '3',
   startAt: '2026-08-19T21:00:00.000Z', capacity: 4, availableSpots: 1,
   waitingCount: 0, status: 'programada',
 };

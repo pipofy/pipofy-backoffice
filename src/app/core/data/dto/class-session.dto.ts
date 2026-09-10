@@ -13,6 +13,14 @@ import * as v from 'valibot';
  */
 export const ClassSessionDtoSchema = v.object({
   id: v.string(),
+  /**
+   * Nullable en Prisma: una clase creada a mano no cuelga de ninguna plantilla.
+   *
+   * `class-sessions.service.list()` hace `...session` sobre la fila cruda, así que este campo
+   * SIEMPRE viajó — como `waitingCount` y `classSessionStatus` antes del 2026-09-10. No estaba
+   * declarado, y valibot descarta lo que no se declara.
+   */
+  scheduleTemplateId: v.nullable(v.string()),
   courtId: v.string(),
   coachId: v.string(),
   categoryGroupId: v.string(),

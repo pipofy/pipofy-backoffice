@@ -15,6 +15,7 @@ describe('toClassSession', () => {
     expect(
       toClassSession({
         id: '10',
+        scheduleTemplateId: '7',
         courtId: '2',
         coachId: '5',
         categoryGroupId: '3',
@@ -26,6 +27,7 @@ describe('toClassSession', () => {
       }),
     ).toEqual({
       id: '10',
+      scheduleTemplateId: '7',
       courtId: '2',
       coachId: '5',
       categoryGroupId: '3',
@@ -44,6 +46,7 @@ describe('toClassSession', () => {
     expect(
       toClassSession({
         id: '10',
+        scheduleTemplateId: null,
         courtId: '2',
         coachId: '5',
         categoryGroupId: '3',

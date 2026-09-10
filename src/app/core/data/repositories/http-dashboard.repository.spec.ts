@@ -21,6 +21,7 @@ const court = {
 
 const session = (over: Partial<ClassSession> = {}): ClassSession => ({
   id: '10',
+  scheduleTemplateId: null,
   courtId: '1',
   coachId: '2',
   categoryGroupId: '3',

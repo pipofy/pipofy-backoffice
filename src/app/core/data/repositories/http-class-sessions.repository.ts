@@ -12,6 +12,7 @@ import {
 } from '@domain/entities/session-attendance';
 import { isOnLocalDate, shiftDateKey } from '@domain/local-date';
 import {
+  ClassSessionDto,
   ClassSessionListDtoSchema,
   WaitingListDtoSchema,
   SessionReservationListDtoSchema,
@@ -42,42 +43,45 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
    * `ClassSessionsService.list()` arma la ventana con new Date(`${from}T00:00:00Z`). La Z es
    * LITERAL: interpreta las fechas en UTC y no en la zona del club, así que pedir sólo "hoy"
    * desde Argentina pierde las clases de 21:00 a 23:59 — prime time. Se pide un día de más de
-   * cada lado y se recorta acá con la fecha local exacta.
+   * cada lado para compensar.
    *
-   * El recorte vive en el repositorio y no en el consumidor a propósito: antes estaba repartido
-   * entre `HttpDashboardRepository` (que pedía ±1 día) y `dashboard.mapper` (que filtraba), y
-   * cualquier pantalla nueva tenía que acordarse de las dos mitades.
+   * Único dueño de esa compensación: la comparten `list()` y `listRange()` porque las dos pegan
+   * al mismo endpoint con el mismo defecto de la Z literal. Si el ±1 se corrigiera en un método
+   * y no en el otro, el bug sería silencioso —faltan clases en el borde del rango y nadie se
+   * entera—, así que vive acá una sola vez.
+   */
+  private async fetchWindow(fromKey: string, toKey: string): Promise<ClassSessionDto[]> {
+    const from = shiftDateKey(fromKey, -1);
+    const to = shiftDateKey(toKey, 1);
+    const raw = await firstValueFrom(
+      this.api.get<unknown>(`/class-sessions?from=${from}&to=${to}`),
+    );
+    return v.parse(ClassSessionListDtoSchema, raw);
+  }
+
+  /**
+   * El recorte por día local vive en el repositorio y no en el consumidor a propósito: antes
+   * estaba repartido entre `HttpDashboardRepository` (que pedía ±1 día) y `dashboard.mapper`
+   * (que filtraba), y cualquier pantalla nueva tenía que acordarse de las dos mitades.
    */
   async list(dateKey: string): Promise<ClassSession[]> {
     try {
-      const from = shiftDateKey(dateKey, -1);
-      const to = shiftDateKey(dateKey, 1);
-      const raw = await firstValueFrom(
-        this.api.get<unknown>(`/class-sessions?from=${from}&to=${to}`),
-      );
-      return v
-        .parse(ClassSessionListDtoSchema, raw)
-        .filter((dto) => isOnLocalDate(dto.startAt, dateKey))
-        .map(toClassSession);
+      const rows = await this.fetchWindow(dateKey, dateKey);
+      return rows.filter((dto) => isOnLocalDate(dto.startAt, dateKey)).map(toClassSession);
     } catch (err) {
       throw toDomainError(err);
     }
   }
 
   /**
-   * Mismo ajuste de ventana que `list()` y por el mismo motivo —el backend arma el rango con
-   * `new Date(`${from}T00:00:00Z`)`, con la Z literal— pero SIN el recorte final: en una ventana
-   * de semanas, unas horas de más en cada borde no cambian nada, y filtrar costaría un
-   * `isOnLocalDate` por fila para nada.
+   * A diferencia de `list()`, NO recorta por día local: en una ventana de semanas —la que
+   * quieren los grupos, para después agrupar por plantilla— unas horas de más en cada borde no
+   * cambian nada, y filtrar costaría un `isOnLocalDate` por fila para nada.
    */
   async listRange(fromKey: string, toKey: string): Promise<ClassSession[]> {
     try {
-      const from = shiftDateKey(fromKey, -1);
-      const to = shiftDateKey(toKey, 1);
-      const raw = await firstValueFrom(
-        this.api.get<unknown>(`/class-sessions?from=${from}&to=${to}`),
-      );
-      return v.parse(ClassSessionListDtoSchema, raw).map(toClassSession);
+      const rows = await this.fetchWindow(fromKey, toKey);
+      return rows.map(toClassSession);
     } catch (err) {
       throw toDomainError(err);
     }

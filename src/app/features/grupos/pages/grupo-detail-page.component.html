@@ -43,6 +43,11 @@
     <div class="detail-main">
       @if (facade.detalleCargando()) {
         <app-placeholder tone="loading" title="Cargando inscriptos…" />
+      } @else if (facade.detalleError()) {
+        <!-- NUNCA la tabla vacía: "Nadie inscripto" debajo de un hero que dice "Inscriptos 3"
+             es una contradicción, y la lectura que falló es la de abajo, no la de arriba. -->
+        <app-placeholder tone="error" title="No pudimos traer los inscriptos"
+                         [body]="detalleErrorText()" />
       } @else {
         <app-roster-table [roster]="facade.roster()" [capacity]="g.capacity" />
       }
@@ -57,19 +62,28 @@
             </svg>
           </span>
           <h3>Lista de espera</h3>
-          <span class="cnt hold">{{ facade.waitlist().length }}</span>
+          <!-- Guión y no 0 mientras no se sepa: el hero ya muestra el conteo que vino con el
+               grupo, y un 0 acá lo contradiría con un número inventado. -->
+          <span class="cnt hold">{{ facade.detalleError() ? '—' : facade.waitlist().length }}</span>
         </div>
         <div class="a-body">
-          @for (w of facade.waitlist(); track w.id; let i = $index) {
-            <div class="arow">
-              <span class="avatar-sm amber" aria-hidden="true">{{ ini(w.name) }}</span>
-              <div class="a-main">
-                <div class="a-title">{{ w.name }}</div>
-                <div class="a-meta">@if (i === 0) { 1ro en la fila · }anotado {{ fecha(w.requestedAt) }}</div>
+          @if (facade.detalleCargando()) {
+            <app-placeholder tone="loading" title="Cargando la lista de espera…" />
+          } @else if (facade.detalleError()) {
+            <app-placeholder tone="error" title="No pudimos traer la lista de espera"
+                             [body]="detalleErrorText()" />
+          } @else {
+            @for (w of facade.waitlist(); track w.id; let i = $index) {
+              <div class="arow">
+                <span class="avatar-sm amber" aria-hidden="true">{{ ini(w.name) }}</span>
+                <div class="a-main">
+                  <div class="a-title">{{ w.name }}</div>
+                  <div class="a-meta">@if (i === 0) { 1ro en la fila · }anotado {{ fecha(w.requestedAt) }}</div>
+                </div>
               </div>
-            </div>
-          } @empty {
-            <app-placeholder title="Nadie esperando" body="El grupo cubre su cupo." />
+            } @empty {
+              <app-placeholder title="Nadie esperando" body="El grupo cubre su cupo." />
+            }
           }
         </div>
       </div>

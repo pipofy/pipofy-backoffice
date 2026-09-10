@@ -80,6 +80,12 @@ export class GrupoDetailPageComponent {
     return err ? domainErrorMessage(err) : '';
   }
 
+  /** El del roster y la lista de espera, que fallan aparte y no reemplazan la pantalla. */
+  protected detalleErrorText(): string {
+    const err = this.facade.detalleError();
+    return err ? domainErrorMessage(err) : '';
+  }
+
   protected async openAttendance(session: GroupSession): Promise<void> {
     const group = this.group();
     if (!group || this.abriendo()) return;

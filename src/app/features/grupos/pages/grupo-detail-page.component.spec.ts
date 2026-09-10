@@ -37,9 +37,12 @@ interface Opciones {
   readonly groups?: Group[];
   readonly listGroupsFalla?: boolean;
   readonly reservations?: SessionReservation[];
+  /** Roster POR sesión, para los tests en que abrir la sesión equivocada se tiene que notar. */
+  readonly reservationsPorSesion?: Record<string, SessionReservation[]>;
   /** El resultado POR ÍTEM que devuelve markBulk. Por defecto, todo ok. */
   readonly resultados?: { reservationId: string; ok: boolean; status: 'asistio' | 'ausente' | null; error: string | null }[];
   readonly guardarFalla?: boolean;
+  readonly reservasFallan?: boolean;
 }
 
 /**
@@ -61,7 +64,8 @@ function setup(o: Opciones = {}) {
   const sessions = {
     reservations: async (id: string) => {
       calls.push(`reservations:${id}`);
-      return o.reservations ?? [reserva()];
+      if (o.reservasFallan) return Promise.reject({ kind: 'network' as const });
+      return o.reservationsPorSesion?.[id] ?? o.reservations ?? [reserva()];
     },
     waitingList: async (id: string) => {
       calls.push(`waitingList:${id}`);
@@ -110,13 +114,20 @@ async function mount(o: Opciones = {}) {
 }
 
 /** Click + los dos saltos que necesita `openAttendance`, que pide el roster de la sesión. */
-async function abrirModal(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }, el: HTMLElement) {
-  el.querySelector<HTMLButtonElement>('app-sessions-table tbody button')!.click();
+async function abrirModal(
+  fixture: { detectChanges(): void; whenStable(): Promise<unknown> },
+  el: HTMLElement,
+  fila = 0,
+) {
+  el.querySelectorAll<HTMLButtonElement>('app-sessions-table tbody button')[fila].click();
   fixture.detectChanges();
   await fixture.whenStable();
   await flushRepo();
   fixture.detectChanges();
 }
+
+/** Los dos botones Presente/Ausente de cada fila del modal, en orden de fila. */
+const segmentos = (el: HTMLElement) => el.querySelectorAll<HTMLButtonElement>('.segp');
 
 async function confirmar(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }, el: HTMLElement) {
   el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!.click();
@@ -146,6 +157,23 @@ describe('GrupoDetailPageComponent', () => {
     const { calls, el } = await mount({ groups: [grupo({ nextSessionId: null, sessions: [] })] });
     expect(calls.filter((c) => c.startsWith('reservations'))).toEqual([]);
     expect(el.querySelector('app-roster-table')!.textContent).toContain('Nadie inscripto');
+  });
+
+  // El hero dice "Inscriptos 2" porque ese número vino con el grupo; la tabla de abajo depende
+  // de OTRA lectura. Si esa falla y el panel muestra "Nadie inscripto", los dos números de la
+  // misma pantalla se contradicen y nada dice que algo falló.
+  it('si falla el roster lo DICE, en vez de mostrar el panel vacío', async () => {
+    const { el } = await mount({ reservasFallan: true });
+    expect(el.textContent).toContain('No pudimos traer los inscriptos');
+    expect(el.textContent).toContain('No pudimos traer la lista de espera');
+    expect(el.textContent).toContain('Revisá tu conexión');
+    expect(el.textContent).not.toContain('Nadie inscripto');
+    expect(el.textContent).not.toContain('Nadie esperando');
+    // El hero y las sesiones siguen: el grupo ya está cargado y es lo más valioso que hay.
+    expect(el.querySelector('.stu-hero h2')!.textContent).toContain('7ma+8va');
+    expect(el.querySelectorAll('app-sessions-table tbody tr')).toHaveLength(1);
+    // Y el contador de la lista de espera no inventa un cero.
+    expect(el.querySelector('.waitlist-card .cnt')!.textContent).toContain('—');
   });
 
   it('las 4 fichas del hero, en orden, con la fecha LOCAL de la próxima programada', async () => {
@@ -246,6 +274,43 @@ describe('GrupoDetailPageComponent', () => {
     const { el } = await mount({ listGroupsFalla: true });
     expect(el.textContent).toContain('No se pudo cargar el grupo');
     expect(el.textContent).not.toContain('los grupos');
+  });
+
+  // El modal se siembra imperativamente en open(), leyendo su input `target`. Si al cancelar el
+  // target no se limpiara, el @if no destruiría la vista y Angular la REUSARÍA: el effect que
+  // llama open() correría ANTES de que el binding [target] se refresque, así que el modal se
+  // sembraría con la sesión ANTERIOR. Y desde que el target lleva también el ROSTER de esa
+  // sesión, guardar ahí escribe la asistencia de la sesión A contra las reservas de la B: en
+  // silencio, y con el toast de éxito.
+  it('CANCELAR y abrir OTRA sesión siembra el modal con la sesión NUEVA, no con la anterior', async () => {
+    const { fixture, el } = await mount({
+      groups: [grupo({ sessions: [sesion(), sesion({ id: '302', startAt: '2026-09-08T21:00:00.000Z' })] })],
+      reservationsPorSesion: {
+        '301': [reserva({ id: '500', studentName: 'Lucía Pereyra' })],
+        '302': [
+          reserva({ id: '501', studentId: '89', studentName: 'Bruno Torres', attendanceStatus: 'ausente' }),
+        ],
+      },
+    });
+
+    await abrirModal(fixture, el, 0);                                  // sesión A
+    expect(el.querySelector('.m-sub')!.textContent).toContain('07/09');
+
+    el.querySelector<HTMLButtonElement>('.modal-foot .btn-ghost')!.click();   // Cancelar
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    await abrirModal(fixture, el, 1);                                  // sesión B
+    expect(el.querySelector('.m-sub')!.textContent).toContain('08/09');
+    expect(el.querySelector('.att-list')!.textContent).toContain('Bruno Torres');
+
+    // La aserción con dientes es la SIEMBRA, no lo que se ve: la lista y el subtítulo salen del
+    // binding [target] y se refrescan solos aunque open() haya leído el target viejo. Lo que NO
+    // se refresca son las `marks`, que open() siembra a mano desde el roster que tenía enfrente:
+    // sembradas con los ids de A, los de B caen al default PRESENTE y la ausencia que el panel
+    // ya tenía guardada para Bruno se pisa en silencio al guardar.
+    expect(segmentos(el)[1].classList.contains('on-a')).toBe(true);
   });
 
   it('ya no muestra el cartel de datos de demostración', async () => {

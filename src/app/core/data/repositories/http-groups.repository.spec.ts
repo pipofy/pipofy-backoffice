@@ -7,6 +7,7 @@ import { ClassSessionsRepository } from '@domain/contracts/class-sessions.reposi
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
+import { localDateKey } from '@domain/local-date';
 
 function setup(over: { sesionesFalla?: boolean } = {}) {
   const calls: string[] = [];
@@ -73,6 +74,14 @@ describe('HttpGroupsRepository', () => {
     const [from, to] = rango();
     const dias = (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000;
     expect(dias).toBe(56);
+
+    // Y CENTRADA en hoy, no sólo de 56 días de ancho: una ventana [hoy, hoy+56] mide igual y
+    // esconde todas las sesiones pasadas, y con ellas todos los botones "Tomar asistencia", que
+    // son la acción principal de la pantalla. Comparación de strings sobre 'yyyy-MM-dd', que
+    // ordena igual que las fechas.
+    const hoy = localDateKey(new Date());
+    expect(from < hoy).toBe(true);
+    expect(to > hoy).toBe(true);
   });
 
   // Media pantalla de grupos es peor que un mensaje de error: mismo criterio que el dashboard.

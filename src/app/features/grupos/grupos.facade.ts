@@ -31,9 +31,16 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
   private readonly _roster = signal<readonly RosterMember[]>([]);
   private readonly _waitlist = signal<readonly GroupWaitlistEntry[]>([]);
   private readonly _detalleCargando = signal(false);
+  /**
+   * El fallo del detalle, APARTE de error(): éste pinta dos paneles, aquél reemplaza la pantalla.
+   * Existe porque un roster vacío y un roster que no se pudo traer se ven igual, y el segundo
+   * deja el "Inscriptos 3" del hero peleado con el "Nadie inscripto" de la tabla.
+   */
+  private readonly _detalleError = signal<DomainError | null>(null);
   readonly roster = this._roster.asReadonly();
   readonly waitlist = this._waitlist.asReadonly();
   readonly detalleCargando = this._detalleCargando.asReadonly();
+  readonly detalleError = this._detalleError.asReadonly();
 
   /** Lookups de nombres. Se piden una vez por vida de la facade, que dura lo que dura /grupos. */
   private categories: readonly Category[] | null = null;
@@ -50,6 +57,7 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
       this.reset();
       this._roster.set([]);
       this._waitlist.set([]);
+      this._detalleError.set(null);
       this.categories = null;
       this.students = null;
     });
@@ -63,16 +71,25 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
    * Roster y lista de espera de la próxima sesión del grupo.
    *
    * NO pasa por run(): su fallo no debe reemplazar la pantalla entera, que ya tiene el grupo
-   * cargado y es lo más valioso que hay para mostrar. Las dos listas quedan vacías y el detalle
-   * sigue mostrando el hero y las sesiones.
+   * cargado y es lo más valioso que hay para mostrar. El detalle sigue mostrando el hero y las
+   * sesiones, y los dos paneles que dependen de esta lectura pintan su propio error.
+   *
+   * Lo que el fallo NO puede hacer es pasar por vacío. "Nadie inscripto todavía" y "Ocupación
+   * 0/4" debajo de un hero que dice "Inscriptos 3" es la misma contradicción que el §3.7 existe
+   * para evitar —el número de arriba peleado con las filas de abajo—, y encima sin ninguna señal
+   * de que algo falló. Por eso el error se EXPONE en `detalleError()` en vez de tragarse.
    */
   async loadDetalle(nextSessionId: string | null): Promise<void> {
+    // Un grupo sin próxima sesión programada no tiene roster que pedir: es vacío de verdad,
+    // no un fallo.
     if (nextSessionId === null) {
       this._roster.set([]);
       this._waitlist.set([]);
+      this._detalleError.set(null);
       return;
     }
     this._detalleCargando.set(true);
+    this._detalleError.set(null);
     try {
       const [reservations, esperando, categories, students] = await Promise.all([
         this.sessions.reservations(nextSessionId),
@@ -82,9 +99,10 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
       ]);
       this._roster.set(toRoster(reservations, categories, new Date()));
       this._waitlist.set(toGroupWaitlist(esperando, students));
-    } catch {
+    } catch (err) {
       this._roster.set([]);
       this._waitlist.set([]);
+      this._detalleError.set(toDomainError(err));
     } finally {
       this._detalleCargando.set(false);
     }

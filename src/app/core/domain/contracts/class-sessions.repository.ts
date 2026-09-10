@@ -54,9 +54,10 @@ export abstract class ClassSessionsRepository {
    *
    * ÚNICA escritura del contrato que devuelve algo, y no es un capricho: el backend responde
    * con un resultado POR ÍTEM —el éxito parcial es lo normal, no un borde— y ninguna relectura
-   * lo recupera, porque `listReservations` no incluye `attendance`. Ya hay precedente de
-   * escrituras que devuelven: `groups.repository.ts` (saveAttendance → snapshot completo) y
-   * `schedules.repository.ts` (generateSessions → SessionGenerationResult).
+   * lo recupera, porque `listReservations` no incluye `attendance`. Hay precedente de escrituras
+   * que devuelven: `schedules.repository.ts` (generateSessions → SessionGenerationResult). El
+   * otro que citaba este comentario, `groups.repository.ts` (saveAttendance → snapshot completo),
+   * ya no existe: los grupos escriben su asistencia por acá.
    */
   abstract markAttendance(
     sessionId: string,

@@ -7,7 +7,7 @@ import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { catalogLabel } from '@data/catalog-labels';
-import { WEEKDAY_OPTIONS } from './weekday-label';
+import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(schedule)` es edición.

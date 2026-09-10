@@ -3,7 +3,7 @@ import { HorariosFacade } from './horarios.facade';
 import { HorarioFormModalComponent } from './horario-form-modal.component';
 import { GenerarClasesModalComponent } from './generar-clases-modal.component';
 import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
-import { weekdayLabel } from './weekday-label';
+import { weekdayLabel } from '@shared/weekday-label';
 import { Schedule, ScheduleInput, SessionGenerationInput } from '@domain/entities/schedule';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';

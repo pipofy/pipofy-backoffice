@@ -1,6 +1,8 @@
 /**
- * Los nombres de los días. Vive en la feature y no en `domain/` porque es presentación,
- * no una regla del negocio — mismo criterio que `planes/plan-price.ts` y `hand-label.ts`.
+ * Los nombres de los días. Vive en `shared/` y no en `domain/` porque es presentación, no una
+ * regla del negocio — mismo criterio que `planes/plan-price.ts` y `hand-label.ts`. Está acá y
+ * no en la feature de horarios desde que apareció el segundo consumidor: `features/grupos` no
+ * puede importar de otra feature (boundaries), y `shared/` sí lo ve todo el mundo.
  *
  * El índice ES el `weekday` del backend: 0 = Domingo (§3.4). No reordenar este array — el
  * orden de la SEMANA se resuelve aparte, en HorariosFacade.sorted().

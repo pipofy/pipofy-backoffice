@@ -261,7 +261,7 @@ fijó la regla contraria y la dejó escrita: *"el significado de un código HTTP
 endpoint, por eso el mapeo específico vive acá y to-domain-error.ts no se toca"*. Estos dos
 métodos hablan con `HttpClient` directo, igual que hace todo `HttpAuthRepository`.
 
-**Estado local**: `grupo-items-store.ts`, `localStorage`, clave `setpoint:grupo-items:v1`
+**Estado local**: `grupo-items-store.ts`, `localStorage`, clave `PipoFy:grupo-items:v1`
 siguiendo la de sesión, shape `Record<groupId, categoryId[]>`. Borrar un grupo limpia su
 entrada. El modal lleva al pie una línea honesta: la API no devuelve la asignación y esta vista
 recuerda lo cargado desde este navegador.

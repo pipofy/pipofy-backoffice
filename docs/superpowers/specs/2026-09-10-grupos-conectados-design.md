@@ -340,8 +340,12 @@ Las iniciales las calcula un helper de presentación en `grupos-format.ts`, no e
   queda tal cual.
 - `roster` / `waitlist` / `sessionRoster`: signals propias, con su `loading` propio. **No** pasan
   por `run()`.
-- `saveAttendance(sessionId, marks)` → `ClassSessionsRepository.markAttendance()` y después
-  re-lee. Conserva las dos trampas gemelas ya documentadas en `grupos.facade.ts`: no toca
+- `saveAttendance(sessionId, marks)` → `ClassSessionsRepository.markAttendance()`, **sin
+  relectura**. Es la excepción a la convención "la escritura devuelve void y la facade re-lee", y
+  el propio contrato ya la documenta: `markBulk` escribe la tabla `attendance` y no toca cupo, ni
+  créditos, ni el estado de la reserva, ni el de la clase. Nada de lo que la pantalla muestra
+  cambia, y el resultado por ítem no se puede releer de ningún lado. Conserva las dos trampas
+  gemelas ya documentadas en `grupos.facade.ts`: no toca
   `loading()` ni `error()` y **deja propagar** el error, porque el modal vive dentro de la rama
   `data()` del template y `run()` lo desmontaría con el usuario adentro, además de tragarse el
   fallo y disparar el toast de éxito. Ese comentario se conserva palabra por palabra.
@@ -371,9 +375,9 @@ Las iniciales las calcula un helper de presentación en `grupos-format.ts`, no e
 carteles *"Datos de demostración"* · `GroupSessionNotFoundError` y `SessionCancelledError` de
 `core/domain/errors.ts` · `nextSessionDate` de `grupos-format.ts`.
 
-**Ojo con `errors.ts`:** `domainErrorMessage()` es un `switch` exhaustivo sin `default`. Sacar
-dos `kind` no rompe el build —sobran `case`, no faltan— pero hay que sacar también sus ramas o
-quedan muertas.
+**`errors.ts` no corre riesgo:** los dos son subclases de `DomainRuleError`, no `kind` nuevos de
+la unión, así que el `switch` exhaustivo de `domainErrorMessage()` ni se entera. Salen las dos
+clases y nada más.
 
 ## 9. Errores
 

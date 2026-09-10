@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { attendanceState, formatAttendance, nextSessionDate, occupancyState } from './grupos-format';
-import { GroupSession } from '@domain/entities/group';
-
-const ses = (over: Partial<GroupSession> = {}): GroupSession => ({
-  id: 's1', date: '01/07', time: '18:00', courtName: 'Cancha 1',
-  status: 'scheduled', attendance: null, ...over,
-});
+import { fechaCorta, groupTitle, horaCorta, initials, occupancyState } from './grupos-format';
+import { Group } from '@domain/entities/group';
 
 describe('occupancyState', () => {
   it('lleno cuando llega o pasa la capacidad', () => {
@@ -27,59 +22,46 @@ describe('occupancyState', () => {
   });
 });
 
-describe('attendanceState', () => {
-  it('80 EXACTO es high', () => {
-    expect(attendanceState(80)).toBe('high');
-    expect(attendanceState(92)).toBe('high');
+describe('groupTitle', () => {
+  const g = { category: '7ma+8va', weekday: 1, startTime: '18:00' } as Group;
+
+  it('junta categoría, día y hora', () => {
+    expect(groupTitle(g)).toBe('7ma+8va · Lunes 18:00');
   });
 
-  it('65 EXACTO es mid', () => {
-    expect(attendanceState(65)).toBe('mid');
-    expect(attendanceState(79)).toBe('mid');
-  });
-
-  it('por debajo de 65 es low', () => {
-    expect(attendanceState(64)).toBe('low');
-    expect(attendanceState(0)).toBe('low');
+  // Hay templates viejos sin día ni hora: generateSessions los saltea, pero existen y se listan.
+  it('se queda con la categoría sola cuando no hay día ni hora', () => {
+    expect(groupTitle({ ...g, weekday: null, startTime: null } as Group)).toBe('7ma+8va');
   });
 });
 
-describe('formatAttendance', () => {
-  it('sin asistencia tomada devuelve un guión largo', () => {
-    expect(formatAttendance(ses({ status: 'scheduled' }))).toBe('—');
-    expect(formatAttendance(ses({ status: 'cancelled' }))).toBe('—');
+describe('fechaCorta / horaCorta', () => {
+  // test-setup.ts fija TZ=America/Argentina/Buenos_Aires. Sin eso este test pasa aunque la
+  // lógica esté rota: 21:00Z es 18:00 en Argentina y 21:00 en UTC.
+  it('formatea en zona local, no en UTC', () => {
+    expect(fechaCorta('2026-09-14T21:00:00.000Z')).toBe('14/09');
+    expect(horaCorta('2026-09-14T21:00:00.000Z')).toBe('18:00');
   });
 
-  it('cuenta presentes sobre el total de MARCAS guardadas', () => {
-    const s = ses({ status: 'completed', attendance: [
-      { memberId: 'r1', present: true }, { memberId: 'r2', present: true },
-      { memberId: 'r3', present: true }, { memberId: 'r4', present: false },
-    ] });
-    expect(formatAttendance(s)).toBe('3/4');
+  it('cruza el día hacia atrás cuando corresponde', () => {
+    expect(fechaCorta('2026-09-15T02:00:00.000Z')).toBe('14/09');
+    expect(horaCorta('2026-09-15T02:00:00.000Z')).toBe('23:00');
   });
 
-  it('el n/N de una sesión pasada NO cambia si el roster crece o se achica', () => {
-    // El denominador sale de session.attendance.length — las marcas que se guardaron esa vez —
-    // nunca del roster actual. Si se derivara del roster de hoy, la sesión que fue 4/4 pasaría
-    // a mostrarse 4/5 cuando entre alguien nuevo: una asistencia que nunca ocurrió.
-    const s = ses({ status: 'completed', attendance: [
-      { memberId: 'r1', present: true }, { memberId: 'r2', present: true },
-    ] });
-    expect(formatAttendance(s)).toBe('2/2');   // la firma no recibe el roster: es imposible que cambie
+  it('devuelve guión sin fecha o con basura', () => {
+    expect(fechaCorta(null)).toBe('—');
+    expect(horaCorta('no es una fecha')).toBe('—');
   });
 });
 
-describe('nextSessionDate', () => {
-  it('devuelve la fecha de la PRIMERA sesión programada por orden de array', () => {
-    expect(nextSessionDate([
-      ses({ id: 's1', date: '01/07', status: 'completed', attendance: [] }),
-      ses({ id: 's2', date: '08/07', status: 'scheduled' }),
-      ses({ id: 's3', date: '15/07', status: 'scheduled' }),
-    ])).toBe('08/07');
+describe('initials', () => {
+  it('toma la inicial de las dos primeras palabras', () => {
+    expect(initials('Lucía Pereyra')).toBe('LP');
+    expect(initials('María del Carmen Ruiz')).toBe('MD');
+    expect(initials('Cher')).toBe('C');
   });
 
-  it('sin ninguna programada devuelve un guión largo', () => {
-    expect(nextSessionDate([ses({ status: 'cancelled' })])).toBe('—');
-    expect(nextSessionDate([])).toBe('—');
+  it('devuelve guión con el nombre vacío', () => {
+    expect(initials('')).toBe('—');
   });
 });

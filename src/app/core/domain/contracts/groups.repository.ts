@@ -1,18 +1,17 @@
-import { GroupsSnapshot, SaveAttendanceRequest } from '../entities/group';
+import { Group } from '../entities/group';
 
 /**
- * Contrato del repositorio de grupos. Clase abstracta a propósito: hace de token DI sin
- * arrastrar @angular/core al dominio. La impl se bindea en los providers de la ruta lazy
- * (grupos.providers.ts), nunca con providedIn: 'root'.
+ * Los grupos del club. UN solo método, y no es minimalismo: es lo único que no existe ya.
  *
- * La escritura devuelve el snapshot COMPLETO nuevo, igual que cancelSession: así la facade
- * hace un setData() y la pantalla queda consistente sin una segunda lectura.
+ * El roster, la lista de espera y la escritura de asistencia salen de `ClassSessionsRepository`,
+ * que ya tiene `reservations()`, `waitingList()` y `markAttendance()` con su DTO, su mapper y sus
+ * tests. Envolverlos acá sería una capa que sólo reenvía.
  *
- * ponytail: un solo snapshot con todos los rosters. Con 6-30 grupos por club no se nota; si
- * un club llega a cientos, la salida es partir en listGroups() liviano + getGroup(id) completo
- * y mover el filtrado al servidor. No antes.
+ * Sin `clubId`: lo pone `tenantInterceptor` con X-Tenant-Id. Lo recibía sólo porque el
+ * repositorio en memoria tenía que elegir qué semilla devolver.
+ *
+ * Clase abstracta a propósito: hace de token DI sin arrastrar @angular/core al dominio.
  */
 export abstract class GroupsRepository {
-  abstract getGroups(clubId: string): Promise<GroupsSnapshot>;
-  abstract saveAttendance(clubId: string, req: SaveAttendanceRequest): Promise<GroupsSnapshot>;
+  abstract listGroups(): Promise<Group[]>;
 }

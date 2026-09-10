@@ -1,12 +1,8 @@
-/* Barra de asistencia + layout de la fila del roster. Feature-local: vocabulario de Grupos.
-   Fuente: index-v2.html:406-411. */
+/* Layout de la fila del roster. Feature-local: vocabulario de Grupos.
+   Fuente: index-v2.html:406-411.
 
-.att-bar{display:inline-flex;align-items:center;gap:var(--space-sm)}
-.att-bar .track{width:56px;height:6px;border-radius:3px;background:var(--color-border-strong);overflow:hidden}
-.att-bar .track i{display:block;height:100%;background:var(--color-accent-mark);border-radius:3px}
-.att-bar .track i.mid{background:var(--color-warning-mark)}
-.att-bar .track i.lowp{background:var(--color-destructive)}
-.att-pct{font-family:var(--font-mono);font-size:var(--text-2xs);font-weight:700;color:var(--color-fg-muted);width:34px;font-variant-numeric:tabular-nums}
+   SIN la barra de asistencia (.att-bar/.att-pct): la columna se fue con la del % de asistencia,
+   que es un dato POR INSCRIPCIÓN y la inscripción no existe en la base. */
 
 .roster-who { display: flex; align-items: center; gap: var(--space-sm); }
 .roster-who .avatar-sm { width: 30px; height: 30px; font-size: var(--text-xs); }

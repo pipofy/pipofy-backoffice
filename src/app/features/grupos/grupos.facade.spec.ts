@@ -1,82 +1,140 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection, signal } from '@angular/core';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { GruposFacade } from './grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
-import { InMemoryGroupsRepository } from '@data/repositories/in-memory-groups.repository';
-import { TenantContext } from '@shared/tenant/tenant-context';
-import { GroupNotFoundError } from '@domain/errors';
+import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { CategoriesRepository } from '@domain/contracts/categories.repository';
+import { StudentsRepository } from '@domain/contracts/students.repository';
+import { Group } from '@domain/entities/group';
+import { SessionReservation } from '@domain/entities/session-reservation';
 
-/** Fixture de test: no es la constante de producción que se borró (era un club inventado). */
-const CLUB_ID = 'c1';
+const grupo = (over: Partial<Group> = {}): Group => ({
+  id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 3, waiting: 1,
+  nextSessionId: '301', sessions: [], ...over,
+});
 
-function setup(repo: GroupsRepository = new InMemoryGroupsRepository(0), tenant?: unknown) {
+const reserva = (over: Partial<SessionReservation> = {}): SessionReservation => ({
+  id: '500', studentId: '88', studentPlanId: null, status: 'confirmed',
+  holdExpiresAt: null, attendanceStatus: null, studentName: 'Lucía Pereyra',
+  studentCategoryId: '3', ...over,
+});
+
+function setup(over: { asistenciaFalla?: boolean; reservasFallan?: boolean } = {}) {
+  const calls: string[] = [];
+
+  const groups = {
+    listGroups: async () => { calls.push('listGroups'); return [grupo()]; },
+  } as unknown as GroupsRepository;
+
+  const sessions = {
+    reservations: async (id: string) => {
+      calls.push(`reservations:${id}`);
+      if (over.reservasFallan) throw new Error('boom');
+      return [reserva()];
+    },
+    waitingList: async (id: string) => { calls.push(`waitingList:${id}`); return []; },
+    markAttendance: async (id: string) => {
+      calls.push(`markAttendance:${id}`);
+      if (over.asistenciaFalla) throw new Error('boom');
+      return [{ reservationId: '500', ok: true, status: 'asistio' as const, error: null }];
+    },
+  } as unknown as ClassSessionsRepository;
+
+  const categories = {
+    list: async () => { calls.push('categories'); return [{ id: '3', name: '7ma', levelOrder: 7 }]; },
+  } as unknown as CategoriesRepository;
+  const students = {
+    list: async () => { calls.push('students'); return []; },
+  } as unknown as StudentsRepository;
+
+  // TenantContext se inyecta con { optional: true }: no hace falta proveerlo.
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       GruposFacade,
-      { provide: GroupsRepository, useValue: repo },
-      ...(tenant ? [{ provide: TenantContext, useValue: tenant }] : []),
+      { provide: GroupsRepository, useValue: groups },
+      { provide: ClassSessionsRepository, useValue: sessions },
+      { provide: CategoriesRepository, useValue: categories },
+      { provide: StudentsRepository, useValue: students },
     ],
   });
-  return TestBed.inject(GruposFacade);
+  return { facade: TestBed.inject(GruposFacade), calls };
 }
 
 describe('GruposFacade', () => {
-  it('load() puebla data() y groups()', async () => {
-    const facade = setup();
-    await facade.load(CLUB_ID);
-    expect(facade.data()?.groups).toHaveLength(6);
-    expect(facade.groups()).toHaveLength(6);
-    expect(facade.error()).toBeNull();
-  });
-
-  it('groups() es un array vacío antes de cargar', () => {
-    expect(setup().groups()).toEqual([]);
-  });
-
-  it('un fallo del repo se normaliza a DomainError y NO rechaza', async () => {
-    const facade = setup({
-      getGroups: () => Promise.reject({ kind: 'network' as const }),
-      saveAttendance: () => Promise.reject(new Error('no')),
-    });
-    await facade.load(CLUB_ID);            // run() atrapa todo: no rechaza
-    expect(facade.error()).toEqual({ kind: 'network' });
-    expect(facade.data()).toBeNull();
-  });
-
-  it('saveAttendance() actualiza data() SIN tocar loading() ni error()', async () => {
-    const facade = setup();
-    await facade.load(CLUB_ID);
-    await facade.saveAttendance(CLUB_ID, {
-      groupId: '1', sessionId: '1-s2', discountAbsences: true,
-      marks: ['1-r1', '1-r2', '1-r3', '1-r4'].map((memberId) => ({ memberId, present: true })),
-    });
+  it('load() llena groups()', async () => {
+    const { facade } = setup();
+    await facade.load();
+    expect(facade.groups().map((g) => g.id)).toEqual(['7']);
     expect(facade.loading()).toBe(false);
     expect(facade.error()).toBeNull();
-    expect(facade.data()!.groups.find((g) => g.id === '1')!.roster[0].credits).toBe(5);
   });
 
-  it('saveAttendance() PROPAGA el error en vez de tragárselo', async () => {
-    // Si usara run(), atraparía el error y la página nunca entraría al catch: saldría el toast
-    // de ÉXITO tras un fallo. La página necesita que esto rechace.
-    const facade = setup();
-    await facade.load(CLUB_ID);
-    await expect(facade.saveAttendance(CLUB_ID, {
-      groupId: '99', sessionId: 'x', marks: [], discountAbsences: true,
-    })).rejects.toThrow(GroupNotFoundError);
-    expect(facade.error()).toBeNull();     // la pantalla NO se reemplaza por el estado de error
+  it('loadDetalle() trae roster y lista de espera de esa sesión', async () => {
+    const { facade, calls } = setup();
+    await facade.loadDetalle('301');
+    expect(calls).toContain('reservations:301');
+    expect(calls).toContain('waitingList:301');
+    expect(facade.roster().map((m) => m.id)).toEqual(['500']);
+    expect(facade.detalleCargando()).toBe(false);
   });
 
-  it('resetea al CAMBIAR de tenant, pero NO en el primer disparo del effect', async () => {
-    const tenantId = signal('t1');
-    const facade = setup(new InMemoryGroupsRepository(0), { tenantId });
-    await facade.load(CLUB_ID);
-    TestBed.tick();
-    expect(facade.data()).not.toBeNull();   // el primer run del effect NO pisó lo recién cargado
+  // Un grupo sin próxima sesión programada no tiene roster que pedir.
+  it('loadDetalle(null) vacía las listas sin pegarle a nadie', async () => {
+    const { facade, calls } = setup();
+    await facade.loadDetalle(null);
+    expect(facade.roster()).toEqual([]);
+    expect(facade.waitlist()).toEqual([]);
+    expect(calls).toEqual([]);
+  });
 
-    tenantId.set('t2');
-    TestBed.tick();
-    expect(facade.data()).toBeNull();
+  // El grupo ya está en pantalla: que falle el roster no debe reemplazarla por el estado de error.
+  it('si loadDetalle falla, no ensucia error() ni loading()', async () => {
+    const { facade } = setup({ reservasFallan: true });
+    await facade.load();
+    await facade.loadDetalle('301');
+    expect(facade.error()).toBeNull();
+    expect(facade.loading()).toBe(false);
+    expect(facade.roster()).toEqual([]);
+    expect(facade.data()).not.toBeNull();
+  });
+
+  it('pide categorías y padrón UNA sola vez aunque se llame dos veces', async () => {
+    const { facade, calls } = setup();
+    await facade.loadDetalle('301');
+    await facade.loadDetalle('301');
+    expect(calls.filter((c) => c === 'categories')).toHaveLength(1);
+    expect(calls.filter((c) => c === 'students')).toHaveLength(1);
+  });
+
+  // LAS DOS TRAMPAS GEMELAS. El modal vive DENTRO de la rama data() del template: si esto
+  // prendiera loading() o setError(), se desmontaría con el usuario adentro. Y si no propagara,
+  // el catch de la página no correría y saldría el toast de ÉXITO tras un fallo.
+  it('saveAttendance no toca loading() ni error(), y PROPAGA el fallo', async () => {
+    const { facade } = setup({ asistenciaFalla: true });
+    await facade.load();
+    await expect(
+      facade.saveAttendance('301', [{ reservationId: '500', status: 'asistio' }]),
+    ).rejects.toBeDefined();
+    expect(facade.loading()).toBe(false);
+    expect(facade.error()).toBeNull();
+    expect(facade.data()).not.toBeNull();
+  });
+
+  it('saveAttendance devuelve el resultado POR ÍTEM y no relee', async () => {
+    const { facade, calls } = setup();
+    const results = await facade.saveAttendance('301', [{ reservationId: '500', status: 'asistio' }]);
+    expect(results).toEqual([{ reservationId: '500', ok: true, status: 'asistio', error: null }]);
+    // markBulk no toca cupo, créditos ni estados: no hay nada que releer.
+    expect(calls).toEqual(['markAttendance:301']);
+  });
+
+  // createSessionAttendanceDraft valida las dos invariantes que el backend valida a nivel DTO.
+  it('rechaza guardar sin ninguna marca, antes de pegarle al backend', async () => {
+    const { facade, calls } = setup();
+    await expect(facade.saveAttendance('301', [])).rejects.toBeDefined();
+    expect(calls).toEqual([]);
   });
 });

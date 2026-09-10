@@ -2,148 +2,141 @@ import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { AttendanceModalComponent, AttendanceTarget } from './attendance-modal.component';
-import { AttendanceMark, Group, GroupSession } from '@domain/entities/group';
+import { Group, GroupSession, RosterMember } from '@domain/entities/group';
+import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 
 const GRUPO: Group = {
-  id: '1', name: '7ma+8va · Lunes PM', category: '7ma+8va',
-  teacher: 'Diego A.', teacherInitials: 'D',
-  day: 'Lun', time: '18:00', courtName: 'Cancha 1', capacity: 4,
-  roster: [
-    { id: '1-r1', name: 'Lucía Pereyra', initials: 'LP', category: '7ma', credits: 6, attendanceRate: 92 },
-    { id: '1-r2', name: 'Bruno Torres',  initials: 'BT', category: '7ma', credits: 3, attendanceRate: 78 },
-  ],
-  waitlist: [],
-  sessions: [],
+  id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 2, waiting: 0,
+  nextSessionId: '301', sessions: [],
 };
 
-const ses = (over: Partial<GroupSession> = {}): GroupSession => ({
-  id: '1-s2', date: '08/07', time: '18:00', courtName: 'Cancha 1',
-  status: 'scheduled', attendance: null, ...over,
+const SESION: GroupSession = {
+  id: '301', startAt: '2026-09-07T21:00:00.000Z', courtName: 'Cancha 1',
+  status: 'programada', enrolled: 2, capacity: 4, waiting: 0, yaPaso: true,
+};
+
+const miembro = (over: Partial<RosterMember> = {}): RosterMember => ({
+  id: '500', studentId: '88', name: 'Lucía Pereyra', category: '7ma',
+  status: 'confirmed', attendanceStatus: null, ...over,
 });
 
-function mount(session: GroupSession) {
+function render(roster: readonly RosterMember[]) {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(AttendanceModalComponent);
-  const target: AttendanceTarget = { group: GRUPO, session };
+  const target: AttendanceTarget = { group: GRUPO, session: SESION, roster };
   fixture.componentRef.setInput('target', target);
   fixture.detectChanges();
-  fixture.componentInstance.open();
-  fixture.detectChanges();
-  return { fixture, el: fixture.nativeElement as HTMLElement, cmp: fixture.componentInstance };
+  return { fixture, el: fixture.nativeElement as HTMLElement, comp: fixture.componentInstance };
 }
 
 const segmentos = (el: HTMLElement) => el.querySelectorAll<HTMLButtonElement>('.segp');
+const guardar = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!;
 
 describe('AttendanceModalComponent', () => {
-  it('modo TOMAR: título, botón, política visible y todos presentes', () => {
-    const { el } = mount(ses({ status: 'scheduled' }));
+  it('UN SOLO MODO: siempre "Tomar asistencia", sin checkbox de política ni créditos', () => {
+    const { el, comp } = render([miembro()]);
+    comp.open();
     expect(el.querySelector('h3')!.textContent).toContain('Tomar asistencia');
-    expect(el.querySelector('[data-testid="confirm"]')!.textContent).toContain('Confirmar asistencia');
-    expect(el.querySelector('.att-policy')).toBeTruthy();
-    // 2 integrantes × 2 botones; los "Presente" (índices 0 y 2) arrancan activos.
-    expect(segmentos(el)[0].classList.contains('on-p')).toBe(true);
-    expect(segmentos(el)[2].classList.contains('on-p')).toBe(true);
-  });
-
-  it('modo EDITAR: título, botón, política OCULTA y las marcas GUARDADAS', () => {
-    // Este es el test que la semilla mixta hace significativo: si arrancara todo-presente como
-    // el modo tomar, pasaría igual sin que la restauración de marcas exista.
-    const guardadas: AttendanceMark[] = [
-      { memberId: '1-r1', present: true },
-      { memberId: '1-r2', present: false },
-    ];
-    const { el } = mount(ses({ status: 'completed', attendance: guardadas }));
-    expect(el.querySelector('h3')!.textContent).toContain('Editar asistencia');
-    expect(el.querySelector('[data-testid="confirm"]')!.textContent).toContain('Guardar cambios');
+    expect(el.querySelector('[data-testid="confirm"]')!.textContent).toContain('Guardar asistencia');
     expect(el.querySelector('.att-policy')).toBeNull();
-    expect(segmentos(el)[0].classList.contains('on-p')).toBe(true);    // Lucía presente
-    expect(segmentos(el)[3].classList.contains('on-a')).toBe(true);    // Bruno AUSENTE
+    expect(el.textContent).not.toContain('créd');
+    expect(el.textContent).not.toContain('Clases a computar');
   });
 
-  it('el subtítulo lleva grupo · fecha hora · cancha', () => {
-    const { el } = mount(ses());
-    expect(el.querySelector('.m-sub')!.textContent).toContain('7ma+8va · Lunes PM · 08/07 18:00 · Cancha 1');
+  it('el subtítulo lleva grupo · fecha hora LOCALES · cancha', () => {
+    const { el, comp } = render([miembro()]);
+    comp.open();
+    // 21:00Z es 18:00 en Argentina, y test-setup.ts fija esa TZ.
+    expect(el.querySelector('.m-sub')!.textContent)
+      .toContain('7ma+8va · Lunes 18:00 · 07/09 18:00 · Cancha 1');
+  });
+
+  it('open() prellena Ausente a quien ya está marcado ausente, y Presente al resto', () => {
+    const { fixture, el, comp } = render([
+      miembro({ id: '1', attendanceStatus: 'ausente' }),
+      miembro({ id: '2', attendanceStatus: 'asistio' }),
+      miembro({ id: '3', attendanceStatus: null }),
+    ]);
+    comp.open();
+    fixture.detectChanges();
+    const emitidas: (readonly SessionAttendanceMark[])[] = [];
+    comp.confirmed.subscribe((m) => emitidas.push(m));
+    guardar(el).click();
+    expect(emitidas[0]).toEqual([
+      { reservationId: '1', status: 'ausente' },
+      { reservationId: '2', status: 'asistio' },
+      { reservationId: '3', status: 'asistio' },
+    ]);
   });
 
   it('el resumen se actualiza al togglear', () => {
-    const { fixture, el } = mount(ses());
+    const { fixture, el, comp } = render([miembro({ id: '1' }), miembro({ id: '2' })]);
+    comp.open();
+    fixture.detectChanges();
     expect(el.querySelector('.att-summary')!.textContent).toContain('Presentes 2');
 
-    segmentos(el)[3].click();          // Bruno → Ausente
+    segmentos(el)[3].click();          // el segundo → Ausente
     fixture.detectChanges();
     const resumen = el.querySelector('.att-summary')!.textContent!;
     expect(resumen).toContain('Presentes 1');
     expect(resumen).toContain('Ausentes 1');
   });
 
-  it('la política cambia el contador de clases a computar', () => {
-    const { fixture, el } = mount(ses());
-    segmentos(el)[3].click();          // 1 presente, 1 ausente
-    fixture.detectChanges();
-    expect(el.querySelector('.att-summary')!.textContent).toContain('Clases a computar 2');
-
-    el.querySelector<HTMLInputElement>('.att-policy input')!.click();   // apagar la política
-    fixture.detectChanges();
-    expect(el.querySelector('.att-summary')!.textContent).toContain('Clases a computar 1');
-  });
-
-  it('emite las marcas reconciliadas y la política', () => {
-    const { fixture, el, cmp } = mount(ses());
-    let emitido: { marks: readonly AttendanceMark[]; discountAbsences: boolean } | undefined;
-    cmp.confirmed.subscribe((e) => (emitido = e));
-
-    segmentos(el)[3].click();
-    fixture.detectChanges();
-    el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!.click();
-
-    expect(emitido).toEqual({
-      marks: [{ memberId: '1-r1', present: true }, { memberId: '1-r2', present: false }],
-      discountAbsences: true,
-    });
-  });
-
+  // El guard es de CÓDIGO: .btn.loading es sólo pointer-events:none y no frena el Enter del teclado.
   it('DOS activaciones seguidas del botón emiten UNA sola vez', () => {
-    // .btn.loading es sólo pointer-events:none y NO frena el teclado: dos Enter seguidos son
-    // dos escrituras en vuelo. El guard tiene que estar en código, no en el CSS.
-    const { fixture, el, cmp } = mount(ses());
+    const { fixture, el, comp } = render([miembro()]);
+    comp.open();
+    fixture.detectChanges();
     let veces = 0;
-    cmp.confirmed.subscribe(() => veces++);
+    comp.confirmed.subscribe(() => veces++);
 
-    const boton = el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!;
     // SIN detectChanges() entre los dos clicks, a propósito: es el escenario real (dos Enter en el
     // mismo macrotask, antes de que corra la detección de cambios). Con un detectChanges() en el
     // medio el botón queda disabled y jsdom descarta el segundo click ANTES del handler
     // (HTMLElement-impl.js: `if (isDisabled(this)) return`), así que el test pasaría en verde
     // aunque se borrara el guard: estaría probando el [disabled] del template, que es justo el
     // freno que NO alcanza. Así, el guard de confirm() es lo único que evita el segundo emit.
-    boton.click();
-    boton.click();
+    guardar(el).click();
+    guardar(el).click();
 
     expect(veces).toBe(1);
 
     fixture.detectChanges();
-    expect(boton.disabled).toBe(true);
+    expect(guardar(el).disabled).toBe(true);
   });
 
-  it('markFailed rehabilita el botón para reintentar', () => {
-    const { fixture, el, cmp } = mount(ses());
-    el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!.click();
+  it('markFailed() deja el modal abierto y el botón disponible otra vez', () => {
+    const { fixture, el, comp } = render([miembro()]);
+    comp.open();
     fixture.detectChanges();
-    cmp.markFailed();
+    let veces = 0;
+    comp.confirmed.subscribe(() => veces++);
+
+    guardar(el).click();
     fixture.detectChanges();
-    expect(el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!.disabled).toBe(false);
+    expect(guardar(el).disabled).toBe(true);
+
+    comp.markFailed();
+    fixture.detectChanges();
+    expect(guardar(el).disabled).toBe(false);
+    guardar(el).click();
+    expect(veces).toBe(2);
+    expect(el.querySelector('dialog')!.open).toBe(true);   // NO se cerró
   });
 
   it('reabrir después de un fallo arranca en limpio', () => {
-    const { fixture, el, cmp } = mount(ses());
-    segmentos(el)[3].click();                 // Bruno ausente
+    const { fixture, el, comp } = render([miembro({ id: '1' }), miembro({ id: '2' })]);
+    comp.open();
     fixture.detectChanges();
-    el.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!.click();
+    segmentos(el)[3].click();                 // el segundo, ausente
     fixture.detectChanges();
-    cmp.markFailed();
+    guardar(el).click();
+    fixture.detectChanges();
+    comp.markFailed();
     fixture.detectChanges();
 
-    cmp.open();                                // reabrir
+    comp.open();                              // reabrir
     fixture.detectChanges();
     expect(segmentos(el)[3].classList.contains('on-a')).toBe(false);   // volvió a presente
   });

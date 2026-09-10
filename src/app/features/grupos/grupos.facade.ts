@@ -1,18 +1,43 @@
-import { Injectable, computed, effect, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
-import { GroupsSnapshot, SaveAttendanceRequest } from '@domain/entities/group';
+import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { CategoriesRepository } from '@domain/contracts/categories.repository';
+import { StudentsRepository } from '@domain/contracts/students.repository';
+import { Group, GroupWaitlistEntry, RosterMember } from '@domain/entities/group';
+import {
+  SessionAttendanceMark,
+  SessionAttendanceResult,
+  createSessionAttendanceDraft,
+} from '@domain/entities/session-attendance';
+import { Category } from '@domain/entities/category';
+import { Student } from '@domain/entities/student';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { toGroupWaitlist, toRoster } from '@data/mappers/groups.mapper';
 
 @Injectable()
-export class GruposFacade extends SignalStore<GroupsSnapshot, DomainError> {
+export class GruposFacade extends SignalStore<Group[], DomainError> {
   private readonly repo = inject(GroupsRepository);
+  private readonly sessions = inject(ClassSessionsRepository);
+  private readonly categoriesRepo = inject(CategoriesRepository);
+  private readonly studentsRepo = inject(StudentsRepository);
   private readonly tenant = inject(TenantContext, { optional: true });
 
-  /** Atajo para los templates: [] mientras no haya snapshot. */
-  readonly groups = computed(() => this.data()?.groups ?? []);
+  /** Atajo para los templates: [] mientras no haya datos. */
+  readonly groups = computed(() => this.data() ?? []);
+
+  private readonly _roster = signal<readonly RosterMember[]>([]);
+  private readonly _waitlist = signal<readonly GroupWaitlistEntry[]>([]);
+  private readonly _detalleCargando = signal(false);
+  readonly roster = this._roster.asReadonly();
+  readonly waitlist = this._waitlist.asReadonly();
+  readonly detalleCargando = this._detalleCargando.asReadonly();
+
+  /** Lookups de nombres. Se piden una vez por vida de la facade, que dura lo que dura /grupos. */
+  private categories: readonly Category[] | null = null;
+  private students: readonly Student[] | null = null;
 
   constructor() {
     super();
@@ -23,17 +48,64 @@ export class GruposFacade extends SignalStore<GroupsSnapshot, DomainError> {
       this.tenant?.tenantId();
       if (!seenFirst) { seenFirst = true; return; }
       this.reset();
+      this._roster.set([]);
+      this._waitlist.set([]);
+      this.categories = null;
+      this.students = null;
     });
   }
 
-  load(clubId: string): Promise<void> {
-    return this.run(this.repo.getGroups(clubId), toDomainError);
+  load(): Promise<void> {
+    return this.run(this.repo.listGroups(), toDomainError);
+  }
+
+  /**
+   * Roster y lista de espera de la próxima sesión del grupo.
+   *
+   * NO pasa por run(): su fallo no debe reemplazar la pantalla entera, que ya tiene el grupo
+   * cargado y es lo más valioso que hay para mostrar. Las dos listas quedan vacías y el detalle
+   * sigue mostrando el hero y las sesiones.
+   */
+  async loadDetalle(nextSessionId: string | null): Promise<void> {
+    if (nextSessionId === null) {
+      this._roster.set([]);
+      this._waitlist.set([]);
+      return;
+    }
+    this._detalleCargando.set(true);
+    try {
+      const [reservations, esperando, categories, students] = await Promise.all([
+        this.sessions.reservations(nextSessionId),
+        this.sessions.waitingList(nextSessionId),
+        this.lookupCategories(),
+        this.lookupStudents(),
+      ]);
+      this._roster.set(toRoster(reservations, categories, new Date()));
+      this._waitlist.set(toGroupWaitlist(esperando, students));
+    } catch {
+      this._roster.set([]);
+      this._waitlist.set([]);
+    } finally {
+      this._detalleCargando.set(false);
+    }
+  }
+
+  /**
+   * El roster de UNA sesión cualquiera, para el modal de asistencia. Se devuelve y no se guarda:
+   * el modal es efímero y la sesión que se marca casi nunca es la próxima.
+   */
+  async rosterDeSesion(sessionId: string): Promise<readonly RosterMember[]> {
+    const [reservations, categories] = await Promise.all([
+      this.sessions.reservations(sessionId),
+      this.lookupCategories(),
+    ]);
+    return toRoster(reservations, categories, new Date());
   }
 
   /**
    * LAS DOS TRAMPAS GEMELAS — este método NO toca loading() NI error(), a propósito, y DEJA
-   * PROPAGAR el error. Es una copia deliberada de DashboardFacade.cancel()
-   * (dashboard.facade.ts:37-57), por las mismas tres razones:
+   * PROPAGAR el error. Es una copia deliberada de DashboardFacade.cancel(), por las mismas tres
+   * razones:
    *
    *  1. El template del detalle es una cadena `@if (loading()) … @else if (error()) … @else if
    *     (data())` y el modal vive DENTRO de la rama data(): usar run() prendería loading() y el
@@ -44,8 +116,29 @@ export class GruposFacade extends SignalStore<GroupsSnapshot, DomainError> {
    *     el catch de la página no correría y saldría el toast de ÉXITO tras un fallo.
    *
    * Un implementador que "arregle" esto usando run() reintroduce exactamente el bug.
+   *
+   * NO relee después de escribir, y es la excepción justificada a la convención del repo:
+   * `markBulk` escribe la tabla `attendance` y no toca el cupo, ni los créditos, ni el estado de
+   * la reserva, ni el de la clase. Nada de lo que la pantalla muestra cambia. El resultado POR
+   * ÍTEM que devuelve es lo único que hay, porque ninguna relectura lo recupera.
    */
-  async saveAttendance(clubId: string, req: SaveAttendanceRequest): Promise<void> {
-    this.setData(await this.repo.saveAttendance(clubId, req));
+  // `async` y no un return pelado de la promesa: `createSessionAttendanceDraft` tira
+  // SINCRÓNICAMENTE, y la página espera ese fallo en su `catch`, no como una excepción que le
+  // explota antes del await.
+  async saveAttendance(
+    sessionId: string,
+    marks: readonly SessionAttendanceMark[],
+  ): Promise<SessionAttendanceResult[]> {
+    return this.sessions.markAttendance(sessionId, createSessionAttendanceDraft(marks));
+  }
+
+  private async lookupCategories(): Promise<readonly Category[]> {
+    this.categories ??= await this.categoriesRepo.list();
+    return this.categories;
+  }
+
+  private async lookupStudents(): Promise<readonly Student[]> {
+    this.students ??= await this.studentsRepo.list();
+    return this.students;
   }
 }

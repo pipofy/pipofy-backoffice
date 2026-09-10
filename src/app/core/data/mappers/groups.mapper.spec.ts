@@ -1,98 +1,206 @@
 import { describe, it, expect } from 'vitest';
-import * as v from 'valibot';
-import { toGroupsSnapshot } from './groups.mapper';
-import { GroupsDto, GroupsDtoSchema } from '../dto/groups.dto';
-import { GROUPS_SEED } from '../repositories/groups.seed';
+import { toGroups, toRoster, toGroupWaitlist, GroupsInput } from './groups.mapper';
+import { Schedule } from '@domain/entities/schedule';
+import { ClassSession } from '@domain/entities/class-session';
+import { SessionReservation } from '@domain/entities/session-reservation';
 
-/** DTO mínimo de un grupo, con las sesiones que pida cada test. */
-function dto(sessions: GroupsDto['groups'][number]['sessions']): GroupsDto {
-  return {
-    club_id: 'c1',
-    groups: [{
-      id: '1', name: 'Grupo', category: '7ma', teacher: 'Diego A.', teacher_initials: 'D',
-      day: 'Lun', time: '18:00', court_name: 'Cancha 1', capacity: 4,
-      roster: [{ id: '1-r1', name: 'Lucía Pereyra', initials: 'LP', category: '7ma', credits: 6, attendance_rate: 92 }],
-      waitlist: [{ name: 'Julián Vera', initials: 'JV', since: 'hace 2 días' }],
-      sessions,
-    }],
-  };
-}
+const AHORA = new Date('2026-09-10T12:00:00.000Z');
 
-const ses = (over: Partial<GroupsDto['groups'][number]['sessions'][number]> = {}) => ({
-  id: '1-s1', date: '01/07', time: '18:00', court_name: 'Cancha 1',
-  status: 'prog' as const, attendance: null, ...over,
+const template = (over: Partial<Schedule> = {}): Schedule => ({
+  id: '7',
+  courtId: '1',
+  coachId: '3',
+  categoryGroupId: '2',
+  sessionTypeId: '1',
+  weekday: 1,
+  startTime: '18:00',
+  endTime: '19:30',
+  capacity: 4,
+  price: null,
+  active: true,
+  validFrom: null,
+  validTo: null,
+  ...over,
 });
 
-describe('toGroupsSnapshot', () => {
-  it('mapea snake_case a camelCase', () => {
-    const snap = toGroupsSnapshot(dto([ses()]));
-    expect(snap.clubId).toBe('c1');
-    const g = snap.groups[0];
-    expect(g.teacherInitials).toBe('D');
+const sesion = (over: Partial<ClassSession> = {}): ClassSession => ({
+  id: '301',
+  scheduleTemplateId: '7',
+  courtId: '1',
+  coachId: '3',
+  categoryGroupId: '2',
+  startAt: '2026-09-14T21:00:00.000Z',
+  capacity: 4,
+  availableSpots: 1,
+  waitingCount: 2,
+  status: 'programada',
+  ...over,
+});
+
+const input = (over: Partial<GroupsInput> = {}): GroupsInput => ({
+  schedules: [template()],
+  sessions: [sesion()],
+  courts: [
+    { id: '1', name: 'Cancha 1', code: null, surfaceTypeId: null, indoor: false, courtStatusId: null },
+  ],
+  coaches: [{ id: '3', displayName: 'Diego A.', description: null }],
+  categoryGroups: [{ id: '2', name: '7ma+8va' }],
+  ...over,
+});
+
+describe('toGroups', () => {
+  it('arma el grupo desde el template y resuelve los nombres', () => {
+    const [g] = toGroups(input(), AHORA);
+    expect(g.id).toBe('7');
+    expect(g.category).toBe('7ma+8va');
+    expect(g.teacher).toBe('Diego A.');
     expect(g.courtName).toBe('Cancha 1');
-    expect(g.roster[0]).toEqual({
-      id: '1-r1', name: 'Lucía Pereyra', initials: 'LP', category: '7ma', credits: 6, attendanceRate: 92,
-    });
-    expect(g.waitlist[0]).toEqual({ name: 'Julián Vera', initials: 'JV', since: 'hace 2 días' });
-    expect(g.sessions[0].courtName).toBe('Cancha 1');
+    expect(g.weekday).toBe(1);
+    expect(g.startTime).toBe('18:00');
+    expect(g.capacity).toBe(4);
   });
 
-  it('mapea los tres status', () => {
-    const snap = toGroupsSnapshot(dto([
-      ses({ id: '1-s1', status: 'prog', attendance: null }),
-      ses({ id: '1-s2', status: 'done', attendance: [{ member_id: '1-r1', present: true }] }),
-      ses({ id: '1-s3', status: 'canc', attendance: null }),
-    ]));
-    expect(snap.groups[0].sessions.map((s) => s.status)).toEqual(['scheduled', 'completed', 'cancelled']);
+  it('toma enrolled, waiting y nextSessionId de la próxima sesión PROGRAMADA', () => {
+    const [g] = toGroups(
+      input({
+        sessions: [
+          sesion({ id: 'pasada', startAt: '2026-09-07T21:00:00.000Z', availableSpots: 4, waitingCount: 0 }),
+          sesion({ id: 'cancelada', startAt: '2026-09-14T21:00:00.000Z', status: 'cancelada', availableSpots: 4 }),
+          sesion({ id: 'proxima', startAt: '2026-09-21T21:00:00.000Z', availableSpots: 1, waitingCount: 2 }),
+          sesion({ id: 'lejana', startAt: '2026-09-28T21:00:00.000Z', availableSpots: 0, waitingCount: 9 }),
+        ],
+      }),
+      AHORA,
+    );
+    expect(g.nextSessionId).toBe('proxima');
+    expect(g.enrolled).toBe(3);   // capacity 4 − availableSpots 1
+    expect(g.waiting).toBe(2);
   });
 
-  it('una sesión done trae attendance con una marca por integrante; prog y canc traen null', () => {
-    const snap = toGroupsSnapshot(dto([
-      ses({ id: '1-s1', status: 'done', attendance: [{ member_id: '1-r1', present: false }] }),
-      ses({ id: '1-s2', status: 'prog', attendance: null }),
-      ses({ id: '1-s3', status: 'canc', attendance: null }),
-    ]));
-    expect(snap.groups[0].sessions[0].attendance).toEqual([{ memberId: '1-r1', present: false }]);
-    expect(snap.groups[0].sessions[1].attendance).toBeNull();
-    expect(snap.groups[0].sessions[2].attendance).toBeNull();
+  it('ordena las sesiones ascendente y marca yaPaso contra el reloj recibido', () => {
+    const [g] = toGroups(
+      input({
+        sessions: [
+          sesion({ id: 'b', startAt: '2026-09-14T21:00:00.000Z' }),
+          sesion({ id: 'a', startAt: '2026-09-07T21:00:00.000Z' }),
+        ],
+      }),
+      AHORA,
+    );
+    expect(g.sessions.map((s) => s.id)).toEqual(['a', 'b']);
+    expect(g.sessions.map((s) => s.yaPaso)).toEqual([true, false]);
   });
 
-  it('RECHAZA un DTO que viole la invariante status⟺attendance', () => {
-    // done sin marcas: es el estado que produce una semilla mal expandida, y hace que el modo
-    // editar del modal arranque leyendo null.
-    expect(() => toGroupsSnapshot(dto([ses({ status: 'done', attendance: null })])))
-      .toThrow(/invariante/i);
-    // marcas en una sesión que no está completada
-    expect(() => toGroupsSnapshot(dto([ses({ status: 'prog', attendance: [{ member_id: '1-r1', present: true }] })])))
-      .toThrow(/invariante/i);
-    expect(() => toGroupsSnapshot(dto([ses({ status: 'canc', attendance: [{ member_id: '1-r1', present: true }] })])))
-      .toThrow(/invariante/i);
+  // Una clase creada a mano no cuelga de ninguna plantilla: no es de ningún grupo.
+  it('ignora las sesiones sin scheduleTemplateId', () => {
+    const [g] = toGroups(input({ sessions: [sesion({ scheduleTemplateId: null })] }), AHORA);
+    expect(g.sessions).toEqual([]);
+    expect(g.nextSessionId).toBeNull();
+    expect(g.enrolled).toBe(0);
+    expect(g.waiting).toBe(0);
+  });
+
+  // Los inactivos no generan sesiones (generateSessions filtra active: true), así que un grupo
+  // inactivo es un grupo que no existe más.
+  it('descarta los templates inactivos', () => {
+    expect(toGroups(input({ schedules: [template({ active: false })] }), AHORA)).toEqual([]);
+  });
+
+  it('muestra el template aunque no tenga sesiones en la ventana', () => {
+    const [g] = toGroups(input({ sessions: [] }), AHORA);
+    expect(g.sessions).toEqual([]);
+    expect(g.enrolled).toBe(0);
+  });
+
+  it('cae a guión cuando un id no matchea ningún lookup', () => {
+    const [g] = toGroups(input({ courts: [], coaches: [], categoryGroups: [] }), AHORA);
+    expect([g.courtName, g.teacher, g.category]).toEqual(['—', '—', '—']);
   });
 });
 
-describe('GROUPS_SEED', () => {
-  it('parsea contra el schema y mapea sin violar la invariante', () => {
-    const snap = toGroupsSnapshot(v.parse(GroupsDtoSchema, GROUPS_SEED));
-    expect(snap.groups).toHaveLength(6);
+describe('toRoster', () => {
+  const reserva = (over: Partial<SessionReservation> = {}): SessionReservation => ({
+    id: '500',
+    studentId: '88',
+    studentPlanId: null,
+    status: 'confirmed',
+    holdExpiresAt: null,
+    attendanceStatus: null,
+    studentName: 'Lucía Pereyra',
+    studentCategoryId: '3',
+    ...over,
+  });
+  const categorias = [{ id: '3', name: '7ma', levelOrder: 7 }];
+
+  it('usa la reserva como id de la fila y resuelve la categoría', () => {
+    const [m] = toRoster([reserva()], categorias, AHORA);
+    expect(m.id).toBe('500');
+    expect(m.studentId).toBe('88');
+    expect(m.name).toBe('Lucía Pereyra');
+    expect(m.category).toBe('7ma');
   });
 
-  it('la sesión 3-s1 es MIXTA: sin eso, el modo editar del modal es intesteable', () => {
-    // Todas las sesiones completadas de la maqueta son 100% presentes, y el modo TOMAR también
-    // arranca con todos presentes. Si la semilla las expandiera literalmente, el test de
-    // "editar restaura las marcas guardadas" daría el mismo resultado que si la restauración
-    // no estuviera implementada. Esta sesión es el único dato que los distingue.
-    const snap = toGroupsSnapshot(v.parse(GroupsDtoSchema, GROUPS_SEED));
-    const sesion = snap.groups.find((g) => g.id === '3')!.sessions.find((s) => s.id === '3-s1')!;
-    expect(sesion.status).toBe('completed');
-    expect(sesion.attendance!.filter((m) => m.present)).toHaveLength(3);
-    expect(sesion.attendance!.filter((m) => !m.present)).toHaveLength(1);
+  // La MISMA definición de "lugar ocupado" que usa el backend (occupiedSpotsWhere), para que el
+  // largo de esta tabla coincida con el `enrolled` del cupo.
+  it('deja pasar confirmed y held vigente, y descarta el resto', () => {
+    const rows = toRoster(
+      [
+        reserva({ id: 'conf', status: 'confirmed' }),
+        reserva({ id: 'vigente', status: 'held', holdExpiresAt: '2026-09-10T13:00:00.000Z' }),
+        reserva({ id: 'vencido', status: 'held', holdExpiresAt: '2026-09-10T11:00:00.000Z' }),
+        reserva({ id: 'sinvto', status: 'held', holdExpiresAt: null }),
+        reserva({ id: 'cancelada', status: 'cancelled' }),
+      ],
+      categorias,
+      AHORA,
+    );
+    expect(rows.map((r) => r.id)).toEqual(['conf', 'vigente']);
   });
 
-  it('las sesiones vienen en orden cronológico ascendente (de eso depende nextSessionDate)', () => {
-    const snap = toGroupsSnapshot(v.parse(GroupsDtoSchema, GROUPS_SEED));
-    for (const g of snap.groups) {
-      const dias = g.sessions.map((s) => Number(s.date.slice(0, 2)));
-      expect([...dias].sort((a, b) => a - b)).toEqual(dias);
-    }
+  it('cae a guión sin categoría o con una que no está en el catálogo', () => {
+    const rows = toRoster(
+      [reserva({ id: 'a', studentCategoryId: null }), reserva({ id: 'b', studentCategoryId: '99' })],
+      categorias,
+      AHORA,
+    );
+    expect(rows.map((r) => r.category)).toEqual(['—', '—']);
+  });
+
+  it('cae a guión con el alumno sin nombre cargado', () => {
+    const [m] = toRoster([reserva({ studentName: '' })], categorias, AHORA);
+    expect(m.name).toBe('—');
+  });
+});
+
+describe('toGroupWaitlist', () => {
+  const alumno = {
+    id: '91',
+    phone: '+5491100000000',
+    firstName: 'Julián',
+    lastName: 'Vera',
+    birthDate: null,
+    categoryId: null,
+    studentStatusId: '1',
+    dominantHand: null,
+    ranking: null,
+    notes: null,
+  };
+
+  it('resuelve el nombre contra el padrón', () => {
+    const [e] = toGroupWaitlist(
+      [{ id: '7', studentId: '91', requestedAt: '2026-09-01T12:00:00.000Z' }],
+      [alumno],
+    );
+    expect(e).toEqual({
+      id: '7',
+      studentId: '91',
+      name: 'Julián Vera',
+      requestedAt: '2026-09-01T12:00:00.000Z',
+    });
+  });
+
+  it('cae a guión si el alumno no está en el padrón', () => {
+    const [e] = toGroupWaitlist([{ id: '7', studentId: '404', requestedAt: null }], [alumno]);
+    expect(e.name).toBe('—');
   });
 });

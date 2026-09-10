@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { Group } from '@domain/entities/group';
 import { domainErrorMessage } from '@domain/errors';
+import { weekdayLabel } from '@shared/weekday-label';
 import { CupoCellComponent } from '../components/cupo-cell.component';
+import { groupTitle, initials } from '../grupos-format';
 import { GruposFacade } from '../grupos.facade';
-import { SessionStore } from '@data/auth/session-store';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 const TODAS = 'Todas';
@@ -30,17 +31,15 @@ const TODAS = 'Todas';
 export class GruposListPageComponent {
   protected readonly facade = inject(GruposFacade);
   private readonly router = inject(Router);
-  private readonly session = inject(SessionStore);
 
   protected readonly query = signal('');
   protected readonly category = signal(TODAS);
   protected readonly todas = TODAS;
 
   constructor() {
-    // Carga sólo si el snapshot está vacío: la facade se provee en la ruta PADRE, así que volver
-    // del detalle no recarga, y entrar por deep-link a /grupos/:id sí carga.
-    const clubId = this.session.clubId();
-    if (clubId && !this.facade.data() && !this.facade.loading()) void this.facade.load(clubId);
+    // Carga sólo si está vacío: la facade se provee en la ruta PADRE, así que volver del detalle
+    // no recarga, y entrar por deep-link a /grupos/:id sí carga.
+    if (!this.facade.data() && !this.facade.loading()) void this.facade.load();
   }
 
   /** 'Todas' + las categorías presentes en los datos, sin repetir. Origen: 1688-1690. */
@@ -55,9 +54,13 @@ export class GruposListPageComponent {
     return this.facade.groups().filter(
       (g) =>
         (cat === TODAS || g.category === cat) &&
-        (g.name.toLowerCase().includes(q) || g.teacher.toLowerCase().includes(q)),
+        (groupTitle(g).toLowerCase().includes(q) || g.teacher.toLowerCase().includes(q)),
     );
   });
+
+  protected title(g: Group): string { return groupTitle(g); }
+  protected ini(name: string): string { return initials(name); }
+  protected dia(weekday: number | null): string { return weekdayLabel(weekday); }
 
   protected errorText(): string {
     const err = this.facade.error();

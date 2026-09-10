@@ -1,17 +1,14 @@
 /* Modal de asistencia. Feature-local: es vocabulario de Grupos, no del design system.
    Fuente: index-v2.html:546-563.
 
-   El borde de .att-policy está hardcodeado como #F4DCA0 en la maqueta (546): acá va el token
-   --color-warning-soft-border, que ya existe (styles/tokens.css:73).
+   SIN .att-policy ni .notice-ic: el checkbox de "descontar crédito por inasistencia" y el aviso
+   verde de créditos se fueron con el modo doble del modal — este backend descuenta al reservar,
+   no al tomar asistencia.
 
    El @media(pointer:coarse) de .segp vive ACÁ, junto a su regla base, y NO en el components.css
    global: partir un selector entre el DS y un feature es lo que prohíbe la regla de colocación.
    Sólo .fchip y .row-open —que sí son primitivos del DS— tienen su táctil allá. */
 
-.att-policy{display:flex;align-items:center;gap:var(--space-sm);background:var(--color-warning-soft);border:1px solid var(--color-warning-soft-border);border-radius:var(--radius-sm);padding:var(--space-sm);margin-bottom:var(--space-md);cursor:pointer}
-.att-policy input{width:18px;height:18px;accent-color:var(--color-warning);flex:0 0 auto;min-height:auto;padding:0}
-.att-policy .ap-t{font-size:var(--text-xs);font-weight:600;color:var(--color-on-warning-soft)}
-.att-policy .ap-d{font-size:var(--text-2xs);color:var(--color-on-warning-soft);opacity:.9}
 .att-list{border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;margin-bottom:var(--space-md)}
 .att-row{display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-sm);flex-wrap:wrap}
 .att-row+.att-row{border-top:1px solid var(--color-border)}
@@ -25,9 +22,6 @@
 .att-summary b{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .att-summary .sp{color:var(--color-on-accent-soft)}
 .att-summary .sa{color:var(--color-on-destructive-soft)}
-.att-summary .sc{color:var(--color-on-primary-soft)}
-
-.notice-ic { flex: 0 0 auto; margin-top: 1px; }
 
 @media (pointer: coarse) {
   .segp { min-height: 44px; }

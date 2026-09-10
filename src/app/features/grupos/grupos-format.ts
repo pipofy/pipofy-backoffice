@@ -1,10 +1,11 @@
-import { GroupSession } from '@domain/entities/group';
+import { Group } from '@domain/entities/group';
+import { localHhMm } from '@domain/local-date';
+import { weekdayLabel } from '@shared/weekday-label';
 
 /** Guión largo (EM DASH, U+2014), igual que la maqueta. */
 const DASH = '—';
 
 export type OccupancyState = 'low' | 'ok' | 'full';
-export type AttendanceState = 'high' | 'mid' | 'low';
 
 /**
  * Estado de ocupación de un grupo. Origen: index-v2.html:1698-1701.
@@ -17,29 +18,48 @@ export function occupancyState(enrolled: number, capacity: number): OccupancySta
   return 'ok';
 }
 
-/** Umbrales de la barra de asistencia. Origen: index-v2.html:1737. */
-export function attendanceState(rate: number): AttendanceState {
-  if (rate >= 80) return 'high';   // 80 exacto es 'high'
-  if (rate >= 65) return 'mid';    // 65 exacto es 'mid'
-  return 'low';
-}
-
 /**
- * Celda de asistencia de una sesión: '3/4' o '—'.
+ * El título del grupo: '7ma+8va · Lunes 18:00'.
  *
- * NO recibe el roster a propósito. El denominador son las marcas que se guardaron ESA vez; si
- * saliera del roster actual, la sesión que fue 4/4 se mostraría 4/5 al entrar alguien nuevo —
- * una asistencia que nunca ocurrió. La maqueta congelaba el string al guardar, con el mismo efecto.
+ * Se arma acá y no en el mapper porque necesita `weekdayLabel`, que vive en `shared/`, y
+ * `core/data` no puede importar `shared/` (boundaries). Es presentación de todos modos.
  */
-export function formatAttendance(session: GroupSession): string {
-  if (session.attendance === null) return DASH;
-  return `${session.attendance.filter((m) => m.present).length}/${session.attendance.length}`;
+export function groupTitle(g: Group): string {
+  const cuando = [weekdayLabel(g.weekday), g.startTime].filter((p) => p && p !== DASH).join(' ');
+  return cuando ? `${g.category} · ${cuando}` : g.category;
 }
 
 /**
- * Ficha "Próxima sesión" del hero. Origen: index-v2.html:1791.
- * Depende de que Group.sessions venga en orden cronológico ascendente (ver entities/group.ts).
+ * '2026-09-14T21:00:00.000Z' → '14/09', en zona LOCAL. Es la fecha que ve el club.
+ *
+ * A mano y no con DatePipe: `new DatePipe('es-AR')` TIRA si el locale no está registrado con
+ * `registerLocaleData`, y este proyecto no lo registra. Un `| date` en el template funcionaría
+ * —cae al LOCALE_ID por defecto— pero entonces el mismo formato quedaría resuelto de dos maneras
+ * distintas según se lo pida un template o una clase.
  */
-export function nextSessionDate(sessions: readonly GroupSession[]): string {
-  return sessions.find((s) => s.status === 'scheduled')?.date ?? DASH;
+export function fechaCorta(startAt: string | null): string {
+  if (startAt === null) return DASH;
+  const d = new Date(startAt);
+  if (Number.isNaN(d.getTime())) return DASH;
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** '21:00' en zona local. Reusa `localHhMm`, que ya resuelve esto para el resto del repo. */
+export function horaCorta(startAt: string | null): string {
+  if (startAt === null) return DASH;
+  const d = new Date(startAt);
+  return Number.isNaN(d.getTime()) ? DASH : localHhMm(d);
+}
+
+/**
+ * Iniciales para el avatar. Las calcula el front: el backend manda nombre y apellido y nada más.
+ * Toma la primera letra de las dos primeras palabras.
+ */
+export function initials(name: string): string {
+  const letras = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '');
+  return letras.join('') || DASH;
 }

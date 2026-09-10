@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RosterMember } from '@domain/entities/group';
-import { attendanceState, occupancyState } from '../grupos-format';
+import { initials, occupancyState } from '../grupos-format';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
@@ -9,6 +9,13 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
  *
  * SIN filas clickeables ni .row-open (D8): en la maqueta abren la ficha del alumno, que este
  * slice difiere. Una fila muerta o un toast que promete la ficha serían peores.
+ *
+ * SIN las columnas Créditos y % de asistencia: los dos son datos POR INSCRIPCIÓN y la inscripción
+ * no existe en la base (ver el ponytail de entities/group.ts). Una columna de guiones ocupa ancho
+ * e invita a preguntar por qué está vacía. Vuelven cuando exista `enrollment`.
+ *
+ * La fila 'held' se marca pero no se esconde: ocupa cupo para el backend, así que esconderla haría
+ * que el 4/4 del hero no cuadre con las filas de esta tabla.
  */
 @Component({
   selector: 'app-roster-table',
@@ -30,7 +37,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
           <table>
             <thead>
               <tr>
-                <th>Alumno</th><th>Categoría</th><th class="cell-right">Créditos</th><th>Asistencia</th>
+                <th>Alumno</th><th>Categoría</th>
               </tr>
             </thead>
             <tbody>
@@ -38,20 +45,15 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
                 <tr>
                   <td>
                     <div class="roster-who">
-                      <span class="avatar-sm" aria-hidden="true">{{ m.initials }}</span>
+                      <span class="avatar-sm" aria-hidden="true">{{ ini(m.name) }}</span>
                       <div class="roster-name">{{ m.name }}</div>
                     </div>
                   </td>
-                  <td><span class="cat-badge">{{ m.category }}</span></td>
-                  <td class="amt mono">{{ m.credits }}</td>
                   <td>
-                    <span class="att-bar">
-                      <span class="track" aria-hidden="true">
-                        <i [class.mid]="rate(m) === 'mid'" [class.lowp]="rate(m) === 'low'"
-                           [style.width.%]="m.attendanceRate"></i>
-                      </span>
-                      <span class="att-pct">{{ m.attendanceRate }}%</span>
-                    </span>
+                    <span class="cat-badge">{{ m.category }}</span>
+                    @if (m.status === 'held') {
+                      <span class="cat-badge hold">Sin confirmar</span>
+                    }
                   </td>
                 </tr>
               }
@@ -69,5 +71,5 @@ export class RosterTableComponent {
   readonly capacity = input.required<number>();
 
   protected readonly full = computed(() => occupancyState(this.roster().length, this.capacity()) === 'full');
-  protected rate(m: RosterMember) { return attendanceState(m.attendanceRate); }
+  protected ini(name: string): string { return initials(name); }
 }

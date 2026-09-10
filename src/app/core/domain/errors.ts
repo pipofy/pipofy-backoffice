@@ -56,20 +56,6 @@ export class GroupNotFoundError extends DomainRuleError {
   }
 }
 
-export class GroupSessionNotFoundError extends DomainRuleError {
-  constructor(groupId: string, sessionId: string) {
-    super(`La sesión ${sessionId} no pertenece al grupo ${groupId}.`);
-    this.name = 'GroupSessionNotFoundError';
-  }
-}
-
-export class SessionCancelledError extends DomainRuleError {
-  constructor() {
-    super('No se puede tomar asistencia de una sesión cancelada.');
-    this.name = 'SessionCancelledError';
-  }
-}
-
 /**
  * DomainError → copy en español para el usuario final.
  *

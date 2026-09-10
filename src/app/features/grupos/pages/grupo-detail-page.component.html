@@ -10,23 +10,18 @@
     Volver a la lista
   </a>
 
-  <p class="notice hold">
-    Datos de demostración. Esta pantalla todavía no está conectada: falta el endpoint de
-    asistencia.
-  </p>
-
   <div class="stu-wrap">
     <div class="stu-card">
       <div class="stu-hero">
-        <div class="st-av">{{ g.teacherInitials }}</div>
-        <h2>{{ g.name }}</h2>
+        <div class="st-av">{{ ini(g.teacher) }}</div>
+        <h2>{{ title(g) }}</h2>
         <div class="st-sub">{{ g.teacher }} · Categoría {{ g.category }}</div>
         <div class="grp-hero-tags">
           <span class="grp-tag">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
               <rect x="3.5" y="4.5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/>
               <path d="M3.5 9h17M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            </svg>{{ g.day }} · {{ g.time }}
+            </svg>{{ dia(g.weekday) }} · {{ g.startTime ?? '—' }}
           </span>
           <span class="grp-tag">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -38,15 +33,19 @@
       </div>
       <div class="st-facts">
         <div class="st-fact"><span class="l">Cupo</span>
-          <span class="v"><app-cupo-cell [enrolled]="g.roster.length" [capacity]="g.capacity" /></span></div>
-        <div class="st-fact"><span class="l">Inscriptos</span><span class="v mono">{{ g.roster.length }}</span></div>
-        <div class="st-fact"><span class="l">En lista de espera</span><span class="v mono">{{ g.waitlist.length }}</span></div>
-        <div class="st-fact"><span class="l">Próxima sesión</span><span class="v mono">{{ nextDate() }}</span></div>
+          <span class="v"><app-cupo-cell [enrolled]="g.enrolled" [capacity]="g.capacity" /></span></div>
+        <div class="st-fact"><span class="l">Inscriptos</span><span class="v mono">{{ g.enrolled }}</span></div>
+        <div class="st-fact"><span class="l">En lista de espera</span><span class="v mono">{{ g.waiting }}</span></div>
+        <div class="st-fact"><span class="l">Próxima sesión</span><span class="v mono">{{ proxima() }}</span></div>
       </div>
     </div>
 
     <div class="detail-main">
-      <app-roster-table [roster]="g.roster" [capacity]="g.capacity" />
+      @if (facade.detalleCargando()) {
+        <app-placeholder tone="loading" title="Cargando inscriptos…" />
+      } @else {
+        <app-roster-table [roster]="facade.roster()" [capacity]="g.capacity" />
+      }
 
       <div class="acard waitlist-card">
         <div class="a-head">
@@ -58,15 +57,15 @@
             </svg>
           </span>
           <h3>Lista de espera</h3>
-          <span class="cnt hold">{{ g.waitlist.length }}</span>
+          <span class="cnt hold">{{ facade.waitlist().length }}</span>
         </div>
         <div class="a-body">
-          @for (w of g.waitlist; track w.name; let i = $index) {
+          @for (w of facade.waitlist(); track w.id; let i = $index) {
             <div class="arow">
-              <span class="avatar-sm amber" aria-hidden="true">{{ w.initials }}</span>
+              <span class="avatar-sm amber" aria-hidden="true">{{ ini(w.name) }}</span>
               <div class="a-main">
                 <div class="a-title">{{ w.name }}</div>
-                <div class="a-meta">@if (i === 0) { 1ro en la fila · }anotado {{ w.since }}</div>
+                <div class="a-meta">@if (i === 0) { 1ro en la fila · }anotado {{ fecha(w.requestedAt) }}</div>
               </div>
             </div>
           } @empty {
@@ -75,8 +74,7 @@
         </div>
       </div>
 
-      <app-sessions-table [sessions]="g.sessions" [canTake]="g.roster.length > 0"
-                          (attendanceRequested)="openAttendance($event)" />
+      <app-sessions-table [sessions]="g.sessions" (attendanceRequested)="openAttendance($event)" />
     </div>
   </div>
 

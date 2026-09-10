@@ -223,6 +223,9 @@ tbody tr:hover .row-open{color:var(--color-primary)}
    Fuente: index-v2.html:355. Consumidores: la celda de categoría del roster (Tarea 8)
    y la de la tabla de grupos (Tarea 12). */
 .cat-badge{display:inline-flex;align-items:center;font-size:var(--text-2xs);font-weight:600;padding:3px var(--space-sm);border-radius:var(--radius-full);background:var(--color-primary-soft);color:var(--color-on-primary-soft)}
+/* El colorway ámbar del par soft, igual que .ic.hold y .notice.hold. Consumidor: la fila 'held'
+   del roster de un grupo, que ocupa cupo pero todavía no está confirmada. */
+.cat-badge.hold{background:var(--color-warning-soft);color:var(--color-on-warning-soft)}
 
 /* ═══════════════ PRIMITIVOS RENOMBRADOS ═══════════════
    Las tres clases siguientes vienen de index-v2.html con nombres de "student"; acá
@@ -286,10 +289,8 @@ dialog.modal[open]::backdrop{animation:fadein var(--duration) var(--ease)}
 .modal-foot{padding:var(--space-md) var(--space-lg);border-top:1px solid var(--color-border);display:flex;gap:var(--space-sm);justify-content:flex-end;background:var(--color-muted);flex-wrap:wrap}
 
 /* ═══════════════ NOTICE ═══════════════
-   Fuente: index-v2.html:666-667. Consumidores: el modal de cancelar del dashboard
-   (`.notice.hold`), el modal de asistencia de grupos (`.notice.ok`) y los banners de datos de
-   demostración de la lista de grupos y el detalle de grupo (`.notice.hold`, grupos-list-page y
-   grupo-detail-page).
+   Fuente: index-v2.html:666-667. Consumidores: el modal de generar clases (`.notice.hold`, el
+   único crudo — ver notice.component.ts) y `app-notice`, que hoy se usa en `ok` y `bad`.
 
    La base lleva SÓLO geometría y el color vive en la variante. La maqueta pintaba el verde
    en `.notice` a secas y lo tapaba con el ámbar de `.hold`; cuando el único consumidor de la

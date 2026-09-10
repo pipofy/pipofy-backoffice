@@ -1,17 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { GroupSession } from '@domain/entities/group';
+import { Group, GroupSession } from '@domain/entities/group';
+import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 import { domainErrorMessage } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
+import { weekdayLabel } from '@shared/weekday-label';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { CupoCellComponent } from '../components/cupo-cell.component';
 import { RosterTableComponent } from '../components/roster-table.component';
 import { SessionsTableComponent } from '../components/sessions-table.component';
-import { AttendanceModalComponent, AttendanceResult, AttendanceTarget } from '../components/attendance-modal.component';
-import { creditsToDiscount } from '@domain/use-cases/apply-attendance.use-case';
-import { nextSessionDate } from '../grupos-format';
+import { AttendanceModalComponent, AttendanceTarget } from '../components/attendance-modal.component';
+import { fechaCorta, groupTitle, initials } from '../grupos-format';
 import { GruposFacade } from '../grupos.facade';
-import { SessionStore } from '@data/auth/session-store';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
@@ -40,15 +40,22 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 export class GrupoDetailPageComponent {
   protected readonly facade = inject(GruposFacade);
   private readonly toasts = inject(ToastService);
-  private readonly session = inject(SessionStore);
   private readonly groupId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly attendanceTarget = signal<AttendanceTarget | null>(null);
+  protected readonly abriendo = signal(false);
   private readonly modal = viewChild(AttendanceModalComponent);
 
   constructor() {
-    const clubId = this.session.clubId();
-    if (clubId && !this.facade.data() && !this.facade.loading()) void this.facade.load(clubId);
+    if (!this.facade.data() && !this.facade.loading()) void this.facade.load();
+
+    // Cuando el grupo aparece (o cambia), traer roster y lista de espera de su próxima sesión.
+    // Es un effect y no una llamada encadenada al load() porque se entra a esta página también
+    // por deep-link, con el snapshot ya cargado por la lista.
+    effect(() => {
+      const g = this.group();
+      if (g) void this.facade.loadDetalle(g.nextSessionId);
+    });
 
     // El modal vive detrás de un @if, así que no existe cuando se elige la sesión: hay que
     // abrirlo cuando Angular ya lo creó. Mismo patrón que el modal de cancelar del dashboard.
@@ -58,50 +65,67 @@ export class GrupoDetailPageComponent {
   }
 
   protected readonly group = computed(() => this.facade.groups().find((g) => g.id === this.groupId));
-  protected readonly nextDate = computed(() => nextSessionDate(this.group()?.sessions ?? []));
+  protected readonly proxima = computed(() => {
+    const s = this.group()?.sessions.find((x) => x.status === 'programada' && !x.yaPaso);
+    return fechaCorta(s?.startAt ?? null);
+  });
+
+  protected title(g: Group): string { return groupTitle(g); }
+  protected ini(name: string): string { return initials(name); }
+  protected dia(weekday: number | null): string { return weekdayLabel(weekday); }
+  protected fecha(v: string | null): string { return fechaCorta(v); }
 
   protected errorText(): string {
     const err = this.facade.error();
     return err ? domainErrorMessage(err) : '';
   }
 
-  protected openAttendance(session: GroupSession): void {
+  protected async openAttendance(session: GroupSession): Promise<void> {
     const group = this.group();
-    if (!group) return;
-    // Sólo set(): el effect que abre el modal se re-dispara siempre, porque este literal nunca es
-    // Object.is-igual al target anterior. Un open() manual acá correría ANTES de la detección de
-    // cambios y sembraría el modal con el target VIEJO (alcanzable: abrir sesión A → Cancelar →
-    // abrir sesión B). Mismo patrón que dashboard-page.component.ts:79-89.
-    this.attendanceTarget.set({ group, session });
+    if (!group || this.abriendo()) return;
+    this.abriendo.set(true);
+    try {
+      // El modal SÓLO ofrece las confirmed: AttendanceService.mark() tira 400 sobre cualquier
+      // otro estado, así que una fila 'held' en la planilla sería un fallo garantizado.
+      const roster = (await this.facade.rosterDeSesion(session.id)).filter(
+        (m) => m.status === 'confirmed',
+      );
+      if (roster.length === 0) {
+        this.toasts.show('info', 'Nadie confirmado',
+          'Esa clase no tiene reservas confirmadas: no hay a quién tomarle asistencia.');
+        return;
+      }
+      // Sólo set(): el effect que abre el modal se re-dispara siempre, porque este literal nunca
+      // es Object.is-igual al target anterior. Un open() manual acá correría ANTES de la
+      // detección de cambios y sembraría el modal con el target VIEJO.
+      this.attendanceTarget.set({ group, session, roster });
+    } catch (err) {
+      this.toasts.show('info', 'No se pudo abrir la planilla', domainErrorMessage(toDomainError(err)));
+    } finally {
+      this.abriendo.set(false);
+    }
   }
 
-  protected async onConfirmed(result: AttendanceResult): Promise<void> {
+  protected async onConfirmed(marks: readonly SessionAttendanceMark[]): Promise<void> {
     const target = this.attendanceTarget();
-    const clubId = this.session.clubId();
-    if (!target || !clubId) return;
-    const taking = target.session.status === 'scheduled';
-    const present = result.marks.filter((m) => m.present).length;
-    const absent = result.marks.length - present;
+    if (!target) return;
 
     try {
-      await this.facade.saveAttendance(clubId, {
-        groupId: target.group.id,
-        sessionId: target.session.id,
-        marks: result.marks,
-        discountAbsences: result.discountAbsences,
-      });
+      const results = await this.facade.saveAttendance(target.session.id, marks);
+      const ok = results.filter((r) => r.ok).length;
+      const fallaron = results.length - ok;
       this.modal()?.markDone();
       this.attendanceTarget.set(null);
 
-      if (taking) {
-        // Misma función que el contador en vivo del modal: si el toast reimplementara la regla,
-        // los dos números podrían divergir.
-        const computadas = creditsToDiscount(result.marks, result.discountAbsences);
+      // markBulk NO es atómico: itera con un try por ítem, así que el éxito parcial es un
+      // resultado de primera clase y no un borde. Reintentar es seguro: el upsert es idempotente.
+      if (fallaron === 0) {
+        const presentes = marks.filter((m) => m.status === 'asistio').length;
         this.toasts.show('ok', 'Asistencia registrada',
-          `${present} presente(s) · ${absent} ausente(s) · ${computadas} clase(s) computada(s).`);
+          `${presentes} presente(s) · ${marks.length - presentes} ausente(s).`);
       } else {
-        this.toasts.show('ok', 'Asistencia actualizada',
-          `Quedó ${present}/${result.marks.length} presentes (sin cambios de crédito).`);
+        this.toasts.show('info', 'Asistencia guardada a medias',
+          `${ok} de ${results.length} se guardaron. Volvé a intentar: reintentar no duplica nada.`);
       }
     } catch (err) {
       // saveAttendance NO usa run(), así que el error llega crudo hasta acá. toDomainError lo

@@ -1,72 +1,99 @@
-export type SessionStatus = 'scheduled' | 'completed' | 'cancelled';
-
-export interface RosterMember {
-  /** Id de la INSCRIPCIÓN — siempre presente. La maqueta usa `sid`, que es undefined en media
-   *  semilla y por eso no sirve como clave de las marcas de asistencia. */
-  readonly id: string;
-  readonly name: string;
-  readonly initials: string;
-  readonly category: string;
-  readonly credits: number;
-  readonly attendanceRate: number;   // 0..100
-}
-
-export interface WaitlistEntry {
-  readonly name: string;
-  readonly initials: string;
-  readonly since: string;            // ya formateado por el backend: 'hace 2 días', 'hoy'
-}
-
-export interface AttendanceMark {
-  readonly memberId: string;         // RosterMember.id
-  readonly present: boolean;
-}
-
 /**
- * INVARIANTE: `attendance !== null` ⟺ `status === 'completed'`.
+ * Un grupo es un `ScheduleTemplate` con sus sesiones: "los lunes 18:00, cancha 1, 7ma+8va, con
+ * Diego". El id ES el del template.
  *
- * Sin ella el modelo permite cuatro estados imposibles, y el peor —'completed' con
- * attendance null— es el que produce una semilla mal expandida: el modo editar del modal
- * arranca leyendo `attendance` y se encuentra un null.
+ * ponytail: el roster se DERIVA de las reservas de la próxima sesión programada. En Prisma no
+ * existe la inscripción a un grupo —`Reservation` cuelga de `ClassSession`—, así que no hay otra
+ * fuente. Techo: quien no reservó la próxima clase no aparece aunque venga hace un año, y un
+ * grupo sin próxima sesión programada muestra roster vacío. Salida: tabla `enrollment`
+ * (schedule_template_id, student_id, student_plan_id, joined_at, left_at) y `listGroups()` la lee
+ * en vez de derivarla. Ver el spec §3.1.
  *
- * La hacen cumplir DOS lugares, y hacen falta los dos:
- *   · applyAttendance (única escritura del slice: pasa a completed y setea marcas a la vez),
- *   · el mapper, que rechaza un DTO que la viole (borde de datos).
+ * NO lleva `name`: el título se arma con `weekdayLabel()`, que es presentación y vive en
+ * `shared/`, y `core/data` no puede importar `shared/`. Lo arma `grupos-format.ts`.
  */
-export interface GroupSession {
-  readonly id: string;
-  readonly date: string;             // '01/07' — ya formateado por el backend
-  readonly time: string;             // '18:00'
-  readonly courtName: string;
-  readonly status: SessionStatus;
-  readonly attendance: readonly AttendanceMark[] | null;
-}
-
 export interface Group {
   readonly id: string;
-  readonly name: string;
+  /** `categoryGroup.name`. */
   readonly category: string;
+  /** `coach.displayName`. */
   readonly teacher: string;
-  readonly teacherInitials: string;
-  readonly day: string;              // 'Lun'
-  readonly time: string;             // '18:00'
   readonly courtName: string;
+  /** 0 = Domingo. La pantalla lo formatea con `weekdayLabel()`. */
+  readonly weekday: number | null;
+  /** 'HH:mm', ya recortado del DateTime por `toSchedule()`. */
+  readonly startTime: string | null;
   readonly capacity: number;
-  readonly roster: readonly RosterMember[];
-  readonly waitlist: readonly WaitlistEntry[];
-  /** Orden cronológico ASCENDENTE. De eso depende nextSessionDate(), que devuelve la
-   *  primera 'scheduled' por orden de array. */
+  /** Lugares tomados en la PRÓXIMA sesión programada. 0 si no hay ninguna. */
+  readonly enrolled: number;
+  /** Cuántos esperan en la próxima sesión programada. */
+  readonly waiting: number;
+  /** La próxima sesión programada. De acá cuelgan el roster y la lista de espera del detalle. */
+  readonly nextSessionId: string | null;
+  /** Orden cronológico ASCENDENTE. */
   readonly sessions: readonly GroupSession[];
 }
 
-export interface GroupsSnapshot {
-  readonly clubId: string;
-  readonly groups: readonly Group[];
+export interface GroupSession {
+  readonly id: string;
+  /**
+   * El ISO CRUDO del backend, sin parsear: quien lo interpreta decide en qué zona hacerlo.
+   * Mismo criterio —y mismo escarmiento— que `ClassSession.startAt`.
+   */
+  readonly startAt: string | null;
+  readonly courtName: string;
+  /** El `name` crudo del catálogo: 'programada' | 'cancelada' | 'completada'. */
+  readonly status: string;
+  readonly enrolled: number;
+  readonly capacity: number;
+  readonly waiting: number;
+  /**
+   * Si la sesión ya empezó. Se resuelve en el mapper, con el mismo `now` con el que se elige la
+   * próxima sesión: así toda la pantalla mira un solo reloj y el template no tiene que llamar a
+   * `new Date()` en cada ciclo de detección de cambios.
+   *
+   * ponytail: queda viejo si la pestaña se deja abierta cruzando el horario de una clase. Nadie
+   * se rompe —el backend no valida la hora— y un F5 lo arregla.
+   */
+  readonly yaPaso: boolean;
 }
 
-export interface SaveAttendanceRequest {
-  readonly groupId: string;
-  readonly sessionId: string;
-  readonly marks: readonly AttendanceMark[];
-  readonly discountAbsences: boolean;   // política del club (checkbox del modal)
+/**
+ * Una fila del roster.
+ *
+ * `id` ES el de la RESERVA, no el del alumno ni el de una inscripción: es lo que pide
+ * `POST /class-sessions/:id/attendance`.
+ */
+export interface RosterMember {
+  readonly id: string;
+  readonly studentId: string;
+  /** Puede venir vacío: `first_name`/`last_name` son nullables. La pantalla pone el placeholder. */
+  readonly name: string;
+  readonly category: string;
+  /**
+   * 'confirmed' o 'held'. Las dos ocupan cupo —es la definición del backend— pero el modal de
+   * asistencia sólo ofrece las `confirmed`: `AttendanceService.mark()` tira 400 sobre el resto.
+   */
+  readonly status: string;
+  /** 'asistio' | 'ausente' | null. Prellena el modal con lo ya guardado. */
+  readonly attendanceStatus: string | null;
+}
+
+export interface GroupWaitlistEntry {
+  readonly id: string;
+  readonly studentId: string;
+  readonly name: string;
+  /** ISO. La pantalla lo formatea; el backend no manda 'hace 2 días'. */
+  readonly requestedAt: string | null;
+}
+
+/**
+ * Si tiene sentido tomarle asistencia a esta sesión.
+ *
+ * El backend no lo valida —`markBulk` sólo mira que cada reserva esté `confirmed`— así que la
+ * regla vive acá: una clase que todavía no empezó no tiene asistencia que tomar, y una cancelada
+ * no la va a tener nunca.
+ */
+export function puedeTomarAsistencia(session: GroupSession): boolean {
+  return session.yaPaso && session.status !== 'cancelada';
 }

@@ -4,10 +4,6 @@
   <app-placeholder tone="error" size="page" title="No se pudieron cargar los grupos" [body]="errorText()" />
 } @else {
   <section id="view-grupos">
-    <p class="notice hold">
-      Datos de demostración. Esta pantalla todavía no está conectada: falta el endpoint de
-      asistencia.
-    </p>
     <div class="panel">
       <div class="panel-head">
         <h3>Grupos y clases</h3>
@@ -42,21 +38,21 @@
                 <tr class="row-link" (click)="open(g)">
                   <td>
                     <div class="grp-cell">
-                      <span class="avatar-sm" aria-hidden="true">{{ g.teacherInitials }}</span>
+                      <span class="avatar-sm" aria-hidden="true">{{ ini(g.teacher) }}</span>
                       <div>
-                        <div class="grp-name">{{ g.name }}</div>
+                        <div class="grp-name">{{ title(g) }}</div>
                         <div class="grp-meta">
-                          {{ g.courtName }}@if (g.waitlist.length) { · {{ g.waitlist.length }} en espera }
+                          {{ g.courtName }}@if (g.waiting) { · {{ g.waiting }} en espera }
                         </div>
                       </div>
                     </div>
                   </td>
                   <td><span class="cat-badge">{{ g.category }}</span></td>
                   <td class="grp-prof">{{ g.teacher }}</td>
-                  <td class="mono grp-prof">{{ g.day }} {{ g.time }}</td>
-                  <td><app-cupo-cell [enrolled]="g.roster.length" [capacity]="g.capacity" /></td>
+                  <td class="mono grp-prof">{{ dia(g.weekday) }} {{ g.startTime ?? '—' }}</td>
+                  <td><app-cupo-cell [enrolled]="g.enrolled" [capacity]="g.capacity" /></td>
                   <td class="cell-end">
-                    <button type="button" class="row-open" [attr.aria-label]="'Abrir grupo ' + g.name"
+                    <button type="button" class="row-open" [attr.aria-label]="'Abrir grupo ' + title(g)"
                             (click)="$event.stopPropagation(); open(g)">›</button>
                   </td>
                 </tr>

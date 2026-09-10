@@ -32,6 +32,8 @@ const session = (over: Partial<ClassSession> = {}): ClassSession => ({
   startAt: at(18),
   capacity: 4,
   availableSpots: 1,
+  waitingCount: 0,
+  status: 'programada',
   ...over,
 });
 
@@ -52,7 +54,6 @@ const sources = (over: Partial<DashboardSources> = {}): DashboardSources => ({
   categoryGroups: [{ id: '3', name: '7ma' }],
   surfaceTypes: [{ id: '9', name: 'cemento' }],
   sessions: [session()],
-  waitingCounts: new Map(),
   ...over,
 });
 
@@ -188,10 +189,7 @@ describe('toDashboardSnapshot — estados', () => {
 
   it('wait cuando no quedan lugares y hay gente esperando', () => {
     const snap = toDashboardSnapshot(
-      sources({
-        sessions: [session({ availableSpots: 0 })],
-        waitingCounts: new Map([['10', 3]]),
-      }),
+      sources({ sessions: [session({ availableSpots: 0, waitingCount: 3 })] }),
     );
     expect(snap.grid.sessions[0][0]?.state).toBe('wait');
   });
@@ -218,10 +216,7 @@ describe('toDashboardSnapshot — KPIs', () => {
 describe('toDashboardSnapshot — lista de espera', () => {
   it('arma una entrada por sesión con gente esperando', () => {
     const snap = toDashboardSnapshot(
-      sources({
-        sessions: [session({ availableSpots: 0 })],
-        waitingCounts: new Map([['10', 3]]),
-      }),
+      sources({ sessions: [session({ availableSpots: 0, waitingCount: 3 })] }),
     );
     expect(snap.waitlist).toEqual([
       { id: '10', title: '7ma · Cancha 1 · 18:00', meta: '3 en espera · cupo lleno' },
@@ -236,10 +231,7 @@ describe('toDashboardSnapshot — lista de espera', () => {
     // Si el rail la listara, sería una fila que no lleva a ninguna celda visible — y con el
     // nombre de cancha vacío entre dos separadores, porque la cancha no está en /courts.
     const snap = toDashboardSnapshot(
-      sources({
-        sessions: [session({ courtId: '99', availableSpots: 0 })],
-        waitingCounts: new Map([['10', 3]]),
-      }),
+      sources({ sessions: [session({ courtId: '99', availableSpots: 0, waitingCount: 3 })] }),
     );
     expect(snap.grid.sessions[0][0]).toBeNull();
     expect(snap.waitlist).toEqual([]);
@@ -254,17 +246,15 @@ describe('toDashboardSnapshot — lista de espera', () => {
             id: 'temprano',
             startAt: new Date(2026, 7, 5, 18, 0, 0).toISOString(),
             availableSpots: 0,
+            waitingCount: 2,
           }),
           session({
             id: 'tarde',
             startAt: new Date(2026, 7, 5, 18, 0, 30).toISOString(),
             availableSpots: 0,
+            waitingCount: 5,
           }),
         ],
-        waitingCounts: new Map([
-          ['temprano', 2],
-          ['tarde', 5],
-        ]),
       }),
     );
     expect(snap.waitlist).toEqual([

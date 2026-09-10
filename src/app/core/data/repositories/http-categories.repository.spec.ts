@@ -28,17 +28,9 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 
 describe('HttpCategoriesRepository', () => {
   it('list pide /categories y mapea a entidades', async () => {
-    const { repo, calls } = setup({ get: of([{ id: '2', name: '4ta', levelOrder: 4, deletedAt: null }]) });
+    const { repo, calls } = setup({ get: of([{ id: '2', name: '4ta', levelOrder: 4 }]) });
     expect(await repo.list()).toEqual([{ id: '2', name: '4ta', levelOrder: 4 }]);
     expect(calls[0]).toMatchObject({ method: 'get', path: '/categories' });
-  });
-
-  it('list descarta las filas con deletedAt', async () => {
-    const { repo } = setup({ get: of([
-      { id: '2', name: '4ta', levelOrder: 4, deletedAt: null },
-      { id: '3', name: '5ta', levelOrder: 5, deletedAt: '2026-07-30T12:00:00.000Z' },
-    ]) });
-    expect((await repo.list()).map((c) => c.id)).toEqual(['2']);
   });
 
   it('create manda name y levelOrder, y nada más', async () => {

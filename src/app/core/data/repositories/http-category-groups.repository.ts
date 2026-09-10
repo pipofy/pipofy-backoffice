@@ -35,10 +35,7 @@ export class HttpCategoryGroupsRepository extends CategoryGroupsRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/category-groups'));
       const dtos = v.parse(CategoryGroupListDtoSchema, raw);
-      // ponytail: el filtro de borrados es del cliente porque category-groups.service.list()
-      // no excluye deletedAt. Techo: con muchos grupos borrados se transfieren filas de más.
-      // Salida real: arreglarlo en el backend.
-      return dtos.filter((d) => d.deletedAt === null).map(toCategoryGroup);
+      return dtos.map(toCategoryGroup);
     } catch (err) {
       throw toDomainError(err);
     }

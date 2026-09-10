@@ -16,6 +16,32 @@ export interface SessionReservation {
   /** El `name` crudo de `reservation_status`. Se traduce con `reservationStatusLabel()`. */
   readonly status: string;
   readonly holdExpiresAt: string | null;
+  /**
+   * El `name` de `attendance_status`, o null si el panel no marcó nada todavía.
+   *
+   * Sólo lo que el panel puede escribir. La fila `attendance` es única por reserva y la
+   * comparten dos escritores —el panel con 'asistio'/'ausente' y el recordatorio de WhatsApp
+   * con 'confirmo_si'/'confirmo_no'—, y el backend los separa en dos campos
+   * (`class-sessions.service.ts:124`): el RSVP sale por `rsvp`, que este front todavía no
+   * muestra y por eso no declara.
+   *
+   * Queda tipado `string` y no como el union: es el borde HTTP, y quien necesite el union lo
+   * pide con `asistenciaTomada()`.
+   */
+  readonly attendanceStatus: string | null;
+}
+
+/**
+ * Estrecha `attendanceStatus` al union que el panel sabe pintar.
+ *
+ * Es defensa en profundidad, no el filtro principal: desde que el backend separó `rsvp`, un
+ * 'confirmo_si' ya no llega por acá. Se queda igual porque esto es el borde HTTP y el DTO
+ * declara `string` — si el día de mañana alguien vuelve a aplanar los dos mundos en un campo,
+ * la planilla no empieza a pintar como Presente a quien apenas dijo que iba a ir.
+ */
+export function asistenciaTomada(reservation: SessionReservation): 'asistio' | 'ausente' | null {
+  const name = reservation.attendanceStatus;
+  return name === 'asistio' || name === 'ausente' ? name : null;
 }
 
 /**

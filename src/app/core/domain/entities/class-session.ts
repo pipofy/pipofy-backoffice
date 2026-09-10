@@ -15,9 +15,18 @@ export interface ClassSession {
   readonly capacity: number;
   /** Calculado por el backend: capacity − (confirmadas + held vigentes). */
   readonly availableSpots: number;
+  /** Cuántos esperan lugar. Viene en la misma respuesta que la sesión. */
+  readonly waitingCount: number;
+  /** Nombre del catálogo: 'programada' | 'cancelada' | 'completada'. */
+  readonly status: string;
 }
 
 /** Lugares tomados. `capacity - availableSpots`, con piso en 0 por si el backend deriva. */
 export function occupiedSpots(session: ClassSession): number {
   return Math.max(0, session.capacity - session.availableSpots);
+}
+
+/** El literal del catálogo vive acá y no en las pantallas. */
+export function isCancelled(session: ClassSession): boolean {
+  return session.status === 'cancelada';
 }

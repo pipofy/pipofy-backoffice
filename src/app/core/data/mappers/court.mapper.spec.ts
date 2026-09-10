@@ -5,7 +5,7 @@ describe('toCourt', () => {
   it('mapea el DTO a la entidad', () => {
     expect(toCourt({
       id: '7', name: 'Cancha 1', code: 'C1', surfaceTypeId: '3',
-      indoor: true, courtStatusId: '1', deletedAt: null,
+      indoor: true, courtStatusId: '1',
     })).toEqual({
       id: '7', name: 'Cancha 1', code: 'C1', surfaceTypeId: '3', indoor: true, courtStatusId: '1',
     });
@@ -15,7 +15,7 @@ describe('toCourt', () => {
     // POST /courts con {} devuelve 201 (§4.6): estas filas existen y la lista debe mostrarlas.
     expect(toCourt({
       id: '8', name: null, code: null, surfaceTypeId: null,
-      indoor: null, courtStatusId: null, deletedAt: null,
+      indoor: null, courtStatusId: null,
     })).toEqual({
       id: '8', name: '', code: null, surfaceTypeId: null, indoor: false, courtStatusId: null,
     });

@@ -33,7 +33,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 }
 
 const row = (over: Record<string, unknown> = {}) => ({
-  id: '1', name: 'Principiantes', deletedAt: null, ...over,
+  id: '1', name: 'Principiantes', ...over,
 });
 
 describe('HttpCategoryGroupsRepository.list', () => {
@@ -41,13 +41,6 @@ describe('HttpCategoryGroupsRepository.list', () => {
     const { repo, calls } = setup({ get: of([row()]) });
     expect(await repo.list()).toEqual([{ id: '1', name: 'Principiantes' }]);
     expect(calls[0]).toMatchObject({ method: 'get', path: '/category-groups' });
-  });
-
-  it('descarta las filas con deletedAt', async () => {
-    // category-groups.service.list() NO excluye los borrados (§3): sin este filtro, un
-    // grupo eliminado sigue apareciendo después de que la API responde 200.
-    const { repo } = setup({ get: of([row(), row({ id: '2', deletedAt: '2026-07-30T12:00:00.000Z' })]) });
-    expect((await repo.list()).map((g) => g.id)).toEqual(['1']);
   });
 
   it('ignora las claves que el backend manda de más', async () => {

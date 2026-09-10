@@ -25,6 +25,9 @@ export function toClassSession(dto: ClassSessionDto): ClassSession {
     // Nullable en Prisma; normalizado acá para que ninguna pantalla tenga que decidirlo.
     capacity: dto.capacity ?? 0,
     availableSpots: dto.availableSpots,
+    waitingCount: dto.waitingCount,
+    // Se aplana igual que en toSessionReservation: la entidad no sabe del embebido.
+    status: dto.classSessionStatus.name,
   };
 }
 
@@ -40,6 +43,8 @@ export function toSessionReservation(dto: SessionReservationDto): SessionReserva
     // Se aplana acá: la entidad no tiene por qué saber que el backend lo manda embebido.
     status: dto.reservationStatus.name,
     holdExpiresAt: dto.holdExpiresAt,
+    // Mismo aplanado y mismo motivo que `status`.
+    attendanceStatus: dto.attendanceStatus?.name ?? null,
   };
 }
 

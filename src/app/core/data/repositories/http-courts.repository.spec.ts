@@ -29,7 +29,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: '1', name: 'Cancha 1', code: 'C1', surfaceTypeId: '3',
-  indoor: true, courtStatusId: '1', deletedAt: null, ...over,
+  indoor: true, courtStatusId: '1', ...over,
 });
 
 describe('HttpCourtsRepository.list', () => {
@@ -39,14 +39,6 @@ describe('HttpCourtsRepository.list', () => {
       id: '1', name: 'Cancha 1', code: 'C1', surfaceTypeId: '3', indoor: true, courtStatusId: '1',
     }]);
     expect(calls[0]).toMatchObject({ method: 'get', path: '/courts' });
-  });
-
-  it('descarta las filas con deletedAt', async () => {
-    // courts.service.list() NO excluye los borrados (§4.3): sin este filtro, una cancha
-    // eliminada sigue apareciendo en la tabla después de que la API responde 200.
-    const { repo } = setup({ get: of([row(), row({ id: '2', deletedAt: '2026-07-30T12:00:00.000Z' })]) });
-    const courts = await repo.list();
-    expect(courts.map((c) => c.id)).toEqual(['1']);
   });
 
   it('rechaza con un DomainError de validación si el payload deriva', async () => {

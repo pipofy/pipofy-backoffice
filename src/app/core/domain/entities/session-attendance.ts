@@ -10,11 +10,15 @@ import { InvalidAttendanceError } from '../errors';
  * distintas en la misma capa es una trampa; mismo criterio que puso `session-reservation.ts`
  * al lado del concepto homónimo de grupos.
  *
- * ponytail: el union está cerrado en los dos status que este panel ESCRIBE. La tabla
- * `attendance` ya tiene filas con 'confirmo_si' / 'confirmo_no' / 'sin_respuesta' puestas por
- * WhatsApp sobre la misma fila. Techo: si algún día se LEE la asistencia, este union se queda
- * corto. Salida: un `sessionAttendanceStatusLabel()` acá mismo, estilo el
- * `reservationStatusLabel` de session-reservation.ts.
+ * El union sigue cerrado en los dos status que este panel ESCRIBE, y ahora que la asistencia
+ * TAMBIÉN se lee eso dejó de ser una simplificación: el backend separa los dos escritores de
+ * la fila `attendance` —el panel en `attendanceStatus`, el RSVP de WhatsApp en `rsvp`— así que
+ * por `SessionReservation.attendanceStatus` sólo llega este par. `asistenciaTomada()` lo
+ * reestrecha igual, como guarda del borde HTTP.
+ *
+ * El `sessionAttendanceStatusLabel()` que este comentario proponía como salida no hizo falta.
+ * El día que haya que MOSTRAR el RSVP —'confirmo_si' / 'confirmo_no'— ése es el lugar, y el
+ * dato ya viaja en la respuesta.
  */
 export type SessionAttendanceStatus = 'asistio' | 'ausente';
 

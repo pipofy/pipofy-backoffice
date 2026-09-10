@@ -20,10 +20,7 @@ export class HttpCourtsRepository extends CourtsRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/courts'));
       const dtos = v.parse(CourtListDtoSchema, raw);
-      // ponytail: el filtro de borrados es del cliente porque courts.service.list() no
-      // excluye deletedAt (§4.3). Techo: con muchas canchas borradas se transfieren filas
-      // de más. Salida real: arreglarlo en el backend.
-      return dtos.filter((d) => d.deletedAt === null).map(toCourt);
+      return dtos.map(toCourt);
     } catch (err) {
       throw toDomainError(err);
     }

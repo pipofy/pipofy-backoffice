@@ -28,6 +28,8 @@ const session: ClassSession = {
   startAt: '2026-08-19T21:00:00.000Z',
   capacity: 4,
   availableSpots: 1,
+  waitingCount: 0,
+  status: 'programada',
 };
 
 const student: Student = {
@@ -94,6 +96,7 @@ function mount(
           studentPlanId: draft.studentPlanId,
           status: 'held',
           holdExpiresAt: over.holdExpiresAt ?? HOLD_VIVO,
+          attendanceStatus: null,
         },
       ];
     },
@@ -411,7 +414,10 @@ function seccion(el: HTMLElement, titulo: string): string {
 describe('SesionModalComponent · Anotados', () => {
   it('una reserva confirmada va a Anotados y NO a Pendientes', async () => {
     const { fixture, el } = mount({}, [
-      { id: '56', studentId: '4', studentPlanId: '9', status: 'confirmed', holdExpiresAt: null },
+      {
+        id: '56', studentId: '4', studentPlanId: '9', status: 'confirmed',
+        holdExpiresAt: null, attendanceStatus: null,
+      },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).toContain('Bruno');
@@ -442,7 +448,10 @@ describe('SesionModalComponent · Anotados', () => {
 
   it('un hold vigente aparece en las DOS secciones', async () => {
     const { fixture, el } = mount({}, [
-      { id: '55', studentId: '4', studentPlanId: '9', status: 'held', holdExpiresAt: VENCE_EN_30 },
+      {
+        id: '55', studentId: '4', studentPlanId: '9', status: 'held',
+        holdExpiresAt: VENCE_EN_30, attendanceStatus: null,
+      },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).toContain('Bruno');
@@ -459,6 +468,7 @@ describe('SesionModalComponent · Anotados', () => {
         studentPlanId: '9',
         status: 'held',
         holdExpiresAt: VENCIDO_HACE_5,
+        attendanceStatus: null,
       },
     ]);
     await abrir(fixture);
@@ -468,7 +478,10 @@ describe('SesionModalComponent · Anotados', () => {
 
   it('una cancelada no aparece en ninguna de las dos', async () => {
     const { fixture, el } = mount({}, [
-      { id: '57', studentId: '4', studentPlanId: null, status: 'cancelled', holdExpiresAt: null },
+      {
+        id: '57', studentId: '4', studentPlanId: null, status: 'cancelled',
+        holdExpiresAt: null, attendanceStatus: null,
+      },
     ]);
     await abrir(fixture);
     expect(seccion(el, 'Anotados')).not.toContain('Bruno');
@@ -487,6 +500,7 @@ describe('SesionModalComponent · Anotados', () => {
         studentPlanId: null,
         status: 'pending_review',
         holdExpiresAt: null,
+        attendanceStatus: null,
       },
     ]);
     await abrir(fixture);
@@ -504,12 +518,17 @@ describe('SesionModalComponent · Anotados', () => {
 });
 
 describe('SesionModalComponent · Asistencia', () => {
-  const confirmada = (id: string, studentId: string): SessionReservation => ({
+  const confirmada = (
+    id: string,
+    studentId: string,
+    attendanceStatus: string | null = null,
+  ): SessionReservation => ({
     id,
     studentId,
     studentPlanId: null,
     status: 'confirmed',
     holdExpiresAt: null,
+    attendanceStatus,
   });
 
   it('la sección se cablea con el roster y manda lo marcado', async () => {

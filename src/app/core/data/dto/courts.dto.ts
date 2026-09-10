@@ -4,8 +4,8 @@ import * as v from 'valibot';
  * camelCase: la API es NestJS + Prisma y el @map de Prisma es sólo a nivel de base (§4.1).
  *
  * v.object ignora las claves que no declara, así que `clubId`, `createdAt` y `updatedAt`
- * entran y se descartan sin romper el parseo. `deletedAt` SÍ se declara porque el
- * repositorio lo necesita para filtrar los borrados (§4.3).
+ * entran y se descartan sin romper el parseo — `deletedAt` incluido: el backend ya filtra
+ * los borrados en su `list()` (§4.3).
  */
 export const CourtDtoSchema = v.object({
   id: v.string(),
@@ -14,7 +14,6 @@ export const CourtDtoSchema = v.object({
   surfaceTypeId: v.nullable(v.string()),
   indoor: v.nullable(v.boolean()),
   courtStatusId: v.nullable(v.string()),
-  deletedAt: v.nullable(v.string()),
 });
 export type CourtDto = v.InferOutput<typeof CourtDtoSchema>;
 

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild
 import { ReservasFacade } from '../reservas.facade';
 import { SesionModalComponent } from '../components/sesion-modal.component';
 import { CancelarClaseModalComponent } from '../components/cancelar-clase-modal.component';
-import { ClassSession, occupiedSpots } from '@domain/entities/class-session';
+import { ClassSession, isCancelled, occupiedSpots } from '@domain/entities/class-session';
 import { Student } from '@domain/entities/student';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
@@ -105,19 +105,17 @@ export class ReservasPageComponent {
   }
 
   /**
-   * Las de la fecha que todavía NO cancelamos en esta sesión: son las que cancelDay toca.
+   * Las de la fecha que siguen en pie: son las que cancelDay toca.
    *
    * `computed` y no un método: el template lo consulta vía hayVigentes() y un método plano
    * volvería a filtrar la lista en CADA ciclo de detección de cambios.
    */
-  private readonly vigentes = computed(() =>
-    this.facade.sorted().filter((s) => !this.facade.cancelled().has(s.id)),
-  );
+  private readonly vigentes = computed(() => this.facade.sorted().filter((s) => !isCancelled(s)));
 
   protected readonly hayVigentes = computed(() => this.vigentes().length > 0);
 
   protected estaCancelada(session: ClassSession): boolean {
-    return this.facade.cancelled().has(session.id);
+    return isCancelled(session);
   }
 
   /** clearError() antes de abrir: sin esto un error viejo aparecería dentro del modal. */

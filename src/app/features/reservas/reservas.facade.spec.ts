@@ -13,6 +13,8 @@ const late: ClassSession = {
   startAt: '2026-08-19T22:00:00.000Z',
   capacity: 4,
   availableSpots: 0,
+  waitingCount: 0,
+  status: 'programada',
 };
 const early: ClassSession = { ...late, id: 'temprano', startAt: '2026-08-19T18:00:00.000Z' };
 
@@ -89,11 +91,17 @@ describe('ReservasFacade · cancelar', () => {
     expect(facade.error()).toBeNull();
   });
 
-  it('marca la clase como cancelada para que la fila deje de verse normal', async () => {
-    const { facade } = setup();
+  it('el estado cancelado sale de la relectura, no de un parche en memoria', async () => {
+    // El backend embebe classSessionStatus en GET /class-sessions, así que un F5 sigue
+    // mostrando la clase cancelada. Si esto volviera a un Set local, este test pasaría igual
+    // en la primera carga y fallaría después de recargar la página.
+    const { facade } = setup({
+      list: async () => [{ ...late, status: 'cancelada' }, early],
+    });
     await facade.cancelarClase('tarde', { reason: '', notify: false });
-    expect(facade.cancelled().has('tarde')).toBe(true);
-    expect(facade.cancelled().has('temprano')).toBe(false);
+    const porId = new Map(facade.sorted().map((s) => [s.id, s.status]));
+    expect(porId.get('tarde')).toBe('cancelada');
+    expect(porId.get('temprano')).toBe('programada');
   });
 
   it('pedir aviso sin motivo deja error de dominio y NO llama al repo', async () => {
@@ -102,23 +110,12 @@ describe('ReservasFacade · cancelar', () => {
     await facade.cancelarClase('tarde', { reason: '   ', notify: true });
     expect(llamado).toBe(false);
     expect(facade.error()).toMatchObject({ kind: 'domain' });
-    expect(facade.cancelled().size).toBe(0);
   });
 
-  it('un fallo del repo NO marca la clase como cancelada', async () => {
+  it('un fallo del repo se normaliza y no re-lee', async () => {
     const { facade } = setup({ cancel: () => Promise.reject({ kind: 'forbidden' as const }) });
     await facade.cancelarClase('tarde', { reason: '', notify: false });
     expect(facade.error()).toEqual({ kind: 'forbidden' });
-    expect(facade.cancelled().size).toBe(0);
-  });
-
-  it('cancelar el día marca TODAS las clases de la fecha', async () => {
-    // cancelDay() cancela todas las 'programada', y ningún flujo del backend escribe
-    // 'completada': lo que no estaba cancelado, quedó.
-    const { facade } = setup();
-    await facade.load();
-    await facade.cancelarDia({ reason: 'Paro', notify: true });
-    expect([...facade.cancelled()].sort()).toEqual(['tarde', 'temprano']);
   });
 
   it('cancelar el día manda la fecha de la facade', async () => {
@@ -127,12 +124,5 @@ describe('ReservasFacade · cancelar', () => {
     await facade.setDate('2026-09-01');
     await facade.cancelarDia({ reason: '', notify: false });
     expect(fechas).toEqual(['2026-09-01']);
-  });
-
-  it('reset() limpia las canceladas: son estado propio de la facade', async () => {
-    const { facade } = setup();
-    await facade.cancelarClase('tarde', { reason: '', notify: false });
-    facade.reset();
-    expect(facade.cancelled().size).toBe(0);
   });
 });

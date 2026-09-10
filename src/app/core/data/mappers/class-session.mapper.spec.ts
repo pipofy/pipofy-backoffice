@@ -21,6 +21,8 @@ describe('toClassSession', () => {
         startAt: '2026-08-19T21:00:00.000Z',
         capacity: 4,
         availableSpots: 1,
+        waitingCount: 3,
+        classSessionStatus: { id: '2', name: 'cancelada' },
       }),
     ).toEqual({
       id: '10',
@@ -30,6 +32,9 @@ describe('toClassSession', () => {
       startAt: '2026-08-19T21:00:00.000Z',
       capacity: 4,
       availableSpots: 1,
+      waitingCount: 3,
+      // El embebido se aplana a su nombre: la entidad no sabe que viene anidado.
+      status: 'cancelada',
     });
   });
 
@@ -45,6 +50,8 @@ describe('toClassSession', () => {
         startAt: null,
         capacity: null,
         availableSpots: 0,
+        waitingCount: 0,
+        classSessionStatus: { id: '1', name: 'programada' },
       }).capacity,
     ).toBe(0);
   });
@@ -70,6 +77,7 @@ describe('toSessionReservation', () => {
         holdExpiresAt: null,
         deletedAt: null,
         reservationStatus: { name: 'held' },
+        attendanceStatus: { id: '14', name: 'asistio' },
       }),
     ).toEqual({
       id: '55',
@@ -77,6 +85,7 @@ describe('toSessionReservation', () => {
       studentPlanId: '9',
       holdExpiresAt: null,
       status: 'held',
+      attendanceStatus: 'asistio',
     });
   });
 
@@ -89,6 +98,7 @@ describe('toSessionReservation', () => {
         holdExpiresAt: null,
         deletedAt: null,
         reservationStatus: { name: 'confirmed' },
+        attendanceStatus: null,
       }).studentPlanId,
     ).toBeNull();
   });

@@ -24,11 +24,9 @@ export class HttpStudentsRepository extends StudentsRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/students'));
       const dtos = v.parse(StudentListDtoSchema, raw);
-      // ponytail: el filtro de borrados es del cliente porque students.service.list() no
-      // excluye deletedAt. Techo: además el backend no pagina, así que la lista entera
-      // viaja en cada carga. Con un club de cientos de alumnos empieza a pesar. Salida
-      // real: paginar y filtrar en el backend.
-      return dtos.filter((d) => d.deletedAt === null).map(toStudent);
+      // ponytail: el backend no pagina, así que el padrón entero viaja en cada carga. Con
+      // un club de cientos de alumnos empieza a pesar. Salida: paginar y buscar en el backend.
+      return dtos.map(toStudent);
     } catch (err) {
       throw toDomainError(err);
     }
@@ -64,8 +62,8 @@ export class HttpStudentsRepository extends StudentsRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>(`/students/${studentId}/plans`));
       const dtos = v.parse(StudentPlanListDtoSchema, raw);
-      // Mismo filtro de borrados que list(), por el mismo motivo: el service no lo hace.
-      // El orden ya viene del backend (purchasedAt desc), así que no se reordena acá.
+      // list() ya no filtra —el backend lo hace—, pero student-plans.service.ts:107 no
+      // filtra deletedAt. El orden sí viene del backend (purchasedAt desc).
       return dtos.filter((d) => d.deletedAt === null).map(toStudentPlan);
     } catch (err) {
       throw toDomainError(err);

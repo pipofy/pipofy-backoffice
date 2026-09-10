@@ -4,7 +4,7 @@ import { PlanDraft } from '@domain/entities/plan';
 
 const dto = {
   id: '1', name: 'Mensual 8', planTypeId: '2', coachId: '5',
-  classCount: 8, price: '12000.5', validityDays: 30, active: true, deletedAt: null,
+  classCount: 8, price: '12000.5', validityDays: 30, active: true,
 };
 
 const draft: PlanDraft = {

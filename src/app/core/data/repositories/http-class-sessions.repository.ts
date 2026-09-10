@@ -78,8 +78,8 @@ export class HttpClassSessionsRepository extends ClassSessionsRepository {
       return (
         v
           .parse(SessionReservationListDtoSchema, raw)
-          // El backend no filtra deletedAt en ningún list(); mismo recorte que el resto de los
-          // repositorios.
+          // Los list() del backend filtran deletedAt, pero ESTE findMany no
+          // (class-sessions.service.ts:98): el recorte se hace acá.
           .filter((dto) => dto.deletedAt === null)
           .map(toSessionReservation)
       );

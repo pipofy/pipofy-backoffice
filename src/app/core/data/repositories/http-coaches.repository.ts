@@ -20,10 +20,7 @@ export class HttpCoachesRepository extends CoachesRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/coaches'));
       const dtos = v.parse(CoachListDtoSchema, raw);
-      // coaches.service.list() tampoco excluye deletedAt. Hoy nada setea ese campo (no hay
-      // DELETE), pero el filtro va igual: es la misma regla que las otras tres listas y
-      // dejarlo afuera sería una excepción que alguien tendría que explicar.
-      return dtos.filter((d) => d.deletedAt === null).map(toCoach);
+      return dtos.map(toCoach);
     } catch (err) {
       throw toDomainError(err);
     }

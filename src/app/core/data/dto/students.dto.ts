@@ -5,7 +5,7 @@ import * as v from 'valibot';
  * el alta lo fuerza a 'pending_classification' del lado del backend, así que toda fila lo
  * tiene. Llega como string porque el serializador global convierte los BigInt.
  *
- * v.object descarta el resto (clubId, waOptIn*, createdAt, updatedAt).
+ * v.object descarta el resto (clubId, waOptIn*, createdAt, updatedAt, deletedAt).
  */
 export const StudentDtoSchema = v.object({
   id: v.string(),
@@ -18,7 +18,6 @@ export const StudentDtoSchema = v.object({
   dominantHand: v.nullable(v.string()),
   ranking: v.nullable(v.number()),
   notes: v.nullable(v.string()),
-  deletedAt: v.nullable(v.string()),
 });
 export type StudentDto = v.InferOutput<typeof StudentDtoSchema>;
 

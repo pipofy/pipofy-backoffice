@@ -47,6 +47,8 @@ const session = (over: Record<string, unknown> = {}) => ({
   startAt: '2026-08-19T21:00:00.000Z',
   capacity: 4,
   availableSpots: 1,
+  waitingCount: 0,
+  classSessionStatus: { id: '1', name: 'programada' },
   ...over,
 });
 
@@ -130,6 +132,7 @@ const reserva = (over: Record<string, unknown> = {}) => ({
   holdExpiresAt: null,
   deletedAt: null,
   reservationStatus: { name: 'confirmed' },
+  attendanceStatus: null,
   ...over,
 });
 
@@ -154,8 +157,15 @@ describe('HttpClassSessionsRepository.reservations', () => {
         studentPlanId: '9',
         status: 'held',
         holdExpiresAt: '2026-08-19T21:30:00.000Z',
+        attendanceStatus: null,
       },
     ]);
+  });
+
+  it('aplana attendanceStatus: sin esto la planilla no puede releer lo que guardó', async () => {
+    const marcada = reserva({ attendanceStatus: { id: '14', name: 'asistio' } });
+    const { repo } = setup({ get: of([marcada]) });
+    expect((await repo.reservations('10'))[0].attendanceStatus).toBe('asistio');
   });
 
   it('descarta las borradas: el backend no filtra deletedAt', async () => {

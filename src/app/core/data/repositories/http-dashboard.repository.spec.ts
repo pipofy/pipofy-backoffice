@@ -27,6 +27,8 @@ const session = (over: Partial<ClassSession> = {}): ClassSession => ({
   startAt: new Date().toISOString(),
   capacity: 4,
   availableSpots: 1,
+  waitingCount: 0,
+  status: 'programada',
   ...over,
 });
 
@@ -71,24 +73,16 @@ function setup(
 }
 
 describe('HttpDashboardRepository.getSnapshot', () => {
-  it('sólo consulta la lista de espera de las sesiones llenas', async () => {
+  it('no pide la lista de espera: el contador viaja con la sesión', async () => {
+    // Antes esto era un N+1 sobre las sesiones llenas. `GET /class-sessions` ya devuelve
+    // waitingCount, así que una llamada acá es una regresión, no una optimización perdida.
     const { repo, waitingListCalls } = setup([
-      session({ id: '10', availableSpots: 0 }),
+      session({ id: '10', availableSpots: 0, waitingCount: 3 }),
       session({ id: '11', availableSpots: 2 }),
     ]);
-    await repo.getSnapshot('c1');
-    expect(waitingListCalls).toEqual(['10']);
-  });
-
-  it('si falla la lista de espera, la sesión queda full y el snapshot sobrevive', async () => {
-    // La lista de espera es información secundaria; la grilla es la pantalla.
-    const { repo } = setup([session({ availableSpots: 0 })], [], {
-      waitingList: async () => {
-        throw new Error('boom');
-      },
-    });
     const snap = await repo.getSnapshot('c1');
-    expect(snap.grid.sessions[0][0]?.state).toBe('full');
+    expect(waitingListCalls).toEqual([]);
+    expect(snap.grid.sessions[0][0]?.state).toBe('wait');
   });
 
   it('normaliza a DomainError si alguna de las fuentes falla', async () => {

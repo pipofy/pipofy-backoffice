@@ -33,7 +33,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: '1', name: 'Mensual 8', planTypeId: '2', coachId: '5',
-  classCount: 8, price: '12000.5', validityDays: 30, active: true, deletedAt: null, ...over,
+  classCount: 8, price: '12000.5', validityDays: 30, active: true, ...over,
 });
 
 const draft: PlanDraft = {
@@ -48,11 +48,6 @@ describe('HttpPlansRepository.list', () => {
     expect(plans).toHaveLength(1);
     expect(plans[0]).toMatchObject({ id: '1', name: 'Mensual 8', planTypeId: '2', coachId: '5' });
     expect(calls[0]).toMatchObject({ method: 'get', path: '/plans' });
-  });
-
-  it('descarta las filas con deletedAt', async () => {
-    const { repo } = setup({ get: of([row(), row({ id: '2', deletedAt: '2026-07-30T12:00:00.000Z' })]) });
-    expect((await repo.list()).map((p) => p.id)).toEqual(['1']);
   });
 
   it('acepta el precio como número sin romper el parseo', async () => {

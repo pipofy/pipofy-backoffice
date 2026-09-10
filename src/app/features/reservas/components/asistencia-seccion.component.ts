@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { NoticeComponent } from '@shared/ui/notice.component';
-import { SessionReservation } from '@domain/entities/session-reservation';
+import { asistenciaTomada, SessionReservation } from '@domain/entities/session-reservation';
 import {
   SessionAttendanceMark,
   SessionAttendanceResult,
@@ -72,8 +72,8 @@ function resumenDe(results: readonly SessionAttendanceResult[]): string {
                 <button
                   type="button"
                   class="segp"
-                  [class.on-p]="marcaDe(r.id) === 'asistio'"
-                  [attr.aria-pressed]="marcaDe(r.id) === 'asistio'"
+                  [class.on-p]="estadoDe(r) === 'asistio'"
+                  [attr.aria-pressed]="estadoDe(r) === 'asistio'"
                   [disabled]="saving()"
                   (click)="marcar(r.id, 'asistio')"
                 >
@@ -82,8 +82,8 @@ function resumenDe(results: readonly SessionAttendanceResult[]): string {
                 <button
                   type="button"
                   class="segp"
-                  [class.on-a]="marcaDe(r.id) === 'ausente'"
-                  [attr.aria-pressed]="marcaDe(r.id) === 'ausente'"
+                  [class.on-a]="estadoDe(r) === 'ausente'"
+                  [attr.aria-pressed]="estadoDe(r) === 'ausente'"
                   [disabled]="saving()"
                   (click)="marcar(r.id, 'ausente')"
                 >
@@ -214,18 +214,36 @@ export class AsistenciaSeccionComponent {
     return this.nombres().get(studentId) ?? `Alumno #${studentId}`;
   }
 
-  protected marcaDe(reservationId: string): SessionAttendanceStatus | undefined {
-    return this.marcas()[reservationId];
+  /**
+   * Lo que la fila tiene que mostrar: la marca sin guardar si la hay, y si no la que ya está
+   * guardada en el backend.
+   *
+   * Son DOS cosas distintas y por eso no se fusionan en un solo signal: `marcas()` es lo
+   * pendiente de guardar —y lo único que mira `hayMarcas()`, que habilita el botón— mientras
+   * que `asistenciaTomada()` es lo persistido. Sembrar `marcas()` con lo guardado dejaría
+   * "Guardar asistencia" habilitado sin que nadie haya tocado nada, y reenviaría la clase
+   * entera en cada click.
+   */
+  protected estadoDe(r: SessionReservation): SessionAttendanceStatus | null {
+    return this.marcas()[r.id] ?? asistenciaTomada(r);
   }
 
   protected marcar(reservationId: string, status: SessionAttendanceStatus): void {
     this.marcas.update((m) => ({ ...m, [reservationId]: status }));
   }
 
+  /**
+   * Sólo las que no tienen NADA todavía: pisar con 'asistio' a alguien ya marcado ausente —o
+   * ya marcado presente, que reenviaría su fila sin motivo— no es lo que dice el botón.
+   */
   protected vinieronTodos(): void {
     this.marcas.update((m) => ({
       ...m,
-      ...Object.fromEntries(this.confirmadas().map((r) => [r.id, 'asistio' as const])),
+      ...Object.fromEntries(
+        this.confirmadas()
+          .filter((r) => this.estadoDe(r) === null)
+          .map((r) => [r.id, 'asistio' as const]),
+      ),
     }));
   }
 

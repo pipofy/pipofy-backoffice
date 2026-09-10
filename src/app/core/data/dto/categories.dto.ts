@@ -4,7 +4,6 @@ export const CategoryDtoSchema = v.object({
   id: v.string(),
   name: v.nullable(v.string()),
   levelOrder: v.nullable(v.number()),
-  deletedAt: v.nullable(v.string()),
 });
 export type CategoryDto = v.InferOutput<typeof CategoryDtoSchema>;
 

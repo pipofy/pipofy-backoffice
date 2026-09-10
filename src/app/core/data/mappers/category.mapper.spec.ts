@@ -3,12 +3,12 @@ import { toCategory, toCategoryRequest } from './category.mapper';
 
 describe('toCategory', () => {
   it('mapea el DTO a la entidad', () => {
-    expect(toCategory({ id: '2', name: '4ta', levelOrder: 4, deletedAt: null }))
+    expect(toCategory({ id: '2', name: '4ta', levelOrder: 4 }))
       .toEqual({ id: '2', name: '4ta', levelOrder: 4 });
   });
 
   it('tolera los nulls que el backend permite guardar', () => {
-    expect(toCategory({ id: '3', name: null, levelOrder: null, deletedAt: null }))
+    expect(toCategory({ id: '3', name: null, levelOrder: null }))
       .toEqual({ id: '3', name: '', levelOrder: null });
   });
 });

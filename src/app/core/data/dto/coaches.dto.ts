@@ -10,7 +10,6 @@ import * as v from 'valibot';
 export const CoachDtoSchema = v.object({
   id: v.string(),
   description: v.nullable(v.string()),
-  deletedAt: v.nullable(v.string()),
   user: v.optional(
     v.object({
       nombre: v.nullable(v.string()),

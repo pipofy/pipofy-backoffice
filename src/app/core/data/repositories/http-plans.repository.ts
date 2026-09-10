@@ -35,10 +35,7 @@ export class HttpPlansRepository extends PlansRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/plans'));
       const dtos = v.parse(PlanListDtoSchema, raw);
-      // ponytail: el filtro de borrados es del cliente porque plans.service.list() no
-      // excluye deletedAt. Techo: con muchos planes borrados se transfieren filas de más.
-      // Salida real: arreglarlo en el backend.
-      return dtos.filter((d) => d.deletedAt === null).map(toPlan);
+      return dtos.map(toPlan);
     } catch (err) {
       throw toDomainError(err);
     }

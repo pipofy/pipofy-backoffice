@@ -23,8 +23,6 @@ export interface DashboardSources {
   readonly categoryGroups: readonly CategoryGroup[];
   readonly surfaceTypes: readonly CatalogItem[];
   readonly sessions: readonly ClassSession[];
-  /** sessionId → cuántos esperan. Sólo trae las sesiones llenas que se consultaron. */
-  readonly waitingCounts: ReadonlyMap<string, number>;
 }
 
 function courtMeta(court: Court, surfaceOf: ReadonlyMap<string, string>): string {
@@ -108,7 +106,7 @@ export function toDashboardSnapshot(src: DashboardSources): DashboardSnapshot {
     }
 
     const capacity = session.capacity;
-    const waiting = src.waitingCounts.get(session.id) ?? 0;
+    const waiting = session.waitingCount;
     sessions[ri][ci] = {
       id: session.id,
       category: groupOf.get(session.categoryGroupId) ?? '',
@@ -131,7 +129,7 @@ export function toDashboardSnapshot(src: DashboardSources): DashboardSnapshot {
   // 5. Lista de espera: una entrada por sesión VISIBLE con gente esperando.
   const waitlist: WaitlistEntry[] = [];
   for (const { session, hhmm, court } of placed) {
-    const n = src.waitingCounts.get(session.id) ?? 0;
+    const n = session.waitingCount;
     if (n === 0) continue;
     waitlist.push({
       id: session.id,

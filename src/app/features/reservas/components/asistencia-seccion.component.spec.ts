@@ -5,12 +5,18 @@ import { AsistenciaSeccionComponent } from './asistencia-seccion.component';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 
-const fila = (id: string, studentId: string, status: string): SessionReservation => ({
+const fila = (
+  id: string,
+  studentId: string,
+  status: string,
+  attendanceStatus: string | null = null,
+): SessionReservation => ({
   id,
   studentId,
   studentPlanId: null,
   status,
   holdExpiresAt: null,
+  attendanceStatus,
 });
 
 const NOMBRES = new Map([
@@ -73,6 +79,51 @@ describe('AsistenciaSeccionComponent', () => {
     botones(el, 0)[0].click();
     fixture.detectChanges();
     expect(guardar.disabled).toBe(false);
+  });
+
+  it('la asistencia YA GUARDADA llega marcada, y Guardar sigue deshabilitado', () => {
+    // El bug que esto cubre: antes `attendance` era de sólo escritura para el panel y al
+    // reabrir la clase todos volvían a verse sin marcar. Guardar deshabilitado porque no hay
+    // NADA pendiente: lo guardado no es una marca sin guardar.
+    const { el } = mount([fila('55', '4', 'confirmed', 'asistio'), fila('56', '7', 'confirmed', 'ausente')]);
+    expect(botones(el, 0)[0].getAttribute('aria-pressed')).toBe('true');
+    expect(botones(el, 1)[1].getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector<HTMLButtonElement>('[data-test="guardar-asistencia"]')!.disabled).toBe(
+      true,
+    );
+  });
+
+  it('un confirmo_si de WhatsApp NO se pinta como Presente', () => {
+    // Hoy el backend manda el RSVP aparte (`rsvp`), así que esto no debería llegar nunca. El
+    // test se queda como guarda: el RSVP es la respuesta del ALUMNO ('voy a ir'), no el profe
+    // diciendo que fue, y si alguien vuelve a aplanar los dos mundos esto lo delata.
+    const { el } = mount([fila('55', '4', 'confirmed', 'confirmo_si')]);
+    expect(botones(el, 0)[0].getAttribute('aria-pressed')).toBe('false');
+    expect(botones(el, 0)[1].getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('marcar encima de lo guardado manda SÓLO esa fila', () => {
+    const { el, fixture, emitidas } = mount([
+      fila('55', '4', 'confirmed', 'asistio'),
+      fila('56', '7', 'confirmed', 'asistio'),
+    ]);
+    botones(el, 1)[1].click(); // corrige la segunda a Ausente
+    fixture.detectChanges();
+    click(el, '[data-test="guardar-asistencia"]');
+    expect(emitidas[0]).toEqual([{ reservationId: '56', status: 'ausente' }]);
+  });
+
+  it('«Vinieron todos» no pisa lo que ya estaba marcado', () => {
+    // Pisar con 'asistio' a alguien guardado como ausente no es lo que dice el botón, y
+    // reenviar a los que ya están presentes es ruido.
+    const { el, fixture, emitidas } = mount([
+      fila('55', '4', 'confirmed', 'ausente'),
+      fila('56', '7', 'confirmed'),
+    ]);
+    click(el, '[data-test="todos"]');
+    fixture.detectChanges();
+    click(el, '[data-test="guardar-asistencia"]');
+    expect(emitidas[0]).toEqual([{ reservationId: '56', status: 'asistio' }]);
   });
 
   it('«Vinieron todos» marca a todas las confirmadas como presentes', () => {

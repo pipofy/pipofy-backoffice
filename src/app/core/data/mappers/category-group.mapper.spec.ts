@@ -3,13 +3,13 @@ import { toCategoryGroup, toCategoryGroupRequest } from './category-group.mapper
 
 describe('toCategoryGroup', () => {
   it('mapea el DTO a la entidad', () => {
-    expect(toCategoryGroup({ id: '3', name: 'Principiantes', deletedAt: null }))
+    expect(toCategoryGroup({ id: '3', name: 'Principiantes' }))
       .toEqual({ id: '3', name: 'Principiantes' });
   });
 
   it('el nombre null se tolera como cadena vacía', () => {
     // El backend acepta grupos sin nombre; la lista tiene que poder mostrarlos.
-    expect(toCategoryGroup({ id: '3', name: null, deletedAt: null }).name).toBe('');
+    expect(toCategoryGroup({ id: '3', name: null }).name).toBe('');
   });
 });
 

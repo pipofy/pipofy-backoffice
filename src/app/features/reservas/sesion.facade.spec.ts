@@ -72,6 +72,7 @@ function setup(
           studentPlanId: draft.studentPlanId,
           status: 'held',
           holdExpiresAt: null,
+          attendanceStatus: null,
         },
       ];
     },
@@ -164,6 +165,7 @@ const HOLD_VIVO = {
   studentPlanId: '9',
   status: 'held',
   holdExpiresAt: '2099-01-01T00:00:00.000Z',
+  attendanceStatus: null,
 } as const;
 const CONFIRMADA = {
   id: '56',
@@ -171,6 +173,7 @@ const CONFIRMADA = {
   studentPlanId: '9',
   status: 'confirmed',
   holdExpiresAt: null,
+  attendanceStatus: null,
 } as const;
 const CANCELADA = {
   id: '57',
@@ -178,6 +181,7 @@ const CANCELADA = {
   studentPlanId: null,
   status: 'cancelled',
   holdExpiresAt: null,
+  attendanceStatus: null,
 } as const;
 
 describe('SesionFacade · roster desde la API', () => {
@@ -256,16 +260,16 @@ describe('SesionFacade.tomarAsistencia', () => {
     error: 'Solo se puede marcar asistencia sobre reservas confirmadas',
   };
 
-  it('devuelve el resultado por ítem y NO relee: la asistencia no cambia el roster', async () => {
-    // AttendanceService escribe la tabla `attendance` y nada más: la reserva sigue confirmed,
-    // el cupo no cambia, la lista de espera no cambia. Releer sería un GET al pedo que
-    // devolvería exactamente lo que ya está en pantalla.
+  it('devuelve el resultado por ítem y SIEMPRE relee: la relectura trae attendanceStatus', async () => {
+    // Antes no releía, y estaba bien: `attendance` era de sólo escritura para el panel. Ahora
+    // GET /class-sessions/:id/reservations devuelve attendanceStatus, y es esa relectura la que
+    // deja la planilla marcada — sin ella, guardar la dejaría en blanco.
     const { facade, calls } = setup({}, [], async () => [OK]);
     expect(await facade.tomarAsistencia('10', MARCAS)).toEqual([OK]);
-    expect(calls).toEqual(['markAttendance']);
+    expect(calls).toEqual(['markAttendance', 'reservations']);
   });
 
-  it('con un fallo per-ítem SÍ relee: la fila muerta tiene que salir de la planilla', async () => {
+  it('con un fallo per-ítem también relee: la fila muerta tiene que salir de la planilla', async () => {
     // El fallo más probable es que la reserva haya dejado de estar `confirmed` entre la carga
     // del roster y el Guardar. Ésa no va a entrar nunca, por más que se reintente.
     const { facade, calls } = setup({}, [], async () => [FALLO]);
@@ -273,7 +277,7 @@ describe('SesionFacade.tomarAsistencia', () => {
     expect(calls).toEqual(['markAttendance', 'reservations']);
   });
 
-  it('si la relectura del parcial falla, NO pisa el resultado ni ensucia error()', async () => {
+  it('si la relectura falla, NO pisa el resultado ni ensucia error()', async () => {
     // La relectura es una comodidad, no la operación: su fallo es de segundo orden y taparía el
     // bloque de fallidos, que es el que cuenta el problema real.
     const { facade } = setup({}, [], async () => [FALLO], true);

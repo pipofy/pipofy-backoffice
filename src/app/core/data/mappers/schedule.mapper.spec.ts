@@ -11,7 +11,6 @@ const DTO: ScheduleDto = {
   capacity: 8, price: '12000', active: true,
   validFrom: '2026-08-01T00:00:00.000Z',
   validTo: '2026-12-31T00:00:00.000Z',
-  deletedAt: null,
 };
 
 describe('toSchedule', () => {

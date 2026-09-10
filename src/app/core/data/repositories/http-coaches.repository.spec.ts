@@ -7,7 +7,7 @@ import { HttpCoachesRepository } from './http-coaches.repository';
 import { API_CONFIG } from '../config/api-config.token';
 
 const row = (over: Record<string, unknown> = {}) => ({
-  id: '5', description: null, deletedAt: null,
+  id: '5', description: null,
   user: { nombre: 'Juan', apellido: 'Gómez', email: 'juan@club.com' }, ...over,
 });
 
@@ -35,13 +35,6 @@ describe('HttpCoachesRepository', () => {
       const p = repo.list();
       http.expectOne({ method: 'GET', url: '/api/coaches' }).flush([row()]);
       expect(await p).toEqual([{ id: '5', displayName: 'Juan Gómez', description: null }]);
-    });
-
-    it('descarta las filas con deletedAt', async () => {
-      const p = repo.list();
-      http.expectOne({ method: 'GET', url: '/api/coaches' })
-        .flush([row(), row({ id: '6', deletedAt: '2026-07-30T12:00:00.000Z' })]);
-      expect((await p).map((c) => c.id)).toEqual(['5']);
     });
 
     it('ignora userId y clubId, que el backend manda de más', async () => {

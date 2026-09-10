@@ -166,9 +166,16 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
    * otro método; acá está en esta misma función, así que el throw síncrono ya cae donde tiene
    * que caer.
    *
-   * NO RELEE cuando sale todo bien: `AttendanceService` escribe la tabla `attendance` y nada más
-   * —la reserva sigue confirmed, el cupo no cambia, la lista de espera no cambia—, así que una
-   * relectura devolvería exactamente lo que ya está en pantalla.
+   * RELEE SIEMPRE el roster, salga bien o mal. Antes no lo hacía y estaba bien: `attendance`
+   * era una tabla de sólo escritura para el panel, así que la relectura no traía nada nuevo.
+   * Ahora `GET /class-sessions/:id/reservations` devuelve `attendanceStatus`, y es esa
+   * relectura la que deja la planilla marcada: sin ella, guardar limpiaría las marcas y la
+   * clase volvería a verse sin tomar hasta la próxima apertura.
+   *
+   * El fallo de la relectura se TRAGA en los dos caminos. Con fallos per-ítem, además, saca de
+   * la planilla las filas que dejaron de estar `confirmed` —el motivo más probable de un
+   * `{ok:false}`: se confirmó un hold y el roster se releyó, o el alumno canceló por
+   * WhatsApp— y deja en pantalla exactamente lo reintentable.
    */
   async tomarAsistencia(
     sessionId: string,
@@ -181,19 +188,13 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
         sessionId,
         createSessionAttendanceDraft(marks),
       );
-      if (results.some((r) => !r.ok)) {
-        // El fallo más probable es que la reserva haya dejado de estar `confirmed` entre la
-        // carga del roster y el Guardar: se confirmó un hold y el roster se releyó, o el alumno
-        // canceló por WhatsApp. Esa fila no va a entrar por más que se reintente, y la
-        // relectura la saca de la planilla dejando en pantalla exactamente lo reintentable.
-        //
-        // Su fallo se TRAGA: la planilla queda como está y el bloque de fallidos ya cuenta el
-        // problema real. Un error acá lo taparía con uno de segundo orden.
-        try {
-          await this.loadReservations(sessionId);
-        } catch {
-          /* ver arriba */
-        }
+      // Ver el comentario de arriba: la relectura es lo que deja la asistencia marcada, y su
+      // fallo se traga porque el resultado per-ítem ya cuenta el problema real —taparlo con un
+      // error de segundo orden sería peor.
+      try {
+        await this.loadReservations(sessionId);
+      } catch {
+        /* ver arriba */
       }
       return results;
     } catch (err) {

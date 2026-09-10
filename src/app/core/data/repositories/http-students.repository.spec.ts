@@ -31,7 +31,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
 const row = (over: Record<string, unknown> = {}) => ({
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
   birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4', studentStatusId: '2',
-  dominantHand: 'diestro', ranking: 12, notes: null, deletedAt: null, ...over,
+  dominantHand: 'diestro', ranking: 12, notes: null, ...over,
 });
 
 const draft: StudentDraft = {
@@ -46,11 +46,6 @@ describe('HttpStudentsRepository.list', () => {
     const students = await repo.list();
     expect(students[0]).toMatchObject({ id: '1', phone: '1155667788', birthDate: '2001-05-03' });
     expect(calls[0]).toMatchObject({ method: 'get', path: '/students' });
-  });
-
-  it('descarta las filas con deletedAt', async () => {
-    const { repo } = setup({ get: of([row(), row({ id: '2', deletedAt: '2026-07-30T12:00:00.000Z' })]) });
-    expect((await repo.list()).map((s: { id: string }) => s.id)).toEqual(['1']);
   });
 
   it('conserva studentStatusId: la columna Estado y su select lo necesitan', async () => {
@@ -118,7 +113,7 @@ describe('HttpStudentsRepository.plans', () => {
     });
   });
 
-  // Mismo motivo que en list(): student-plans.service.ts:88 no filtra deletedAt.
+  // list() ya no filtra —el backend lo hace—, pero student-plans.service.ts:107 no.
   it('descarta los planes borrados', async () => {
     const { repo } = setup({
       get: of([planRow(), planRow({ id: '2', deletedAt: '2026-08-10T00:00:00.000Z' })]),

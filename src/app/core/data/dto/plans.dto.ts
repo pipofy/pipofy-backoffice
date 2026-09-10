@@ -14,7 +14,6 @@ export const PlanDtoSchema = v.object({
   price: v.nullable(v.union([v.string(), v.number()])),
   validityDays: v.nullable(v.number()),
   active: v.boolean(),
-  deletedAt: v.nullable(v.string()),
 });
 export type PlanDto = v.InferOutput<typeof PlanDtoSchema>;
 

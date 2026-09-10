@@ -10,6 +10,8 @@ const row = (over: Record<string, unknown> = {}) => ({
   startAt: '2026-08-05T21:00:00.000Z',
   capacity: 4,
   availableSpots: 1,
+  waitingCount: 0,
+  classSessionStatus: { id: '1', name: 'programada' },
   ...over,
 });
 

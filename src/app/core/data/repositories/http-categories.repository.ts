@@ -16,9 +16,7 @@ export class HttpCategoriesRepository extends CategoriesRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/categories'));
       const dtos = v.parse(CategoryListDtoSchema, raw);
-      // ponytail: mismo filtro de borrados que en canchas — categories.service.list()
-      // tampoco excluye deletedAt (§4.3).
-      return dtos.filter((d) => d.deletedAt === null).map(toCategory);
+      return dtos.map(toCategory);
     } catch (err) {
       throw toDomainError(err);
     }

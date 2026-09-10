@@ -23,7 +23,6 @@ export const ScheduleDtoSchema = v.object({
   active: v.boolean(),
   validFrom: v.nullable(v.string()),
   validTo: v.nullable(v.string()),
-  deletedAt: v.nullable(v.string()),
 });
 export type ScheduleDto = v.InferOutput<typeof ScheduleDtoSchema>;
 

@@ -14,7 +14,6 @@ const ROW = {
   capacity: 8, price: '12000', active: true,
   validFrom: null, validTo: null,
   createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
-  deletedAt: null,
 };
 
 describe('HttpSchedulesRepository', () => {
@@ -42,13 +41,6 @@ describe('HttpSchedulesRepository', () => {
     const rows = await p;
     expect(rows).toHaveLength(1);
     expect(rows[0].startTime).toBe('18:00');
-  });
-
-  it('list() FILTRA los borrados: schedules.service.list() no los excluye (§3.1)', async () => {
-    const p = repo.list();
-    http.expectOne({ method: 'GET', url: '/api/schedules' })
-      .flush([ROW, { ...ROW, id: '2', deletedAt: '2026-01-01T00:00:00.000Z' }]);
-    expect(await p).toHaveLength(1);
   });
 
   it('create() manda POST con el body parseado', async () => {

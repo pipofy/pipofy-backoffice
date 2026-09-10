@@ -5,7 +5,7 @@ import { StudentDraft } from '@domain/entities/student';
 const dto = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',
   birthDate: '2001-05-03T00:00:00.000Z', categoryId: '4', studentStatusId: '2',
-  dominantHand: 'diestro', ranking: 12, notes: null, deletedAt: null,
+  dominantHand: 'diestro', ranking: 12, notes: null,
 };
 
 const draft: StudentDraft = {

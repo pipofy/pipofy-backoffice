@@ -30,10 +30,7 @@ export class HttpSchedulesRepository extends SchedulesRepository {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/schedules'));
       const dtos = v.parse(ScheduleListDtoSchema, raw);
-      // ponytail: el filtro de borrados es del cliente porque schedules.service.list() no
-      // excluye deletedAt, aunque su remove() SÍ lo setea (§3.1). Techo: con muchos
-      // horarios borrados se transfieren filas de más. Salida real: arreglarlo en el backend.
-      return dtos.filter((d) => d.deletedAt === null).map(toSchedule);
+      return dtos.map(toSchedule);
     } catch (err) {
       throw toDomainError(err);
     }

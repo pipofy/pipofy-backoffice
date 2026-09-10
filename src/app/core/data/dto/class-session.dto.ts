@@ -22,6 +22,16 @@ export const ClassSessionDtoSchema = v.object({
   capacity: v.nullable(v.number()),
   /** Calculado por el backend: capacity − (confirmadas + held vigentes). */
   availableSpots: v.number(),
+  /**
+   * Cuántos esperan. Sale del segundo `groupBy` de `class-sessions.service.list()`, así que
+   * viene en la MISMA respuesta: no hace falta una llamada por sesión llena.
+   */
+  waitingCount: v.number(),
+  /**
+   * El servicio resuelve el nombre desde su caché de catálogos y lo embebe; no es el
+   * `classSessionStatusId` crudo de la fila. Valores: 'programada' | 'cancelada' | 'completada'.
+   */
+  classSessionStatus: v.object({ id: v.string(), name: v.string() }),
 });
 export const ClassSessionListDtoSchema = v.array(ClassSessionDtoSchema);
 export type ClassSessionDto = v.InferOutput<typeof ClassSessionDtoSchema>;
@@ -50,8 +60,8 @@ export const WaitingListDtoSchema = v.array(WaitingListEntryDtoSchema);
  * `student` también viene incluido y NO se declara: el modal ya tiene el padrón en memoria y
  * resuelve el nombre por `studentId`. valibot descarta lo que no está declarado.
  *
- * `deletedAt` SÍ se declara, por el mismo motivo que en `courts.dto.ts`: el `findMany` del
- * backend no lo filtra y el recorte se hace en el cliente.
+ * `deletedAt` SÍ se declara: es de los dos findMany que el backend NO filtra por borrados
+ * (el otro es `students/:id/plans`), así que el recorte se hace en el cliente.
  */
 export const SessionReservationDtoSchema = v.object({
   id: v.string(),
@@ -61,6 +71,16 @@ export const SessionReservationDtoSchema = v.object({
   holdExpiresAt: v.nullable(v.string()),
   deletedAt: v.nullable(v.string()),
   reservationStatus: v.object({ name: v.string() }),
+  /**
+   * null cuando el panel no tomó asistencia todavía. El backend lo aplana desde la tabla
+   * `attendance` con la misma cache de catálogos que usa para `classSessionStatus`
+   * (`class-sessions.service.ts:124`), así que llega el nombre y no el id.
+   *
+   * Trae SÓLO 'asistio' / 'ausente'. La misma fila la escribe el recordatorio de WhatsApp con
+   * el RSVP del alumno, y eso el backend lo manda aparte en `rsvp`: no se declara acá porque
+   * ninguna pantalla lo muestra todavía, y v.object lo descarta sin romper.
+   */
+  attendanceStatus: v.nullable(v.object({ id: v.string(), name: v.string() })),
 });
 export const SessionReservationListDtoSchema = v.array(SessionReservationDtoSchema);
 export type SessionReservationDto = v.InferOutput<typeof SessionReservationDtoSchema>;
@@ -90,7 +110,8 @@ export type CancelClassRequest = v.InferOutput<typeof CancelClassRequestSchema>;
  * (app.module.ts), así que una clave de más es un 400 de la llamada entera.
  *
  * `status` va por NOMBRE y no por id: `AttendanceService` busca la fila de `attendance_status`
- * por `name`. No hay catálogo que pedir — `GET /catalogs/*` no expone attendance-statuses.
+ * por `name`, así que no hace falta pedir el catálogo (existe: `GET /catalogs/attendance-statuses`,
+ * ver docs/conexiones-disponibles.md §3 — sirve para MOSTRAR los otros tres estados, no para esto).
  */
 export const AttendanceRequestSchema = v.object({
   items: v.array(

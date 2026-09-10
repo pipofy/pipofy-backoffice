@@ -77,8 +77,8 @@
   --color-accent-strong:#2267AC;        /* blanco: 5.83:1 */
   --color-accent-hover:#1B5595;         /* blanco: 7.55:1 */
   --color-accent-mark:var(--color-accent);   /* sólo marcas/barras */
-  --color-accent-soft:#EAF2FA; --color-on-accent-soft:#1B5595;    /* 6.68:1 sobre soft */
-  --color-accent-soft-border:#C5DCF0;   /* el borde del par soft (.sess.open) */
+  --color-accent-soft:var(--color-primary-soft); --color-on-accent-soft:var(--color-on-primary-soft);
+  --color-accent-soft-border:#C5DCF0;   /* el borde del par soft (.sess.open); no hay --color-primary-soft-border al que aliasear */
 
   --color-destructive-hover:#B91C1C;
   --color-destructive-soft:#FEECEC; --color-on-destructive-soft:#B91C1C; /* 5.68:1 */
@@ -130,7 +130,9 @@ h1,h2,h3,h4{font-family:var(--font-heading);font-weight:600;line-height:var(--le
 
 /* ═══════════════ MARCA (lockup compartido) ═══════════════ */
 .brandmark{display:inline-flex;align-items:center;gap:var(--space-sm);text-decoration:none;color:inherit}
-.brandmark .bm-img{height:36px;width:auto;display:block}
+/* width explícito (36px x 1007/292 del viewBox) para que el <img> reserve su caja
+   antes de cargar: con width:auto el layout salta en el primer paint del login. */
+.brandmark .bm-img{height:36px;width:124px;display:block}
 /* .bm-logo / .bm-name / .bm-sub ya no las usa la app: BrandmarkComponent renderiza
    un <img>. Se conservan porque index-v2.html y onboarding.html —maquetas estáticas
    de la raíz, fuera del build— siguen siendo consumidores reales. */

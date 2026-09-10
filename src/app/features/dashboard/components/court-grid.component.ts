@@ -20,13 +20,19 @@ const STATE_LABEL: Record<SessionState, string> = {
     <!-- Los dos estados vacíos son reales contra la API: la semilla vieja garantizaba 4
          canchas y una grilla poblada. Sin canchas, además, repeat(0, ...) es un valor
          inválido y el navegador descarta grid-template-columns entero. -->
+    <!-- El vacío va dentro de .grid-wrap: la grilla no vive en un .panel, así que sin
+         esa chrome (la que traía .grid-empty) el placeholder flota sobre el fondo. -->
     @if (grid().courts.length === 0) {
+    <div class="grid-wrap">
       <app-placeholder
         title="Todavía no hay canchas cargadas"
         body="Se agregan desde Configuración → Canchas."
       />
+    </div>
     } @else if (grid().hours.length === 0) {
+    <div class="grid-wrap">
       <app-placeholder title="No hay clases programadas para hoy" />
+    </div>
     } @else {
     <div class="grid-wrap">
       <div class="grid-scroll">

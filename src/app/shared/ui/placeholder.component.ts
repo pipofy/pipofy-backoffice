@@ -127,15 +127,11 @@ const ROLE: Record<PlaceholderTone, 'alert' | 'status' | null> = {
         color: var(--color-fg);
       }
 
-      /* El @media prefers-reduced-motion de tokens.css:108 anula esto sin código extra. */
+      /* spin es el @keyframes global de components.css:57 (el mismo que usa .btn .spin).
+         El @media prefers-reduced-motion de tokens.css:124 lo anula sin código extra. */
       .ph-roll {
         transform-origin: 12px 11px;
-        animation: ph-roll 900ms linear infinite;
-      }
-      @keyframes ph-roll {
-        to {
-          transform: rotate(360deg);
-        }
+        animation: spin 900ms linear infinite;
       }
     `,
   ],

@@ -101,8 +101,10 @@
 .field.err input,.field.err textarea,.field.err select{border-color:var(--color-destructive);background:var(--color-destructive-soft)}
 .field.err input:focus,.field.err textarea:focus{box-shadow:0 0 0 3px rgba(220,38,38,.16)}
 .field .hint{font-size:var(--text-xs);color:var(--color-fg-subtle);margin-top:var(--space-xs)}
-.field .err-msg{font-size:var(--text-xs);color:var(--color-on-destructive-soft);margin-top:var(--space-xs);font-weight:600;display:none;align-items:flex-start;gap:var(--space-xs)}
-.field.err .err-msg{display:flex}
+/* Sin `display`: app-field-error decide su visibilidad con @if, y una regla global
+   `.field .err-msg{display:none}` empata en especificidad (0,2,0) con la encapsulada
+   del componente, así que sólo el orden de inyección decidía si el error se veía. */
+.field .err-msg{font-size:var(--text-xs);color:var(--color-on-destructive-soft);margin-top:var(--space-xs);font-weight:600;align-items:flex-start;gap:var(--space-xs)}
 .field .err-msg svg{width:14px;height:14px;flex:0 0 auto;margin-top:1px}
 
 /* Variante densa: restaura la densidad de index-v2.html:621-652 (tipografía Y

@@ -15,7 +15,7 @@ eso ya lo resuelve `@domain/local-date`.
 
 | # | Qué es dummy | Endpoint que falta | Qué se borra |
 |---|---|---|---|
-| 1 | ~~Toda la pantalla `/grupos`~~ **⚠️ CONECTADA (2026-09-10), verificación en vivo pendiente**: roster derivado de `/schedules` + `/class-sessions` | — (no hizo falta `GET /groups` ni `.../roster`) | ~~`groups.seed.ts`, `in-memory-groups.repository.ts`~~ borrados |
+| 1 | ~~Toda la pantalla `/grupos`~~ **⚠️ CONECTADO (2026-09-10), verificación en vivo pendiente**: roster derivado de `/schedules` + `/class-sessions` | — (no hizo falta `GET /groups` ni `.../roster`) | ~~`groups.seed.ts`, `in-memory-groups.repository.ts`~~ borrados |
 | 2 | ~~La asistencia no se puede releer~~ **CERRADO (2026-09-10)**: `listReservations` aplana `attendanceStatus` | — | ~~el union cerrado~~ quedó, pero ahora `asistenciaTomada()` lo justifica |
 | 3 | ~~Clases canceladas sólo en memoria~~ **CERRADO**: `GET /class-sessions` ya embebe `classSessionStatus` | — | ~~el `Set _cancelled`~~ borrado |
 | 4 | Badges de la sidebar en 0 | contadores de alertas y pagos | `nav-badges.service.ts` |

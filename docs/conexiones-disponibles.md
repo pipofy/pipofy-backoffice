@@ -241,7 +241,7 @@ Y las dos deudas de modelo:
 2. **Nada más del lado del front.** §3, §4 y §7 se revisaron uno por uno y ninguno tiene
    consumidor hoy: o los cubrió §1, o esperan una pantalla, o esperan que el backend lea el
    campo. Construirlos ahora es código que nadie llama.
-3. ~~**§9** Releer la asistencia~~ ✅ hecho — tocó el backend, confirmado en vivo.
+3. ~~**§9** Releer la asistencia~~ ✅ hecho — tocó el backend.
 4. **§10** `scheduleTemplateId` + `student` de grupos — declarado, **falta confirmar en vivo**
    antes de dar por buena la conexión de `/grupos` (ver `api-faltantes.md` §1).
 5. **El cuello de botella es el backend**, no el front. Por impacto:

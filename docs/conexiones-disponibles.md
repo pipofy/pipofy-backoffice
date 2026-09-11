@@ -198,6 +198,17 @@ Con esto, `/grupos` no necesitó `GET /groups` ni `GET /schedules/:id/roster`: e
 roster de cada sesión, de `student` embebido en `GET /class-sessions/:id/reservations`. Cierra
 la pregunta de endpoint del item **§1 de `api-faltantes.md`**.
 
+**Este riesgo no es sólo de `/grupos`.** Los dos campos se declararon en schemas que ya
+parseaban otras pantallas, no en uno exclusivo de esta entrega. `ClassSessionDtoSchema` (que
+declara `scheduleTemplateId`) la parsea `HttpClassSessionsRepository.list()`, y de ahí salen
+tanto el **dashboard** (`HttpDashboardRepository.getSnapshot()`) como la grilla de
+**`/reservas`** (`ReservasFacade`) — además de `listRange()`, que es el método nuevo que usa
+`/grupos`. `SessionReservationDtoSchema` (que declara `student`) la parsea
+`HttpClassSessionsRepository.reservations()`, que además del roster de `/grupos` es el roster y
+la planilla de asistencia del **modal de `/reservas`** (`SesionFacade.loadReservations()`). Si
+alguno de los dos campos no viniera de verdad en la respuesta, el `v.parse` no tira sólo
+`/grupos`: tira también esas dos pantallas, que hoy funcionan.
+
 **Sin confirmar en vivo.** Los dos campos se declararon leyendo `class-sessions.service.ts`, no
 contra una respuesta real del servidor — que es exactamente el paso que faltó para §1, §2 y §9
 de este mismo documento cuando se propusieron (y que en su momento tampoco se hizo con curl:

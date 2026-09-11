@@ -402,7 +402,7 @@ casteados al contrato, con un array `calls`.
   rechaza el conjunto.
 - **`http-class-sessions.repository.spec.ts`**: `listRange` pide `from−1d … to+1d` y no filtra.
 - **`grupos.facade.spec.ts`**: `saveAttendance` no toca `loading()` ni `error()` y propaga el
-  rechazo; re-lee después de guardar; el `effect` de tenant sigue limpiando.
+  rechazo; NO relee después de guardar (§6); el `effect` de tenant sigue limpiando.
 - **Componentes**: `roster-table` con una fila `held`; `sessions-table` con el botón
   deshabilitado en una sesión futura y en una cancelada; `attendance-modal` prellenado desde
   `attendanceStatus`.

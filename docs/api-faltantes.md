@@ -49,12 +49,25 @@ efectivamente vienen: `scheduleTemplateId` en `GET /class-sessions`, y
 dieron por presentes **leyendo el código de NestJS** (`class-sessions.service.ts`), no una
 respuesta real — y los tests no lo cubren porque corren contra dobles, que devuelven lo que el
 test les pide, no lo que el backend manda de verdad. Importa más de lo habitual: si alguno de
-los dos falta, el `v.parse` de valibot no descarta sólo ese campo — **tira la pantalla entera**.
+los dos falta, el `v.parse` de valibot no descarta sólo ese campo — **tira la pantalla entera,
+y no es sólo la de acá** (ver el párrafo siguiente).
 El intento de verificarlo en vivo quedó bloqueado por el clasificador de riesgo del entorno de
 desarrollo (no por el backend, que arriba y responde), detallado en
 `.superpowers/sdd/2026-09-10-grupos-conectados/task-5-report.md`. Dato para quien lo reintente:
 `prisma/seed.ts` del backend sólo siembra los 16 catálogos (`class_session_status`,
 `reservation_status`, etc.) — **no crea usuarios**, así que no hay credenciales de prueba ahí.
+
+**El alcance de ese riesgo es más grande que "esta pantalla".** Los dos campos no se declararon
+en un DTO exclusivo de `/grupos`: se declararon en los DTOs compartidos que ya venían parseando
+otras dos pantallas. `scheduleTemplateId` lo declara `ClassSessionDtoSchema`, y ese schema lo
+parsea `HttpClassSessionsRepository.list()` — el mismo método que usa `HttpDashboardRepository`
+para el **dashboard** y `ReservasFacade` para la grilla de **`/reservas`** — además de
+`listRange()`, que es el que agrega `/grupos`. `student.{firstName,lastName,categoryId}` lo
+declara `SessionReservationDtoSchema`, y ese schema lo parsea
+`HttpClassSessionsRepository.reservations()`, que usa `SesionFacade` para el roster y la
+planilla de asistencia del **modal de `/reservas`**, además del roster de `/grupos`. Si el
+diagnóstico por lectura de código de NestJS resultara estar mal, el `v.parse` no rompe sólo la
+pantalla nueva: rompe también el dashboard y `/reservas`, dos pantallas que hoy andan.
 
 **Queda explícitamente abierto, y esta entrega no lo resolvió:** la tabla `enrollment`. Sin ella
 no hay créditos ni % de asistencia **por inscripción** — son `creditsRemaining` y

@@ -10,9 +10,9 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
  * SIN filas clickeables ni .row-open (D8): en la maqueta abren la ficha del alumno, que este
  * slice difiere. Una fila muerta o un toast que promete la ficha serían peores.
  *
- * SIN las columnas Créditos y % de asistencia: los dos son datos POR INSCRIPCIÓN y la inscripción
- * no existe en la base (ver el ponytail de entities/group.ts). Una columna de guiones ocupa ancho
- * e invita a preguntar por qué está vacía. Vuelven cuando exista `enrollment`.
+ * ponytail: SIN las columnas Créditos y % de asistencia: los dos son datos POR INSCRIPCIÓN y la
+ * inscripción no existe en la base (ver el ponytail de entities/group.ts). Una columna de guiones
+ * ocupa ancho e invita a preguntar por qué está vacía. Salida: vuelven cuando exista `enrollment`.
  *
  * La fila 'held' se marca pero no se esconde: ocupa cupo para el backend, así que esconderla haría
  * que el 4/4 del hero no cuadre con las filas de esta tabla.

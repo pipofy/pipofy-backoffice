@@ -5,7 +5,7 @@ import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
 import { Category } from '@domain/entities/category';
-import { SessionReservation } from '@domain/entities/session-reservation';
+import { SessionReservation, asistenciaTomada } from '@domain/entities/session-reservation';
 import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { Student } from '@domain/entities/student';
 
@@ -65,7 +65,11 @@ export function toGroups(input: GroupsInput, now: Date): Group[] {
           courtName: courtName.get(t.courtId) ?? DASH,
           weekday: t.weekday,
           startTime: t.startTime,
-          capacity: t.capacity ?? 0,
+          // capacity sale de la MISMA sesión que enrolled y waiting, no del template: si alguien
+          // edita el cupo del horario en /configuracion/horarios, las ClassSession ya generadas
+          // conservan el cupo viejo, y mezclar fuentes mostraría "4/6" ofreciendo lugares que
+          // reserve() va a rechazar. Cae al template sólo cuando no hay próxima sesión.
+          capacity: proxima?.capacity ?? t.capacity ?? 0,
           enrolled: proxima?.enrolled ?? 0,
           waiting: proxima?.waiting ?? 0,
           nextSessionId: proxima?.id ?? null,
@@ -125,7 +129,11 @@ export function toRoster(
       category:
         r.studentCategoryId === null ? DASH : (categoryName.get(r.studentCategoryId) ?? DASH),
       status: r.status,
-      attendanceStatus: r.attendanceStatus,
+      // asistenciaTomada() y no el campo crudo: /reservas ya estrecha por acá, y su propia
+      // docstring dice por qué — es defensa en profundidad porque el DTO declara `string`. Si el
+      // backend algún día vuelve a aplanar el RSVP de WhatsApp en este campo, un valor que no sea
+      // 'asistio'/'ausente' no debe prellenar el modal como Presente.
+      attendanceStatus: asistenciaTomada(r),
     }));
 }
 

@@ -178,7 +178,15 @@ describe('GrupoDetailPageComponent', () => {
 
   it('las 4 fichas del hero, en orden, con la fecha LOCAL de la próxima programada', async () => {
     const { el } = await mount({
-      groups: [grupo({ sessions: [sesion(), sesion({ id: '302', startAt: '2026-12-14T21:00:00.000Z', yaPaso: false })] })],
+      // nextSessionId apunta a la 302: es la que quedó 'programada' y sin pasar. El fixture lo
+      // seteaba mal (quedaba en el default '301', ya pasada) y sólo pasaba porque proxima()
+      // rederivaba la regla en vez de leer nextSessionId — que es justo lo que se dejó de hacer.
+      groups: [
+        grupo({
+          sessions: [sesion(), sesion({ id: '302', startAt: '2026-12-14T21:00:00.000Z', yaPaso: false })],
+          nextSessionId: '302',
+        }),
+      ],
     });
     const fichas = el.querySelectorAll('.st-fact');
     expect(fichas[0].textContent).toContain('Cupo');

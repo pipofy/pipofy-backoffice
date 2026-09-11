@@ -29,6 +29,9 @@ const PILL = new Map<string, string>([
  * sostener contra este backend. El modal abre pidiendo las reservas de la sesión y prellena con
  * lo que ya esté guardado, igual que hace /reservas.
  *
+ * ponytail: desde esta tabla no se ve si una sesión ya tiene asistencia tomada sin abrirla. La
+ * salida es que `markBulk` pase la clase a `completada`, o un contador en `GET /class-sessions`.
+ *
  * La columna es Inscriptos y no Asistencia: el conteo de presentes no viene en `GET /class-sessions`
  * y sacarlo costaría una llamada por sesión.
  */

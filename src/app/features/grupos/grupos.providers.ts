@@ -19,10 +19,11 @@ import { HttpStudentsRepository } from '@data/repositories/http-students.reposit
 /**
  * Bindeados en la ruta lazy de la feature, así quedan scoped a ella.
  *
- * Los OCHO van acá, incluidos los cuatro que `/reservas` también bindea: en `app.config.ts` sólo
- * están a root los que el interceptor o el shell necesitan antes de que exista ruta. Mismo
- * argumento que `reservas.providers.ts`: son contratos de DOMINIO, no de otra feature, y dos
- * instancias de un repo SIN ESTADO no cuestan nada.
+ * Los OCHO van acá, incluidos los cinco que `/reservas` también bindea (`ClassSessionsRepository`,
+ * `StudentsRepository`, `CourtsRepository`, `CoachesRepository`, `CategoryGroupsRepository`): en
+ * `app.config.ts` sólo están a root los que el interceptor o el shell necesitan antes de que
+ * exista ruta. Mismo argumento que `reservas.providers.ts`: son contratos de DOMINIO, no de otra
+ * feature, y dos instancias de un repo SIN ESTADO no cuestan nada.
  *
  * `HttpGroupsRepository` no pega HTTP por sí mismo: compone otros cinco (horarios, clases,
  * canchas, profes y grupos de categoría). Por eso todos tienen que estar resueltos cuando se

@@ -65,8 +65,13 @@ export class GrupoDetailPageComponent {
   }
 
   protected readonly group = computed(() => this.facade.groups().find((g) => g.id === this.groupId));
+  // Busca por `nextSessionId` y no repite la regla 'programada' && !yaPaso: esa regla ya la
+  // aplicó el mapper para poblar ese campo, y copiarla acá las deja atadas sólo mientras nadie
+  // las edite por separado.
   protected readonly proxima = computed(() => {
-    const s = this.group()?.sessions.find((x) => x.status === 'programada' && !x.yaPaso);
+    const g = this.group();
+    if (!g) return fechaCorta(null);
+    const s = g.sessions.find((x) => x.id === g.nextSessionId);
     return fechaCorta(s?.startAt ?? null);
   });
 

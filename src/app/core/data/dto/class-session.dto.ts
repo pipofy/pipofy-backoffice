@@ -9,7 +9,8 @@ import * as v from 'valibot';
  * (`surfaceTypeId`, `deletedAt`). Pasarlo a snake_case "por consistencia" rompe el v.parse
  * en runtime y el compilador no lo ve.
  *
- * Sólo se declaran los campos que el dashboard usa; valibot descarta el resto de la fila.
+ * Sólo se declaran los campos que ALGÚN consumidor usa (dashboard, `/reservas`, `/grupos`);
+ * valibot descarta el resto de la fila.
  */
 export const ClassSessionDtoSchema = v.object({
   id: v.string(),

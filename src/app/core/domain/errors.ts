@@ -49,13 +49,6 @@ export class InvalidRegistrationError extends DomainRuleError {
   }
 }
 
-export class GroupNotFoundError extends DomainRuleError {
-  constructor(groupId: string) {
-    super(`No existe el grupo ${groupId}.`);
-    this.name = 'GroupNotFoundError';
-  }
-}
-
 /**
  * DomainError → copy en español para el usuario final.
  *

@@ -106,10 +106,25 @@ describe('toGroups', () => {
     expect(toGroups(input({ schedules: [template({ active: false })] }), AHORA)).toEqual([]);
   });
 
-  it('muestra el template aunque no tenga sesiones en la ventana', () => {
-    const [g] = toGroups(input({ sessions: [] }), AHORA);
+  it('muestra el template aunque no tenga sesiones en la ventana, y cae a su propio cupo', () => {
+    const [g] = toGroups(input({ schedules: [template({ capacity: 6 })], sessions: [] }), AHORA);
     expect(g.sessions).toEqual([]);
     expect(g.enrolled).toBe(0);
+    expect(g.capacity).toBe(6);
+  });
+
+  // Editar el cupo de un horario en /configuracion/horarios no cambia las ClassSession que ya se
+  // generaron: si capacity saliera del template en vez de la próxima sesión, la lista mostraría
+  // un cupo que reserve() rechaza.
+  it('toma capacity de la PRÓXIMA sesión, no del template', () => {
+    const [g] = toGroups(
+      input({
+        schedules: [template({ capacity: 6 })],
+        sessions: [sesion({ capacity: 4, availableSpots: 1 })],
+      }),
+      AHORA,
+    );
+    expect(g.capacity).toBe(4);
   });
 
   it('cae a guión cuando un id no matchea ningún lookup', () => {

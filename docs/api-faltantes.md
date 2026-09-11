@@ -15,7 +15,7 @@ eso ya lo resuelve `@domain/local-date`.
 
 | # | Qué es dummy | Endpoint que falta | Qué se borra |
 |---|---|---|---|
-| 1 | Toda la pantalla `/grupos` | roster + sesiones de un grupo | `groups.seed.ts`, `in-memory-groups.repository.ts` |
+| 1 | ~~Toda la pantalla `/grupos`~~ **⚠️ CONECTADA (2026-09-10), verificación en vivo pendiente**: roster derivado de `/schedules` + `/class-sessions` | — (no hizo falta `GET /groups` ni `.../roster`) | ~~`groups.seed.ts`, `in-memory-groups.repository.ts`~~ borrados |
 | 2 | ~~La asistencia no se puede releer~~ **CERRADO (2026-09-10)**: `listReservations` aplana `attendanceStatus` | — | ~~el union cerrado~~ quedó, pero ahora `asistenciaTomada()` lo justifica |
 | 3 | ~~Clases canceladas sólo en memoria~~ **CERRADO**: `GET /class-sessions` ya embebe `classSessionStatus` | — | ~~el `Set _cancelled`~~ borrado |
 | 4 | Badges de la sidebar en 0 | contadores de alertas y pagos | `nav-badges.service.ts` |
@@ -28,7 +28,42 @@ eso ya lo resuelve `@domain/local-date`.
 
 ---
 
-## 1. Grupos — la única pantalla 100% dummy · **P0**
+## 1. Grupos · ⚠️ CONECTADO (2026-09-10), verificación en vivo pendiente
+
+**Lo que se hizo:** el front quedó conectado a datos reales. Se borraron
+`core/data/repositories/groups.seed.ts`, `in-memory-groups.repository.ts` (+ sus 2 specs) y los
+dos carteles *"Datos de demostración"*; `GRUPOS_PROVIDERS` pasa a `useClass:
+HttpGroupsRepository`. El "grupo" de la maqueta salió de `ScheduleTemplate` (`GET /schedules`) y
+sus sesiones de `GET /class-sessions` agrupadas por `scheduleTemplateId` — campo que ya venía en
+la fila cruda de Prisma y sólo faltaba declararlo en el DTO del front, el mismo patrón que §2,
+§3 y §5 de este documento. **No se crearon `GET /groups` ni `GET /schedules/:id/roster`**, que
+es lo que esta sección proponía más abajo (quedó en el `<details>` sin tocar, como diagnóstico
+original): se eligió **(a) roster derivado** de las reservas confirmadas, no **(b) tabla nueva
+`enrollment`**. La suite de tests pasa entera — pero corre contra dobles, ver el punto
+siguiente.
+
+**Lo que quedó pendiente, y es bloqueante para dar la entrega por buena:** nadie probó contra
+una respuesta real del backend levantado que los dos campos que el front ahora declara
+efectivamente vienen: `scheduleTemplateId` en `GET /class-sessions`, y
+`student.{firstName,lastName,categoryId}` en `GET /class-sessions/:id/reservations`. Los dos se
+dieron por presentes **leyendo el código de NestJS** (`class-sessions.service.ts`), no una
+respuesta real — y los tests no lo cubren porque corren contra dobles, que devuelven lo que el
+test les pide, no lo que el backend manda de verdad. Importa más de lo habitual: si alguno de
+los dos falta, el `v.parse` de valibot no descarta sólo ese campo — **tira la pantalla entera**.
+El intento de verificarlo en vivo quedó bloqueado por el clasificador de riesgo del entorno de
+desarrollo (no por el backend, que arriba y responde), detallado en
+`.superpowers/sdd/2026-09-10-grupos-conectados/task-5-report.md`. Dato para quien lo reintente:
+`prisma/seed.ts` del backend sólo siembra los 16 catálogos (`class_session_status`,
+`reservation_status`, etc.) — **no crea usuarios**, así que no hay credenciales de prueba ahí.
+
+**Queda explícitamente abierto, y esta entrega no lo resolvió:** la tabla `enrollment`. Sin ella
+no hay créditos ni % de asistencia **por inscripción** — son `creditsRemaining` y
+`attendanceRate`, las dos columnas que tenía el roster de la maqueta y que se borraron al
+conectar (el roster derivado no tiene de dónde sacarlas: no existe la inscripción como entidad).
+Sigue en pie la decisión (a) derivado / (b) `enrollment` que este documento planteaba para ese
+problema puntual.
+
+<details><summary>Diagnóstico original</summary>
 
 **Estado hoy:** `GRUPOS_PROVIDERS` bindea `GroupsRepository` → `InMemoryGroupsRepository`, que
 parsea `GROUPS_SEED` (6 grupos inventados de `index-v2.html:1658`). Las dos páginas muestran un
@@ -113,6 +148,8 @@ y `AttendanceService` **no toca créditos** (los descuenta al reservar). Definir
 **Al conectar se borra:** `core/data/repositories/groups.seed.ts`,
 `in-memory-groups.repository.ts` (+ sus 2 specs), los dos carteles "Datos de demostración",
 y `GRUPOS_PROVIDERS` pasa a `useClass: HttpGroupsRepository`.
+
+</details>
 
 ---
 
@@ -317,10 +354,15 @@ GET  /catalogs/credit-reasons
 3. ~~**§5** (el N+1)~~ ✅ cerrado — `waitingCount` ya venía; faltaba declararlo.
 4. ~~**§10** soft-delete~~ ✅ cerrado — los `list()` ya filtraban. **Queda el ORDER BY** y el
    FK a null en los PATCH.
-5. **§1** Grupos — el grande. Decidir antes (a) vs (b).
+5. ~~**§1** Grupos — el grande. Decidir antes (a) vs (b).~~ **⚠️ conectado (2026-09-10)**: se
+   decidió (a) derivado. **Bloqueante antes de dar la entrega por buena:** confirmar contra el
+   backend levantado que `scheduleTemplateId` y `student` vienen de verdad (§1 arriba). Sigue
+   abierta la tabla `enrollment` para créditos/asistencia por inscripción.
 6. **§6** Pagos → destraba `/comercial`, el KPI de ingresos y el badge de la sidebar.
 7. **§7** Plantillas, **§8** lista de espera, **§9** créditos.
 
 > Los tres primeros resultaron ser **diagnósticos vencidos**: el backend ya servía el dato y el
 > front no lo declaraba. Antes de pedir endpoint nuevo, conviene mirar qué devuelve el que ya
-> hay — ver `conexiones-disponibles.md`.
+> hay — ver `conexiones-disponibles.md`. El §1 de grupos es el mismo patrón, pero a diferencia
+> de los otros tres **no está confirmado en vivo todavía** — no cerrarlo como hecho hasta que lo
+> esté.

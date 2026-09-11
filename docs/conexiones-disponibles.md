@@ -20,6 +20,7 @@ necesita y el back no tiene; acá lo que el back **ya expone** y el front no con
 | 6 | `GET /class-sessions?courtId&categoryGroupId` | filtrado en cliente de la grilla | opcional |
 | 7 | `waOptIn` en students | ⏸ el backend lo escribe pero nunca lo lee | — |
 | 8 | `POST /reservations/:id/attendance` (individual) | — | ninguno |
+| 9 | `scheduleTemplateId` en `class-session` y `student` embebido en sus reservas | roster de grupos derivado, sin `GET /groups` nuevo | ⚠️ **declarados en el DTO, sin confirmar en vivo** — ver §10 |
 
 ---
 
@@ -48,6 +49,18 @@ Consecuencias hoy:
 `isCancelled()` para que el literal `'cancelada'` no viva en las pantallas), y se borraron
 `fetchWaitingCounts`, el `Set _cancelled`, `marcarCancelada()` y el `reset()` que lo limpiaba.
 `DashboardSources.waitingCounts` también desapareció: el contador viaja en la sesión.
+
+**`waitingCount` vs `GET .../waiting-list`, verificado por lectura de código (2026-09-10):** el
+detalle de un grupo muestra "En lista de espera" con el `waitingCount` de `GET /class-sessions`
+en el hero, y debajo lista los nombres desde `GET /class-sessions/:id/waiting-list` — dos
+fuentes para el mismo número en la misma pantalla. Leyendo las dos queries del backend:
+`class-sessions.service.ts` calcula `waitingCount` con `waitingList.groupBy({ where: {
+waitingListStatus: { name: 'esperando' } } })`, y `waiting-list.service.ts:list()` hace
+`waitingList.findMany({ where: { classSessionId, waitingListStatus: { name: 'esperando' } } })`.
+**Mismo filtro exacto**, sobre la misma tabla, sin paginado en ninguna de las dos —
+estructuralmente no pueden divergir salvo por una carrera entre las dos requests (alguien se
+une o se cae de la lista justo entre un `GET` y el otro). Esto es lectura de código, no una
+comparación contra una respuesta real; no se cerró con datos en vivo (ver §10).
 
 ## 2. El backend ya filtra los borrados · ✅ hecho (2026-09-10)
 
@@ -168,6 +181,37 @@ Esto cierra el item **#2 de `api-faltantes.md`**.
 
 ---
 
+## 10. `scheduleTemplateId` y `student` embebido en las reservas · ⚠️ declarados, sin confirmar en vivo (2026-09-10)
+
+Dos conexiones más que estaban disponibles y sin usar, mismo patrón que §1: el backend ya
+mandaba el dato, el front no lo declaraba.
+
+- `class-sessions.service.ts:list()` no hace `select`: devuelve `{ ...session, ... }`, el spread
+  de la fila cruda de `classSession.findMany()`. `schedule_template_id` es columna nativa de esa
+  tabla, así que viaja en el spread sin necesidad de ningún `include`.
+- `class-sessions.service.ts:listReservations()` agrega `include: { student: true, ... }` al
+  `findMany` de reservas y devuelve `{ ...reservation, ... }` sin destructurar `student` (sí
+  descarta `attendances`, que se aplana aparte — ver §9).
+
+Con esto, `/grupos` no necesitó `GET /groups` ni `GET /schedules/:id/roster`: el grupo sale de
+`GET /schedules` y sus sesiones de `GET /class-sessions` agrupadas por `scheduleTemplateId`; el
+roster de cada sesión, de `student` embebido en `GET /class-sessions/:id/reservations`. Cierra
+la pregunta de endpoint del item **§1 de `api-faltantes.md`**.
+
+**Sin confirmar en vivo.** Los dos campos se declararon leyendo `class-sessions.service.ts`, no
+contra una respuesta real del servidor — que es exactamente el paso que faltó para §1, §2 y §9
+de este mismo documento cuando se propusieron (y que en su momento tampoco se hizo con curl:
+se dieron por buenos por lectura de código + la suite del front contra dobles, hasta que esta
+tarea puntual —2026-09-10, ver `.superpowers/sdd/2026-09-10-grupos-conectados/task-5-brief.md`—
+se propuso confirmarlo con el backend levantado). El intento de correr el `curl` real contra un
+club con datos reales quedó bloqueado por el clasificador de riesgo del entorno de desarrollo,
+no por el backend (que arriba y responde sin problema); detalle completo en
+`.superpowers/sdd/2026-09-10-grupos-conectados/task-5-report.md`. Dato para quien lo reintente:
+`prisma/seed.ts` del backend sólo siembra los 16 catálogos, **no crea usuarios** — no hay
+credenciales de prueba en la semilla.
+
+---
+
 ## Lo que sigue faltando (no cambia respecto de `api-faltantes.md`)
 
 Modelos que están en `schema.prisma` y **no tienen controller**, así que no hay nada que
@@ -183,8 +227,11 @@ Y las dos deudas de modelo:
   cache de catálogos que `classSessionStatus`. Del lado del front, `SessionReservation` trae
   `attendanceStatus` crudo + `asistenciaTomada()` para estrecharlo, la planilla muestra lo ya
   guardado y `tomarAsistencia()` relee siempre. Detalle en `§9`.
-- **Roster de grupos.** No existe `enrollment`; sigue en pie la decisión (a) derivado /
-  (b) tabla nueva de `api-faltantes.md` §1.
+- ~~**Roster de grupos.**~~ **Ya no es una decisión pendiente**: se eligió (a) derivado — ver
+  §10. Lo que queda es un techo con salida conocida, no una elección: sin la tabla `enrollment`
+  no hay créditos ni % de asistencia **por inscripción**, que es lo que la maqueta modelaba
+  (`creditsRemaining` / `attendanceRate` del roster, borrados al conectar). Sigue en
+  `api-faltantes.md` §1.
 
 ---
 
@@ -194,8 +241,10 @@ Y las dos deudas de modelo:
 2. **Nada más del lado del front.** §3, §4 y §7 se revisaron uno por uno y ninguno tiene
    consumidor hoy: o los cubrió §1, o esperan una pantalla, o esperan que el backend lea el
    campo. Construirlos ahora es código que nadie llama.
-3. **El cuello de botella es el backend**, no el front. Por impacto:
-   1. `include: { attendances }` en `class-sessions.service.ts:98` — una línea, y desbloquea
-      releer la asistencia (la pantalla ya existe y hoy pierde lo que marcó).
-   2. Controller de `Payment` — desbloquea `/comercial` entero y el badge de pagos.
-   3. Roster de grupos (`enrollment`) — la última pantalla 100% dummy.
+3. ~~**§9** Releer la asistencia~~ ✅ hecho — tocó el backend, confirmado en vivo.
+4. **§10** `scheduleTemplateId` + `student` de grupos — declarado, **falta confirmar en vivo**
+   antes de dar por buena la conexión de `/grupos` (ver `api-faltantes.md` §1).
+5. **El cuello de botella es el backend**, no el front. Por impacto:
+   1. Controller de `Payment` — desbloquea `/comercial` entero y el badge de pagos.
+   2. Tabla `enrollment` — créditos y % de asistencia por inscripción en el roster de grupos
+      (`/grupos` ya no es 100% dummy, pero esas dos columnas siguen sin poder calcularse).

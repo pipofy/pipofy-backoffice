@@ -7,7 +7,7 @@
 .stu-hero{background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary-strong));padding:var(--space-lg) var(--space-md) var(--space-md);color:#fff}
 .stu-hero .st-av{width:56px;height:56px;border-radius:var(--radius-md);background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.24);display:grid;place-items:center;font-family:var(--font-heading);font-weight:700;font-size:var(--text-2xl);margin-bottom:var(--space-sm)}
 .stu-hero h2{font-size:var(--text-xl);color:#fff}
-.stu-hero .st-sub{font-size:var(--text-xs);color:#DBE5F5;margin-top:2px}  /* 5.28:1 */
+.stu-hero .st-sub{font-size:var(--text-xs);color:var(--color-on-primary-strong-muted);margin-top:2px}  /* 5.28:1 */
 .st-facts{padding:var(--space-sm) var(--space-xs)}
 .st-fact{display:flex;justify-content:space-between;align-items:center;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);font-size:var(--text-sm)}
 .st-fact+.st-fact{border-top:1px solid var(--color-border)}

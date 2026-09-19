@@ -1,13 +1,9 @@
 :host{
-  /* Tokens de dashboard (antes inline en index-v2.html :root) */
+  /* Tokens de dashboard (antes inline en index-v2.html :root). El color del sidebar
+     (--color-sidebar* y --color-live) es de marca y vive en styles/brand.css. */
   --sidebar-w:244px; --header-h:60px;
-  --color-sidebar:var(--color-foreground);
-  --color-sidebar-fg:#E2E8F0; --color-sidebar-idle:#CBD5E1;
-  --color-sidebar-label:#94A3B8; --color-sidebar-line:rgba(255,255,255,.10);
-  --color-sidebar-hover:rgba(255,255,255,.07);
   /* --color-scrim subió a styles/tokens.css (:root): dialog.modal::backdrop es global y
      dependía de heredarlo por anidamiento — se rompía fuera del shell. Acá queda heredado. */
-  --color-live:#4ADE80;
   --color-on-warning-mark:#451A03; --wa:var(--color-accent-strong);
   --z-nav:20; --z-header:30; --z-scrim:40; --z-drawer:50;
   /* Densidad tipográfica de dashboard (cascada a las vistas hijas del outlet) */

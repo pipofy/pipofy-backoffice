@@ -22,6 +22,7 @@
               }
             ],
             "styles": [
+              "styles/brand.css",
               "styles/tokens.css",
               "styles/components.css",
               "src/styles.css"

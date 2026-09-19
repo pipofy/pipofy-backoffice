@@ -21,7 +21,7 @@ Lo único que un producto nuevo edita. Es la checklist de `docs/TEMPLATE.md`.
 
 | Qué | Dónde | Contenido |
 |---|---|---|
-| Marca y runtime | `src/app/product/app-config.ts` | nombre, tagline, prefijo de storage, locale, rutas de logos, links del footer, etiquetas de rol, URLs de red (desde `environment`) |
+| Marca y runtime | `src/app/product/app-config.ts` | nombre, tagline, prefijo de storage, locale, rutas de logos, links del footer, etiquetas de rol |
 | Navegación | `src/app/product/nav.ts` | grupos e items de la sidebar y la tab-bar |
 | Iconos e ilustraciones | `src/app/product/icons.ts` | registro `nombre → markup SVG` para nav y estados vacíos |
 | Paleta y fuentes | `styles/brand.css` | sólo los tokens de marca; `tokens.css` no se toca |
@@ -82,9 +82,11 @@ export interface AppConfig {
 ```
 
 `product/index.ts` arma `PRODUCT_PROVIDERS: Provider[]` con `APP_CONFIG`, `API_CONFIG` (los valores
-de `environment`, generado por `set-env.mjs`), `NAV_CONFIG`, `ICONS` y
-`{ provide: LOCALE_ID, useValue: config.locale }`. `app.config.ts` hace `...PRODUCT_PROVIDERS` y deja
-de conocer `environment` directamente.
+de `environment`, generado por `set-env.mjs`), `NAV_CONFIG` e `ICONS`. `app.config.ts` hace
+`...PRODUCT_PROVIDERS` y deja de conocer `environment` directamente; `LOCALE_ID` lo provee el propio
+`app.config.ts` con `{ provide: LOCALE_ID, useFactory: () => inject(APP_CONFIG).locale }`, porque es
+el kernel el que publica el locale del producto como token de Angular, no el producto el que conoce
+`LOCALE_ID`.
 
 ## 4. Contratos en `domain` para lo que hoy es concreto
 
@@ -114,7 +116,7 @@ Con esto, en código de producción `features/*` importa de `@data` **únicament
 - Las 4 ilustraciones de `PlaceholderComponent` (pelota y paleta) también van al registro con nombres `state-empty`, `state-error`, `state-loading`, `state-wip`. La animación del estado `loading` pasa a un `style` inline sobre el `<g>` dentro del markup, porque el contenido inyectado por `innerHTML` no recibe el scope de estilos del componente.
 - `ROLE_LABELS` del shell → `config.roleLabels`. El fallback al rol crudo se mantiene.
 - Reloj del shell: `Intl.DateTimeFormat(inject(LOCALE_ID), …)`. `plan-price.ts` recibe el locale como parámetro; su llamador lo inyecta.
-- Título por defecto, footer (`tagline`, `© ${año} ${name}`, links), `BrandmarkComponent` (`src`, `alt`, `aria-label`) y los 5 textos de onboarding y verify-email leen `config.brand`. El `alt` y el `aria-label` del logo salen de `brand.name`; para Pipofy es `'PipoFy'` (antes el alt decía `'Pipofy'`, inconsistente con el resto del copy).
+- Título por defecto, footer (`tagline`, `© ${año} ${name}`, links), `BrandmarkComponent` (`src`, `alt`, `aria-label`) y los 4 textos de onboarding y verify-email leen `config.brand`. El `alt` y el `aria-label` del logo salen de `brand.name`; para Pipofy es `'PipoFy'` (antes el alt decía `'Pipofy'`, inconsistente con el resto del copy).
 - Los dos `IdSetHintStore` de Configuración y `OnboardingPersistenceService` construyen su clave con `storagePrefix`. Con Pipofy el valor resultante es **idéntico** al actual, así que los navegadores no pierden nada.
 
 ## 6. Estilos
@@ -132,7 +134,7 @@ Con esto, en código de producción `features/*` importa de `@data` **únicament
 - Se borran de `Environment`, `.env.example` y `render.yaml` las claves sin consumidor: `NG_STORAGE_BASE_PATH` y `NG_MERCADOPAGO_PUBLIC_KEY`. `NG_REALTIME_BASE_URL` queda opcional porque `SseRealtimeConnection` existe aunque nadie lo consuma.
 - `test-set-env.mjs` se actualiza al nuevo contrato (obligatoria única, opcionales pasan, secretos siguen abortando).
 - `.nvmrc` con `22.12.0` y `"engines": { "node": ">=22.12" }` en `package.json`, para que el equipo y Render usen la misma versión.
-- `product/index.ts` re-tipa `environment` contra `Environment` (`const env: Environment = environment`) porque el generado sólo trae las claves `NG_*` que estaban presentes (ver arriba): el `satisfies Environment` del archivo generado no ensancha el tipo inferido cuando falta una clave opcional, así que leerla directamente (p. ej. `environment.realtimeBaseUrl`) rompería el build en el ambiente donde falta.
+- El archivo generado declara `environment: Environment` (anotación de tipo, no `satisfies`): una clave de más rompe el build con un error de TS que la nombra, y una clave opcional ausente (p. ej. `realtimeBaseUrl` en un ambiente sin `NG_REALTIME_BASE_URL`) no ensancha el tipo pero tampoco rompe a los consumidores, porque el modelo ya la declara opcional. `product/index.ts` lee `environment.apiBaseUrl` / `environment.realtimeBaseUrl` directo, sin re-tipar nada.
 
 ## 8. Generador de slices
 

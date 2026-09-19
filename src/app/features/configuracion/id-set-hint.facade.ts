@@ -10,10 +10,9 @@ import { DomainError, asDomainError } from '@domain/errors';
  * `data` es la selección visible. NO viene de la API — sale de la pista del navegador
  * (`IdSetHintStore`) y se corrige con cada escritura.
  *
- * Vive en `features/configuracion/` y no en `shared/` porque `toggle()` necesita
- * `asDomainError`, que es de `data`, y `shared` sólo puede importar `shared`. Las dos
- * pantallas que la extienden son tabs de la MISMA feature (`boundaries` captura
- * `src/app/features/*`, un solo nivel), así que el import entre hermanas es interno y legal.
+ * Vive en `features/configuracion/` y no en `shared/` porque tipa su error como `DomainError`,
+ * y `shared` no puede importar `domain`. Las dos pantallas que la extienden son tabs de la
+ * MISMA feature, así que el import entre hermanas es interno y legal.
  *
  * Cada facade concreta se separa de la de su tabla a propósito: `SignalStore` tiene una sola
  * tríada data/loading/error, y con una sola facade tildar una checkbox prendería el spinner de

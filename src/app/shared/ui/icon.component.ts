@@ -12,6 +12,9 @@ const warned = new Set<string>();
  * `bypassSecurityTrustHtml` es seguro acá y sólo acá: el registro es una constante del repo
  * (product/icons.ts) y nunca contiene entrada de usuario. No copiar este patrón para HTML que
  * venga de la API.
+ *
+ * Registro vacío (default del token, kernel sin iconos configurados) renderiza vacío en
+ * silencio; con el registro configurado, un nombre ausente sí avisa: eso es configuración rota.
  */
 @Component({
   selector: 'app-icon',
@@ -28,7 +31,10 @@ export class IconComponent {
   protected readonly markup = computed(() => {
     const svg = this.icons[this.name()];
     if (svg === undefined) {
-      if (!warned.has(this.name())) {
+      // Registro vacío = kernel sin iconos configurados (default del token): silencio a propósito.
+      // Registro con entradas y nombre ausente = configuración rota: se avisa una vez por nombre.
+      const configured = Object.keys(this.icons).length > 0;
+      if (configured && !warned.has(this.name())) {
         warned.add(this.name());
         console.warn(`[app-icon] no hay icono "${this.name()}" en el registro ICONS`);
       }

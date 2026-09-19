@@ -34,4 +34,15 @@ describe('IconComponent', () => {
     expect(el.querySelector('svg')).toBeNull();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('inexistente'));
   });
+
+  it('con el registro vacío (default del kernel) renderiza vacío sin avisar', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(IconComponent);
+    fixture.componentRef.setInput('name', 'dashboard');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('svg')).toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

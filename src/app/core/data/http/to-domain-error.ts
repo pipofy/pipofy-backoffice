@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import * as v from 'valibot';
-import { DomainError, DomainRuleError, isDomainError } from '@domain/errors';
+import { DomainError, asDomainError } from '@domain/errors';
 
 /**
  * NestJS serializa sus excepciones como { statusCode, message, error }, donde `message`
@@ -17,8 +17,6 @@ function nestMessage(err: HttpErrorResponse): string {
 }
 
 export function toDomainError(err: unknown): DomainError {
-  if (isDomainError(err)) return err;                       // idempotent — already normalized
-  if (err instanceof DomainRuleError) return { kind: 'domain', message: err.message };
   if (err instanceof v.ValiError) {
     return { kind: 'validation', issues: err.issues.map((i) => i.message) };
   }
@@ -36,5 +34,6 @@ export function toDomainError(err: unknown): DomainError {
       default: return { kind: 'unknown', cause: err };
     }
   }
-  return { kind: 'unknown', cause: err };
+  // DomainError ya normalizado (idempotente), DomainRuleError, o cualquier otra cosa.
+  return asDomainError(err);
 }

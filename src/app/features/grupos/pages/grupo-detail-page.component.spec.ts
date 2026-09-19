@@ -249,7 +249,7 @@ describe('GrupoDetailPageComponent', () => {
 
   it('si falla al guardar, el modal QUEDA ABIERTO y sale el toast en español', async () => {
     // Rechaza con un DomainRuleError CRUDO, no con un { kind } ya normalizado: es lo que tira de
-    // verdad el repo, y es lo único que prueba que toDomainError haga falta acá.
+    // verdad el repo, y es lo único que prueba que asDomainError haga falta acá.
     const { fixture, el, toasts } = await mount({ guardarFalla: true });
     await abrirModal(fixture, el);
     await confirmar(fixture, el);

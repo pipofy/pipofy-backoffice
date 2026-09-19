@@ -42,6 +42,6 @@ describe('DashboardFacade', () => {
     const f = setup(false);
     await f.load('c1');
     expect(f.data()).toBeNull();
-    expect(f.error()?.kind).toBe('domain'); // ClubInactiveError -> toDomainError -> {kind:'domain'}
+    expect(f.error()?.kind).toBe('domain'); // ClubInactiveError -> asDomainError -> {kind:'domain'}
   });
 });

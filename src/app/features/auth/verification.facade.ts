@@ -1,8 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 /**
  * Scoped a las rutas de verificación (NO root): se recrea en cada navegación, así el error
@@ -19,13 +18,13 @@ export class VerificationFacade extends SignalStore<void, DomainError> {
 
   async verify(token: string): Promise<void> {
     this._verified.set(false);
-    await this.run(this.auth.verifyEmail(token), toDomainError);
+    await this.run(this.auth.verifyEmail(token), asDomainError);
     this._verified.set(this.error() === null);
   }
 
   async resend(email: string): Promise<void> {
     this._sent.set(false);
-    await this.run(this.auth.resendVerification(email), toDomainError);
+    await this.run(this.auth.resendVerification(email), asDomainError);
     this._sent.set(this.error() === null);
   }
 }

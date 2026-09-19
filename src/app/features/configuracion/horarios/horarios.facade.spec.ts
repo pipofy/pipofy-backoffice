@@ -225,7 +225,7 @@ describe('HorariosFacade', () => {
 
   it('generate() con un rango de más de 60 días no llama al repo', async () => {
     // createSessionGenerationDraft tira SÍNCRONO; va dentro de la promesa para que
-    // toDomainError lo normalice igual que un fallo del repo.
+    // asDomainError lo normalice igual que un fallo del repo.
     let llamado = false;
     const { facade: f } = setup({ list: async () => [ROW], generateSessions: async () => { llamado = true; return { created: 0, skipped: 0 }; } });
     const r = await f.generate({ from: '2026-01-01', to: '2026-12-31' });

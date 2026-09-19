@@ -1,8 +1,7 @@
 import { signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { IdSetHintStore } from '@shared/hint-store/id-set-hint-store';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 /**
  * Asignar y desasignar ids a un dueño, cuando el backend acepta la escritura pero ningún GET
@@ -12,7 +11,7 @@ import { toDomainError } from '@data/http/to-domain-error';
  * (`IdSetHintStore`) y se corrige con cada escritura.
  *
  * Vive en `features/configuracion/` y no en `shared/` porque `toggle()` necesita
- * `toDomainError`, que es de `data`, y `shared` sólo puede importar `shared`. Las dos
+ * `asDomainError`, que es de `data`, y `shared` sólo puede importar `shared`. Las dos
  * pantallas que la extienden son tabs de la MISMA feature (`boundaries` captura
  * `src/app/features/*`, un solo nivel), así que el import entre hermanas es interno y legal.
  *
@@ -68,7 +67,7 @@ export abstract class IdSetHintFacade extends SignalStore<string[], DomainError>
       this.store.write(ownerId, after);
     } catch (err) {
       this.setData([...before]);
-      this.setError(toDomainError(err));
+      this.setError(asDomainError(err));
     }
   }
 }

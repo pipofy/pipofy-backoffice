@@ -17,8 +17,7 @@ import {
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 import { localDateKey } from '@domain/local-date';
@@ -80,7 +79,7 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -197,12 +196,12 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
       }
 
       if (fallo) {
-        this.setError(toDomainError(fallo.reason));
+        this.setError(asDomainError(fallo.reason));
         return { creados, generacion: null };
       }
       return { creados, generacion: await generacion };
     } catch (e) {
-      this.setError(toDomainError(e));
+      this.setError(asDomainError(e));
       return { creados: 0, generacion: null };
     } finally {
       this.setLoading(false);
@@ -214,14 +213,14 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(id, createScheduleDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
   remove(id: string): Promise<void> {
     return this.run(
       this.repo.remove(id).then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -255,7 +254,7 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
       const result = await this.repo.generateSessions(createSessionGenerationDraft(input));
       return result;
     } catch (e) {
-      this._generateError.set(toDomainError(e));
+      this._generateError.set(asDomainError(e));
       return null;
     } finally {
       this._generating.set(false);

@@ -11,8 +11,7 @@ import {
   SessionAttendanceResult,
   createSessionAttendanceDraft,
 } from '@domain/entities/session-attendance';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { ReservasFacade } from './reservas.facade';
@@ -79,7 +78,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
       Promise.all([this.sessions.waitingList(sessionId), this.loadReservations(sessionId)]).then(
         ([waiting]) => waiting,
       ),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -106,7 +105,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
 
   /**
    * createReservationDraft tira de forma síncrona sin alumno o sin plan; va DENTRO de la
-   * promesa para que run()/toDomainError normalicen la invariante igual que un fallo del repo.
+   * promesa para que run()/asDomainError normalicen la invariante igual que un fallo del repo.
    * Mismo patrón que CanchasFacade.create().
    *
    * Resuelve a `this.data()`: reservar no cambia la lista de espera, y releerla sería un GET
@@ -118,7 +117,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
         .then(() => this.reservations.reserve(createReservationDraft(input)))
         .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
         .then(() => this.data() ?? []),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -128,7 +127,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
         .confirm(reservationId)
         .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
         .then(() => this.data() ?? []),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -145,7 +144,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
         .then(() => this.reservations.confirmPayment(reservationId, createClassPaymentDraft(input)))
         .then(() => Promise.all([this.reservas.load(), this.loadReservations(sessionId)]))
         .then(() => this.data() ?? []),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -198,7 +197,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
       }
       return results;
     } catch (err) {
-      this.setError(toDomainError(err));
+      this.setError(asDomainError(err));
       return null;
     } finally {
       this.setLoading(false);
@@ -231,7 +230,7 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
           ]),
         )
         .then(([, , waiting]) => waiting),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -240,14 +239,14 @@ export class SesionFacade extends SignalStore<WaitingListEntry[], DomainError> {
       this.sessions
         .joinWaitingList(sessionId, studentId)
         .then(() => this.sessions.waitingList(sessionId)),
-      toDomainError,
+      asDomainError,
     );
   }
 
   quitar(sessionId: string, entryId: string): Promise<void> {
     return this.run(
       this.sessions.leaveWaitingList(entryId).then(() => this.sessions.waitingList(sessionId)),
-      toDomainError,
+      asDomainError,
     );
   }
 }

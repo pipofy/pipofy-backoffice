@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ProfesoresFacade } from './profesores.facade';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach, CoachDraft } from '@domain/entities/coach';
@@ -181,6 +180,8 @@ describe('ProfesoresFacade.crear', () => {
   });
 
   it('el error de la ESCRITURA gana sobre el de la relectura', async () => {
+    // create() tira ya normalizado (UsersRepository lo pasa por toDomainError antes de
+    // rechazar), así que el doble simula eso y no un HttpErrorResponse crudo.
     const f = setup(
       {
         list: async () => {
@@ -190,10 +191,7 @@ describe('ProfesoresFacade.crear', () => {
       {
         roles: async () => ROLES,
         create: async () => {
-          throw new HttpErrorResponse({
-            status: 409,
-            error: { statusCode: 409, message: 'Ya existe un usuario con ese email' },
-          });
+          throw { kind: 'domain', message: 'Ya existe un usuario con ese email' };
         },
       },
     );

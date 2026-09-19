@@ -4,8 +4,7 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Student, StudentInput, createStudentDraft } from '@domain/entities/student';
 import { Category } from '@domain/entities/category';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 
@@ -51,7 +50,7 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -100,7 +99,7 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
 
   /**
    * createStudentDraft tira de forma síncrona (teléfono vacío, ranking decimal); va DENTRO
-   * de la promesa para que run()/toDomainError normalicen tanto la invariante de dominio
+   * de la promesa para que run()/asDomainError normalicen tanto la invariante de dominio
    * como el fallo del repo — incluido el 409 por teléfono duplicado.
    */
   create(input: StudentInput): Promise<void> {
@@ -108,7 +107,7 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.create(createStudentDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -117,14 +116,14 @@ export class AlumnosFacade extends SignalStore<Student[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(id, createStudentDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
   remove(id: string): Promise<void> {
     return this.run(
       this.repo.remove(id).then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 }

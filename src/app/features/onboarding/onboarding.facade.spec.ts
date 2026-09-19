@@ -45,6 +45,6 @@ describe('OnboardingFacade', () => {
   it('captura un DomainError de dominio si la invariante falla (sin rol)', async () => {
     const f = setup({ signup: async () => undefined });
     await f.signup({ ...validInput(), role: null });
-    expect(f.error()?.kind).toBe('domain'); // InvalidRegistrationError -> toDomainError
+    expect(f.error()?.kind).toBe('domain'); // InvalidRegistrationError -> asDomainError
   });
 });

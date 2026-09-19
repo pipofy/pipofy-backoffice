@@ -24,7 +24,7 @@
                  Angular no lo vuelve a escribir hasta que el valor cambie. -->
             <details class="nav-sub" routerLinkActive #sec="routerLinkActive" [open]="sec.isActive">
               <summary>
-                <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+                <app-icon [name]="item.icon" />
                 {{ item.label }}
                 <svg class="chev" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </summary>
@@ -46,7 +46,7 @@
               [attr.aria-current]="rla.isActive ? 'page' : null"
               (click)="closeSide()"
             >
-              <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+              <app-icon [name]="item.icon" />
               {{ item.label }}
               @if (badgeCount(item); as n) {
                 <span class="badge">{{ n }}</span>
@@ -106,7 +106,7 @@
       [attr.aria-current]="rla.isActive ? 'page' : null"
       (click)="closeSide()"
     >
-      <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+      <app-icon [name]="item.icon" />
       {{ item.short }}
     </a>
   }
@@ -115,33 +115,3 @@
 <!-- Host de toasts: acá adentro hereda la escala tipográfica densa del :host del shell.
      `.toasts` es position:fixed, así que su lugar en el DOM no afecta al layout. -->
 <app-toast-host />
-
-<!-- Iconos de navegación (reusados en sidebar y tab-bar) -->
-<ng-template #icon let-name>
-  @switch (name) {
-    @case ('dashboard') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>
-    }
-    @case ('grupos') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="2.4" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="9" r="2.4" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 18c0-2.2 2-3.6 4.5-3.6s4.5 1.4 4.5 3.6M12.5 18c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-    }
-    @case ('reservas') {
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/>
-        <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-    }
-    @case ('alumnos') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19c0-3 2.2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 8.5a3 3 0 010 5M18 19c0-2-1-3.5-2.5-4.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-    }
-    @case ('comercial') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v11a1 1 0 01-1 1H5a1 1 0 01-1-1V8z" stroke="currentColor" stroke-width="1.7"/><path d="M8 8V6a4 4 0 018 0v2M4 12h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-    }
-    @case ('plantillas') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 9h17M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="16.5" cy="15" r="3" fill="var(--wa)" stroke="none"/></svg>
-    }
-    @case ('config') {
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M17.9 6.1l-1.4 1.4M7.5 16.5l-1.4 1.4M17.9 17.9l-1.4-1.4M7.5 7.5L6.1 6.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-    }
-  }
-</ng-template>

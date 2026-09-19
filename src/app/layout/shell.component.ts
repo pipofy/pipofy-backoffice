@@ -1,16 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Data, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { NgTemplateOutlet } from '@angular/common';
 import { filter } from 'rxjs';
+import { NAV_CONFIG, type NavItem } from '@config/nav';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { IconComponent } from '@shared/ui/icon.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { ToastHostComponent } from '@shared/ui/toast/toast-host.component';
 import { SessionFacade } from '@features/auth/session.facade';
 import { SessionStore } from '@domain/contracts/session-store';
 import { UsersRepository } from '@domain/contracts/users.repository';
 import { NavBadgesService } from './nav-badges.service';
-import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from './nav.model';
 
 /**
  * Los cuatro roles que siembra el backend en el signup. El fallback devuelve el nombre crudo:
@@ -26,7 +26,7 @@ const ROLE_LABELS = new Map<string, string>([
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, BrandmarkComponent, SiteFooterComponent, ToastHostComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, BrandmarkComponent, SiteFooterComponent, ToastHostComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [NavBadgesService],
   templateUrl: './shell.component.html',
@@ -40,8 +40,9 @@ export class ShellComponent {
   private readonly usersRepo = inject(UsersRepository);
   protected readonly badges = inject(NavBadgesService);
 
-  protected readonly groups = NAV_GROUPS;
-  protected readonly items = NAV_ITEMS;
+  private readonly nav = inject(NAV_CONFIG);
+  protected readonly groups = this.nav.groups;
+  protected readonly items = this.nav.items;
 
   protected readonly sideOpen = signal(false);
   protected readonly title = signal('PipoFy');
@@ -98,7 +99,7 @@ export class ShellComponent {
     await this.router.navigate(['/login']).catch((e) => console.error('[shell] redirect a /login falló', e));
   }
 
-  protected itemsIn(group: NavGroup): readonly NavItem[] {
+  protected itemsIn(group: string): readonly NavItem[] {
     return this.items.filter((i) => i.group === group);
   }
 

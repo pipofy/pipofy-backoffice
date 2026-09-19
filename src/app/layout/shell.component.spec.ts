@@ -2,13 +2,38 @@ import { signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { NAV_CONFIG, type NavConfig } from '@config/nav';
 import { EnConstruccionComponent } from '@shared/ui/en-construccion.component';
 import { SessionFacade } from '@features/auth/session.facade';
 import { SessionStore } from '@domain/contracts/session-store';
 import { UsersRepository } from '@domain/contracts/users.repository';
 import { CurrentUser } from '@domain/entities/current-user';
 import { ShellComponent } from './shell.component';
-import { NAV_ITEMS } from './nav.model';
+
+/** Nav de prueba: el shell se testea contra un token, no contra product/nav.ts. */
+const NAV: NavConfig = {
+  groups: ['Operación', 'Gestión'],
+  items: [
+    { label: 'Dashboard', short: 'Panel', path: '/dashboard', group: 'Operación', icon: 'dashboard', badge: 'alerts' },
+    { label: 'Grupos y Clases', short: 'Grupos', path: '/grupos', group: 'Operación', icon: 'grupos' },
+    { label: 'Reservas', short: 'Reservas', path: '/reservas', group: 'Operación', icon: 'reservas' },
+    { label: 'Alumnos y Créditos', short: 'Alumnos', path: '/alumnos', group: 'Operación', icon: 'alumnos' },
+    { label: 'Comercial y Pagos', short: 'Pagos', path: '/comercial', group: 'Gestión', icon: 'comercial', badge: 'payments' },
+    { label: 'Plantillas y WhatsApp', short: 'Plantillas', path: '/plantillas', group: 'Gestión', icon: 'plantillas' },
+    {
+      label: 'Configuración', short: 'Config', path: '/configuracion', group: 'Gestión', icon: 'config',
+      children: [
+        { label: 'Club', path: '/configuracion/club' },
+        { label: 'Canchas', path: '/configuracion/canchas' },
+        { label: 'Categorías', path: '/configuracion/categorias' },
+        { label: 'Grupos de categoría', path: '/configuracion/grupos-categoria' },
+        { label: 'Planes', path: '/configuracion/planes' },
+        { label: 'Profesores', path: '/configuracion/profesores' },
+        { label: 'Horarios', path: '/configuracion/horarios' },
+      ],
+    },
+  ],
+};
 
 // SessionStore vive en root (app.config.ts) y el TestBed no lo trae: el shell lo inyecta
 // para leer el rol del token, así que va un doble con los dos signals que consume.
@@ -54,6 +79,7 @@ async function setup(url: string, store = SESSION_STORE_STUB, users = usersRepo(
       { provide: SessionFacade, useValue: { logout: async () => undefined } },
       { provide: SessionStore, useValue: store },
       { provide: UsersRepository, useValue: users },
+      { provide: NAV_CONFIG, useValue: NAV },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -73,7 +99,7 @@ describe('ShellComponent', () => {
     const harness = await setup('/dashboard');
     const labels = Array.from(harness.fixture.nativeElement.querySelectorAll('.nav a, .nav summary'))
       .map((el) => (el as HTMLElement).textContent?.trim() ?? '');
-    for (const item of NAV_ITEMS) {
+    for (const item of NAV.items) {
       expect(labels.some((l) => l.includes(item.label))).toBe(true);
     }
   });
@@ -142,6 +168,7 @@ describe('ShellComponent', () => {
         { provide: SessionFacade, useValue: { logout: async () => { llamado = true; } } },
         { provide: SessionStore, useValue: SESSION_STORE_STUB },
         { provide: UsersRepository, useValue: usersRepo() },
+        { provide: NAV_CONFIG, useValue: NAV },
       ],
     });
     const fixture = TestBed.createComponent(ShellComponent);
@@ -165,6 +192,7 @@ describe('ShellComponent', () => {
         { provide: SessionFacade, useValue: { logout: () => Promise.reject(new Error('boom')) } },
         { provide: SessionStore, useValue: SESSION_STORE_STUB },
         { provide: UsersRepository, useValue: usersRepo() },
+        { provide: NAV_CONFIG, useValue: NAV },
       ],
     });
     const fixture = TestBed.createComponent(ShellComponent);

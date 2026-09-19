@@ -312,6 +312,11 @@ dialog.modal[open]::backdrop{animation:fadein var(--duration) var(--ease)}
 .cell-right{text-align:right}
 .cell-center{text-align:center}
 
+/* ── Icono del registro del producto (shared/ui/icon.component.ts) ──
+   El consumidor fija width/height/color sobre app-icon; el svg llena la caja. */
+.icon{display:inline-flex;flex:0 0 auto;line-height:0}
+.icon svg{width:100%;height:100%;display:block}
+
 /* ═══════════════ TOASTS ═══════════════
    Fuente: index-v2.html:670-684 + 707-708 + 747-748. El responsive es de DOS
    capas efectivas, no tres: en la maqueta, 707-708 vive en la sección "NAV

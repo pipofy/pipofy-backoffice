@@ -1,40 +1,14 @@
-export type BadgeKey = 'alerts' | 'payments';
-export type NavGroup = 'Operación' | 'Gestión';
-export type NavIcon =
-  | 'dashboard'
-  | 'grupos'
-  | 'reservas'
-  | 'alumnos'
-  | 'comercial'
-  | 'plantillas'
-  | 'config';
+import { NavConfig } from '@config/nav';
+import { PIPOFY_ICONS } from './icons';
 
-/** Sub-destino de la sidebar. Sin icono ni badge: es una lista de texto indentada. */
-export interface NavChild {
-  readonly label: string;
-  readonly path: string;    // ruta absoluta
+/** `icon` tipado contra el registro: un nombre que no existe no compila. */
+type Icon = keyof typeof PIPOFY_ICONS;
+
+interface Item extends Omit<NavConfig['items'][number], 'icon'> {
+  readonly icon: Icon;
 }
 
-export interface NavItem {
-  readonly label: string;   // etiqueta en la sidebar
-  readonly short: string;   // etiqueta en la tab-bar móvil
-  readonly path: string;    // ruta absoluta
-  readonly group: NavGroup;
-  readonly icon: NavIcon;
-  readonly badge?: BadgeKey;
-  /**
-   * Con hijos, el item NO navega: despliega. La tab-bar móvil los ignora y sigue linkeando
-   * a `path`, que redirige al primer hijo.
-   *
-   * PARA AGREGAR UNA ENTIDAD DE CONFIGURACIÓN: sumar su entrada acá Y su child route en
-   * configuracion.routes.ts.
-   */
-  readonly children?: readonly NavChild[];
-}
-
-export const NAV_GROUPS: readonly NavGroup[] = ['Operación', 'Gestión'];
-
-export const NAV_ITEMS: readonly NavItem[] = [
+const ITEMS: readonly Item[] = [
   { label: 'Dashboard',             short: 'Panel',      path: '/dashboard',  group: 'Operación', icon: 'dashboard',  badge: 'alerts' },
   { label: 'Grupos y Clases',       short: 'Grupos',     path: '/grupos',     group: 'Operación', icon: 'grupos' },
   { label: 'Reservas',              short: 'Reservas',   path: '/reservas',   group: 'Operación', icon: 'reservas' },
@@ -43,6 +17,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Plantillas y WhatsApp', short: 'Plantillas', path: '/plantillas', group: 'Gestión',   icon: 'plantillas' },
   {
     label: 'Configuración', short: 'Config', path: '/configuracion', group: 'Gestión', icon: 'config',
+    // PARA AGREGAR UNA ENTIDAD DE CONFIGURACIÓN: sumar su entrada acá Y su child route en
+    // features/configuracion/configuracion.routes.ts.
     children: [
       { label: 'Club',                path: '/configuracion/club' },
       { label: 'Canchas',             path: '/configuracion/canchas' },
@@ -54,3 +30,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
     ],
   },
 ];
+
+export const PIPOFY_NAV: NavConfig = { groups: ['Operación', 'Gestión'], items: ITEMS };

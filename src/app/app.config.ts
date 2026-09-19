@@ -1,5 +1,7 @@
 import {
   ApplicationConfig,
+  LOCALE_ID,
+  inject,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -7,6 +9,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
+import { APP_CONFIG } from '@config/app-config';
 import { PRODUCT_PROVIDERS } from './product';
 import { tenantInterceptor } from './shared/http/tenant.interceptor';
 import { errorLogInterceptor } from './shared/http/error-log.interceptor';
@@ -30,8 +33,11 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor, tenantInterceptor, errorLogInterceptor])),
-    // Marca, locale, nav, iconos y red del producto. Es el ÚNICO lugar que importa product/.
+    // Marca, nav, iconos y red del producto. Es el ÚNICO lugar que importa product/.
     ...PRODUCT_PROVIDERS,
+    // Una sola fuente de verdad: el producto declara `locale` en APP_CONFIG y el kernel lo
+    // publica como LOCALE_ID.
+    { provide: LOCALE_ID, useFactory: () => inject(APP_CONFIG).locale },
     // Auth va en ROOT y no en la ruta lazy de la feature (rompiendo la convención del resto
     // del proyecto a propósito): el interceptor puede necesitar refrescar en CUALQUIER
     // request y el guard corre antes de que exista ninguna ruta lazy.

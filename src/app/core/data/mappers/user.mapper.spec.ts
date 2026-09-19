@@ -33,6 +33,11 @@ describe('toCurrentUser', () => {
     expect(toCurrentUser({ ...dto, nombre: null, apellido: ' ' }).displayName).toBe('ana@club.com');
   });
 
+  it('con uno solo de los dos nombres, usa el que hay', () => {
+    expect(toCurrentUser({ ...dto, apellido: null }).displayName).toBe('Ana');
+    expect(toCurrentUser({ ...dto, nombre: '   ' }).displayName).toBe('Pérez');
+  });
+
   it('sin nombre ni email queda vacío: el shell no dibuja el renglón', () => {
     expect(toCurrentUser({ ...dto, nombre: null, apellido: null, email: null }).displayName).toBe('');
   });

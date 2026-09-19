@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    PIPOFY · TOKENS COMPARTIDOS (DS no de marca)
-   Fundamento del design system común a index-v2.html y onboarding.html.
+   Fundamento del design system común a docs/maquetas/index-v2.html y docs/maquetas/onboarding.html.
    Implementa design-system/pipofy-club-ops/MASTER.md.
 
    Contiene: espaciado, sombras, radios, tipografía (escala y --font-mono),
@@ -34,10 +34,10 @@
   /* ── Radios (Component Specs de MASTER) ── */
   --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-full:999px;
 
-  /* ── Scrim y capas (antes sólo vivían en el :root local de index-v2.html) ── */
-  /* Scrim de overlays: ::backdrop de dialog + backdrop del nav móvil. Fuente: index-v2.html:37 */
+  /* ── Scrim y capas (antes sólo vivían en el :root local de docs/maquetas/index-v2.html) ── */
+  /* Scrim de overlays: ::backdrop de dialog + backdrop del nav móvil. Fuente: docs/maquetas/index-v2.html:37 */
   --color-scrim:rgba(0,0,0,0.5);
-  /* Capa de toasts: por encima de TODO (--z-header:30, --z-drawer:50). Fuente: index-v2.html:45 */
+  /* Capa de toasts: por encima de TODO (--z-header:30, --z-drawer:50). Fuente: docs/maquetas/index-v2.html:45 */
   --z-toast:200;
 
   /* ── Movimiento ── */
@@ -58,7 +58,7 @@
   --color-on-warning-mark:#451A03;
 
   /* ── Escala tipográfica canónica (base 16px, cómoda).
-        index-v2.html la sobreescribe a densidad de dashboard. ── */
+        docs/maquetas/index-v2.html la sobreescribe a densidad de dashboard. ── */
   --text-2xs:.6875rem; --text-xs:.75rem; --text-sm:.8125rem; --text-base:1rem;
   --text-md:1.0625rem; --text-lg:1.25rem; --text-xl:1.5rem; --text-2xl:1.875rem;
   --text-3xl:2rem; --text-4xl:2.75rem;

@@ -3,7 +3,7 @@ import { occupancyPercent } from '@domain/occupancy';
 import { occupancyState } from '../grupos-format';
 
 /**
- * Celda de cupo: barra mini + n/N. Origen: index-v2.html:1697-1704 (`cupoCell()`).
+ * Celda de cupo: barra mini + n/N. Origen: docs/maquetas/index-v2.html:1697-1704 (`cupoCell()`).
  *
  * Tiene archivo propio porque la maqueta la llama desde DOS lugares: la fila de la tabla de
  * grupos (1729) y el hero del detalle (1786).

@@ -6,7 +6,7 @@ export interface StrengthInfo {
   cls: string;
 }
 
-// Portado verbatim de onboarding.html (fn strength()): 0..4 según longitud y variedad.
+// Portado verbatim de docs/maquetas/onboarding.html (fn strength()): 0..4 según longitud y variedad.
 export function passwordStrength(value: string): StrengthLevel {
   let s = 0;
   if (value.length >= 8) s++;

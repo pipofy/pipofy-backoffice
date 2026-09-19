@@ -22,7 +22,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
     </ol>
   `,
   styles: [`
-    /* Portado de onboarding.html líneas 54-71 + breakpoint 243. */
+    /* Portado de docs/maquetas/onboarding.html líneas 54-71 + breakpoint 243. */
     .progress{height:6px;border-radius:var(--radius-full);background:var(--color-border-strong);overflow:hidden;margin-bottom:var(--space-md)}
     .progress i{display:block;height:100%;width:0;border-radius:var(--radius-full);background:var(--color-primary);transition:width var(--duration-page) var(--ease-inout)}
     .stepper{list-style:none;display:flex;justify-content:space-between;gap:var(--space-xs)}

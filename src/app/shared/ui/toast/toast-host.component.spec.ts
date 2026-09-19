@@ -44,7 +44,7 @@ describe('ToastHostComponent', () => {
     const { fixture, svc, el } = mount();
     svc.show('ok', 'a', '1');
     fixture.detectChanges();
-    // 'ok' → check; 'info' → exclamación (index-v2.html:1430-1432)
+    // 'ok' → check; 'info' → exclamación (docs/maquetas/index-v2.html:1430-1432)
     expect(el.querySelector('.toast.ok .t-ic path')?.getAttribute('d')).toBe('M5 12l5 5 9-11');
 
     svc.show('info', 'b', '2');

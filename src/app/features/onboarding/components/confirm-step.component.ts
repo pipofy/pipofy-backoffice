@@ -49,7 +49,7 @@ interface SummaryBlock { title: string; edit: 'account'; rows: SummaryRow[] }
     <app-field-error [show]="termsErr()" message="Tenés que aceptar los términos para crear la cuenta." />
   `,
   styles: [`
-    /* Portado de onboarding.html líneas 174-201 (summary + terms). */
+    /* Portado de docs/maquetas/onboarding.html líneas 174-201 (summary + terms). */
     .summary{display:flex;flex-direction:column;gap:var(--space-md);margin-bottom:var(--space-lg)}
     .sum-block{border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
     .sum-head{display:flex;align-items:center;gap:var(--space-sm);padding:12px var(--space-md);background:var(--color-surface-2);border-bottom:1px solid var(--color-border)}

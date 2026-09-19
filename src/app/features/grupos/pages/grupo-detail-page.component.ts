@@ -14,7 +14,7 @@ import { GruposFacade } from '../grupos.facade';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
- * Detalle de un grupo. Origen: index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
+ * Detalle de un grupo. Origen: docs/maquetas/index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
  *
  * La lista de espera va INLINE acá (D10): sin lógica, sin output y con un solo consumidor, no se
  * gana un componente propio. Se extrae cuando llegue "Ofrecer cupo".

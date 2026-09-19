@@ -47,7 +47,7 @@ export class ModalComponent {
   readonly subtitle = input<string>('');
   /**
    * Variantes del `.m-ic`. Presentes: danger (Onboarding) y primary (Grupos, Configuración).
-   * La maqueta también tiene `wa` (index-v2.html:611), pero su consumidor llega con su slice
+   * La maqueta también tiene `wa` (docs/maquetas/index-v2.html:611), pero su consumidor llega con su slice
    * (Plantillas). Misma regla de admisión que dejó afuera a `.btn-wa`/`.btn-light`/`.btn-sm`:
    * un primitivo sin consumidor es CSS muerto.
    *

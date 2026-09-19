@@ -1,5 +1,5 @@
 /* Layout de la fila del roster. Feature-local: vocabulario de Grupos.
-   Fuente: index-v2.html:406-411.
+   Fuente: docs/maquetas/index-v2.html:406-411.
 
    SIN la barra de asistencia (.att-bar/.att-pct): la columna se fue con la del % de asistencia,
    que es un dato POR INSCRIPCIÓN y la inscripción no existe en la base. */
@@ -7,7 +7,7 @@
 .roster-who { display: flex; align-items: center; gap: var(--space-sm); }
 .roster-who .avatar-sm { width: 30px; height: 30px; font-size: var(--text-xs); }
 .roster-name { font-weight: 600; }
-/* index-v2.html:1806 lo pinta con style= inline y los alias --court/--wa-ink, que NO existen
+/* docs/maquetas/index-v2.html:1806 lo pinta con style= inline y los alias --court/--wa-ink, que NO existen
    en la app: acá van los tokens reales. */
 .roster-occ { margin-left: auto; font-size: var(--text-xs); color: var(--color-fg-muted); }
 .roster-occ b { color: var(--color-on-accent-soft); }

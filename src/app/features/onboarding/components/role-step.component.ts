@@ -33,7 +33,7 @@ import { Role } from '@domain/entities/registration';
     </div>
   `,
   styles: [`
-    /* Portado de onboarding.html líneas 73-102 (step-head + role) + breakpoint 240. */
+    /* Portado de docs/maquetas/onboarding.html líneas 73-102 (step-head + role) + breakpoint 240. */
     .step-head{margin-bottom:var(--space-lg)}
     .step-head .eyebrow{font-size:var(--text-2xs);font-weight:700;letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-on-primary-soft);margin-bottom:var(--space-xs)}
     .step-head h2{font-size:var(--text-xl)}

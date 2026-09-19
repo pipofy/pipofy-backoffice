@@ -1,5 +1,5 @@
 :host{
-  /* Tokens de dashboard (antes inline en index-v2.html :root). El color del sidebar
+  /* Tokens de dashboard (antes inline en docs/maquetas/index-v2.html :root). El color del sidebar
      (--color-sidebar* y --color-live) es de marca y vive en styles/brand.css. */
   --sidebar-w:244px; --header-h:60px;
   /* --color-scrim y --color-on-warning-mark subieron a styles/tokens.css (:root): son

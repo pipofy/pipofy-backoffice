@@ -1,4 +1,4 @@
-/* Ficha del grupo. Fuente: index-v2.html:320-330 (ficha), 342 (.back-btn), 392-394 (tags del
+/* Ficha del grupo. Fuente: docs/maquetas/index-v2.html:320-330 (ficha), 342 (.back-btn), 392-394 (tags del
    hero) y el @media de 741. Los primitivos (.panel, .acard, .avatar-sm, .btn) viven
    en styles/components.css. */
 
@@ -24,7 +24,7 @@
 
 .detail-main { display: flex; flex-direction: column; gap: 18px; }
 /* Variante ámbar del avatar, sólo para la lista de espera. NO sube al design system: un solo
-   consumidor. La maqueta la aplica con style= inline (index-v2.html:1760) usando los alias
+   consumidor. La maqueta la aplica con style= inline (docs/maquetas/index-v2.html:1760) usando los alias
    --amber-500/--amber-700, que NO existen en la app: la propia maqueta los define en su línea 60
    como var(--color-warning-mark) y var(--color-warning). Acá van los tokens reales. */
 .avatar-sm.amber { background: linear-gradient(135deg, var(--color-warning-mark), var(--color-warning)); }

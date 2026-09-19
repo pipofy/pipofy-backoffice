@@ -8,7 +8,7 @@ const DASH = '—';
 export type OccupancyState = 'low' | 'ok' | 'full';
 
 /**
- * Estado de ocupación de un grupo. Origen: index-v2.html:1698-1701.
+ * Estado de ocupación de un grupo. Origen: docs/maquetas/index-v2.html:1698-1701.
  * 'full' GANA sobre 'low' (un grupo de capacidad 0 está lleno, no vacío).
  */
 export function occupancyState(enrolled: number, capacity: number): OccupancyState {

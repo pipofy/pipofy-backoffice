@@ -12,7 +12,16 @@ import { fileURLToPath } from 'node:url';
 
 const [entity, entities, feature, label] = process.argv.slice(2);
 if (!entity || !entities || !feature || !label) {
-  console.error('Uso: node scripts/new-slice.mjs <entity> <entities> <feature> <label>  (p. ej. court courts canchas cancha)');
+  console.error(
+    'Uso: node scripts/new-slice.mjs <entity> <entities> <feature> <label>  (p. ej. court courts canchas cancha)\n' +
+      'Cada argumento debe ser minúsculas y dígitos, sin guiones ni "/".',
+  );
+  process.exit(1);
+}
+const ARG_RE = /^[a-z][a-z0-9]*$/;
+const badArg = [entity, entities, feature, label].find((a) => !ARG_RE.test(a));
+if (badArg) {
+  console.error(`Cada argumento debe ser minúsculas y dígitos, sin guiones ni "/": ${badArg}`);
   process.exit(1);
 }
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);

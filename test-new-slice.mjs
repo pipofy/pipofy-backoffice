@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -8,10 +8,11 @@ const root = mkdtempSync(join(tmpdir(), 'slice-'));
 mkdirSync(join(root, 'src/app/core/domain'), { recursive: true });
 writeFileSync(join(root, 'src/app/core/domain/errors.ts'), 'export abstract class DomainRuleError extends Error {}\n');
 
-const run = () =>
-  execFileSync('node', ['scripts/new-slice.mjs', 'widget', 'widgets', 'artefactos', 'artefacto'], {
+const run = (...args) =>
+  execFileSync('node', ['scripts/new-slice.mjs', ...(args.length ? args : ['widget', 'widgets', 'artefactos', 'artefacto'])], {
     env: { ...process.env, SLICE_ROOT: root },
     encoding: 'utf8',
+    stdio: 'pipe',
   });
 
 const out = run();
@@ -29,5 +30,11 @@ assert.match(readFileSync(join(root, 'src/app/core/domain/errors.ts'), 'utf8'), 
 
 // Nunca sobreescribe: la segunda corrida aborta antes de tocar nada.
 assert.throws(run, /ya existe/);
+
+// Args con guiones o "/" generarían identificadores inválidos: se rechazan antes de escribir nada.
+assert.throws(() => run('lista-espera', 'widgets', 'artefactos', 'artefacto'), /minúsculas y dígitos/);
+assert.throws(() => run('widget', '../x', 'artefactos', 'artefacto'), /minúsculas y dígitos/);
+
+rmSync(root, { recursive: true, force: true });
 
 console.log('✓ new-slice self-check OK');

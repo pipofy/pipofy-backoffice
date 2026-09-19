@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { DomainError, asDomainError } from '@domain/errors';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 
 /**
  * Las tres operaciones de contraseña. Scoped a sus rutas (NO root), igual que

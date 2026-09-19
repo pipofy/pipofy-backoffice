@@ -11,7 +11,8 @@ import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { HttpCatalogsRepository } from '@data/repositories/http-catalogs.repository';
 import { UsersRepository } from '@domain/contracts/users.repository';
 import { HttpUsersRepository } from '@data/repositories/http-users.repository';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { API_CONFIG } from '@config/api-config';
 import { SessionFacade } from '@features/auth/session.facade';
 import { routes } from './app.routes';
@@ -33,7 +34,7 @@ async function harnessAt(url: string, conSesion = true, mustChangePassword = fal
     providers: [
       provideZonelessChangeDetection(),
       provideRouter(routes),
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       SessionFacade,
       { provide: ClubRepository, useValue: { isActive: async () => true } },
       { provide: AuthRepository, useValue: { signup: async () => undefined } },

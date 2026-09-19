@@ -3,7 +3,7 @@ import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { DomainError, asDomainError } from '@domain/errors';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 
 /**
  * Dueña de la sesión. Se provee en ROOT (app.config.ts) porque el shell la necesita para el

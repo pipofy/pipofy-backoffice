@@ -7,7 +7,8 @@ import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { authInterceptor } from './auth.interceptor';
 import { TokenRefresher } from './token-refresher';
-import { SessionStore } from '../auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { HttpAuthRepository } from '../repositories/http-auth.repository';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { API_CONFIG } from '@config/api-config';
@@ -26,7 +27,7 @@ function setup() {
       provideRouter([]),
       provideHttpClient(withInterceptors([authInterceptor])),
       provideHttpClientTesting(),
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       TokenRefresher,
       { provide: AuthRepository, useClass: HttpAuthRepository },
       { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/api/stream' } },

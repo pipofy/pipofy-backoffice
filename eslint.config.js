@@ -79,10 +79,7 @@ module.exports = tseslint.config(
           { from: { element: { type: "domain" } }, allow: { to: { element: { type: "domain" } } } },
           { from: { element: { type: "data" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "config"] } } } } },
           { from: { element: { type: "shared" } }, allow: { to: { element: { types: { anyOf: ["shared", "config"] } } } } },
-          // TEMPORAL hasta que el shell inyecte los contratos de domain (SessionStore,
-          // UsersRepository): entonces se saca "data" de esta lista y layout queda con
-          // domain, shared, config y auth. Ver plan Task 6.
-          { from: { element: { type: "layout" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config", "auth"] } } } } },
+          { from: { element: { type: "layout" } }, allow: { to: { element: { types: { anyOf: ["domain", "shared", "config", "auth"] } } } } },
           { from: { element: { type: "auth" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config"] } } } } },
           { from: { element: { type: "features" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config"] } } } } },
           // product es DATOS del producto: lo consume app.config.ts (fuera de elements) y nadie más.

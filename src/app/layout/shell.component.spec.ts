@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { EnConstruccionComponent } from '@shared/ui/en-construccion.component';
 import { SessionFacade } from '@features/auth/session.facade';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 import { UsersRepository } from '@domain/contracts/users.repository';
 import { CurrentUser } from '@domain/entities/current-user';
 import { ShellComponent } from './shell.component';

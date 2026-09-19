@@ -7,7 +7,7 @@ import { BrandmarkComponent } from '@shared/ui/brandmark.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { ToastHostComponent } from '@shared/ui/toast/toast-host.component';
 import { SessionFacade } from '@features/auth/session.facade';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 import { UsersRepository } from '@domain/contracts/users.repository';
 import { NavBadgesService } from './nav-badges.service';
 import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from './nav.model';

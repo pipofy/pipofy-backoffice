@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { SessionStore } from './session-store';
+import { APP_CONFIG, DEFAULT_APP_CONFIG } from '@config/app-config';
+import { LocalStorageSessionStore } from './local-storage-session-store';
 import { readClubId, readRoles } from './jwt-claims';
 
-function store(): SessionStore {
+function store(): LocalStorageSessionStore {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideZonelessChangeDetection(), SessionStore],
+    providers: [provideZonelessChangeDetection(), LocalStorageSessionStore],
   });
-  return TestBed.inject(SessionStore);
+  return TestBed.inject(LocalStorageSessionStore);
 }
 
 /**
@@ -80,8 +81,22 @@ describe('SessionStore', () => {
   });
 
   it('un localStorage con basura no rompe la construcción', () => {
-    localStorage.setItem('PipoFy:session:v1', 'no-es-json');
+    localStorage.setItem('app:session:v1', 'no-es-json');
     expect(store().isAuthenticated()).toBe(false);
+  });
+
+  it('persiste bajo el prefijo de APP_CONFIG', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        LocalStorageSessionStore,
+        { provide: APP_CONFIG, useValue: { ...DEFAULT_APP_CONFIG, storagePrefix: 'Otro' } },
+      ],
+    });
+    TestBed.inject(LocalStorageSessionStore).set({ accessToken: 'a', refreshToken: 'r', mustChangePassword: false });
+    expect(localStorage.getItem('Otro:session:v1')).not.toBeNull();
+    expect(localStorage.getItem('app:session:v1')).toBeNull();
   });
 });
 

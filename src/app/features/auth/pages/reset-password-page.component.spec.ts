@@ -5,7 +5,8 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { ResetPasswordPageComponent } from './reset-password-page.component';
 
 async function mount(url: string, repo: Partial<AuthRepository>) {
@@ -17,7 +18,7 @@ async function mount(url: string, repo: Partial<AuthRepository>) {
         { path: 'reset-password', component: ResetPasswordPageComponent },
         { path: 'login', component: ResetPasswordPageComponent },
       ]),
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       { provide: AuthRepository, useValue: repo },
     ],
   });

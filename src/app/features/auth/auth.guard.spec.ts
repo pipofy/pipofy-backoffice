@@ -5,7 +5,8 @@ import { provideRouter, Router, UrlTree } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Component } from '@angular/core';
 import { authGuard } from './auth.guard';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 
 @Component({ standalone: true, template: 'privado' })
 class PrivadoComponent {}
@@ -21,7 +22,7 @@ async function harness(conSesion: boolean, mustChangePassword = false) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       provideRouter([
         { path: 'login', component: LoginStubComponent },
         { path: 'cambiar-clave', component: CambiarClaveStubComponent },
@@ -61,7 +62,11 @@ describe('authGuard', () => {
   it('devuelve un UrlTree, no un booleano, cuando bloquea', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection(), SessionStore, provideRouter([])],
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: SessionStore, useClass: LocalStorageSessionStore },
+        provideRouter([]),
+      ],
     });
     const result = TestBed.runInInjectionContext(() =>
       authGuard({} as never, { url: '/grupos/3' } as never),

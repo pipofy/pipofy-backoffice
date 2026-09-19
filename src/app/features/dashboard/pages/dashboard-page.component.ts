@@ -3,7 +3,7 @@ import { DashboardFacade } from '../dashboard.facade';
 import { KpiRowComponent } from '../components/kpi-row.component';
 import { CourtGridComponent } from '../components/court-grid.component';
 import { WaitlistCardComponent } from '../components/waitlist-card.component';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 import { domainErrorMessage } from '@domain/errors';
 

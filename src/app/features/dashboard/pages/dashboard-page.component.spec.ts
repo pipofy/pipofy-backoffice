@@ -6,7 +6,7 @@ import { DashboardFacade } from '../dashboard.facade';
 import { DashboardRepository } from '@domain/contracts/dashboard.repository';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { DashboardSnapshot } from '@domain/entities/dashboard-snapshot';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 
 const snapshot: DashboardSnapshot = {
   clubId: 'c1',

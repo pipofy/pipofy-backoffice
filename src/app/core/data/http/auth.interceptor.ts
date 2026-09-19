@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { catchError, switchMap, throwError } from 'rxjs';
-import { SessionStore } from '../auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 import { TokenRefresher } from './token-refresher';
 
 /**

@@ -165,7 +165,7 @@ describe('OnboardingWizardComponent', () => {
       acceptedTerms: false,
       step: 'confirm',
     };
-    sessionStorage.setItem('PipoFy:onboarding:v2', JSON.stringify(snapshot));
+    sessionStorage.setItem('app:onboarding:v2', JSON.stringify(snapshot));
 
     const h = await harness();
     const root: HTMLElement = h.fixture.nativeElement;

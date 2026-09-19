@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { APP_CONFIG, storageKey } from '@config/app-config';
 import { IdSetHintStore } from '@shared/hint-store/id-set-hint-store';
 
 /**
@@ -9,5 +10,6 @@ import { IdSetHintStore } from '@shared/hint-store/id-set-hint-store';
  */
 @Injectable()
 export class GrupoItemsStore extends IdSetHintStore {
-  protected readonly key = 'PipoFy:grupo-items:v1';
+  /** `${prefix}:grupo-items:v1`. Con el prefijo de Pipofy es la clave de siempre. */
+  protected readonly key = storageKey(inject(APP_CONFIG), 'grupo-items', 1);
 }

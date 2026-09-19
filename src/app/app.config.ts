@@ -12,7 +12,8 @@ import { tenantInterceptor } from './shared/http/tenant.interceptor';
 import { errorLogInterceptor } from './shared/http/error-log.interceptor';
 import { authInterceptor } from './core/data/http/auth.interceptor';
 import { TokenRefresher } from './core/data/http/token-refresher';
-import { SessionStore } from './core/data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { SessionFacade } from '@features/auth/session.facade';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { AuthRepository } from '@domain/contracts/auth.repository';
@@ -34,7 +35,7 @@ export const appConfig: ApplicationConfig = {
     // Auth va en ROOT y no en la ruta lazy de la feature (rompiendo la convención del resto
     // del proyecto a propósito): el interceptor puede necesitar refrescar en CUALQUIER
     // request y el guard corre antes de que exista ninguna ruta lazy.
-    SessionStore,
+    { provide: SessionStore, useClass: LocalStorageSessionStore },
     SessionFacade,
     TokenRefresher,
     { provide: AuthRepository, useClass: HttpAuthRepository },

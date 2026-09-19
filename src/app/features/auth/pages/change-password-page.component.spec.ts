@@ -5,7 +5,8 @@ import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { ChangePasswordPageComponent } from './change-password-page.component';
 
 @Component({ standalone: true, template: 'dashboard' })
@@ -20,7 +21,7 @@ async function mount(repo: Partial<AuthRepository>) {
         { path: 'cambiar-clave', component: ChangePasswordPageComponent },
         { path: 'dashboard', component: DashboardStubComponent },
       ]),
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       { provide: AuthRepository, useValue: repo },
     ],
   });

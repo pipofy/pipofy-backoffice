@@ -4,8 +4,12 @@ import { PIPOFY_ICONS } from './icons';
 /** `icon` tipado contra el registro: un nombre que no existe no compila. */
 type Icon = keyof typeof PIPOFY_ICONS;
 
-interface Item extends Omit<NavConfig['items'][number], 'icon'> {
+const GROUPS = ['Operación', 'Gestión'] as const;
+
+/** `group` tipado contra GROUPS: un item con un grupo que no existe no compila. */
+interface Item extends Omit<NavConfig['items'][number], 'icon' | 'group'> {
   readonly icon: Icon;
+  readonly group: (typeof GROUPS)[number];
 }
 
 const ITEMS: readonly Item[] = [
@@ -31,4 +35,4 @@ const ITEMS: readonly Item[] = [
   },
 ];
 
-export const PIPOFY_NAV: NavConfig = { groups: ['Operación', 'Gestión'], items: ITEMS };
+export const PIPOFY_NAV: NavConfig = { groups: GROUPS, items: ITEMS };

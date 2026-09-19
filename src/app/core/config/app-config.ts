@@ -7,7 +7,10 @@ export interface AppBrand {
   readonly tagline: string;
   /** Ruta pública del lockup horizontal, relativa a `public/` (p. ej. 'brand/logo-horizontal.svg'). */
   readonly logoHorizontal: string;
-  /** Links del pie. `href: null` = todavía no existe la página; se renderiza sin destino. */
+  /**
+   * Links del pie. `href` es una ruta INTERNA (va por `routerLink`), no una URL externa.
+   * `href: null` = todavía no existe la página; se renderiza sin destino.
+   */
   readonly footerLinks: readonly { readonly label: string; readonly href: string | null }[];
 }
 

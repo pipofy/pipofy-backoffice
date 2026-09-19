@@ -1,6 +1,6 @@
 # Template: kernel + producto
 
-Fecha: 2026-09-19 · Rama: `feat/template-kernel` · Estado: borrador para revisión
+Fecha: 2026-09-19 · Rama: `feat/template-kernel` · Estado: implementado en la rama feat/template-kernel (2026-09-19); ver docs/superpowers/plans/2026-09-19-template-kernel-producto.md
 
 ## 1. Objetivo
 
@@ -123,7 +123,7 @@ Con esto, en código de producción `features/*` importa de `@data` **únicament
 
 - `styles/brand.css`: **sólo** lo que cambia por marca. Paleta base (`--color-primary`, `-foreground`, `-background`, `-muted`, `-border`, `-border-strong`), derivados de marca (`-primary-hover/-strong/-soft`, familia `-accent-*`), fuentes (`--font-heading`, `--font-body`), y los tokens de sidebar que hoy son 5 hex sueltos en `shell.component.css` (`--color-sidebar-*`, `--color-live`). Cada valor conserva su comentario de contraste AA: quien cambie la paleta hereda la obligación de verificarlo.
 - `styles/tokens.css`: lo que no es marca. Espaciado, sombras, radios, z-index, movimiento, escala tipográfica, semánticos no de marca (`--color-destructive-*`, `--color-warning-*`), reset y base. Se borra el bloque `.brandmark .bm-logo/.bm-name/.bm-sub`, muerto desde que `BrandmarkComponent` renderiza un `<img>`.
-- El hex de `grupo-detail-page.component.css:10` pasa a un token en `brand.css`: `--color-on-primary-strong-subtle` (par de `--color-on-primary-strong-muted`; `muted` = más contraste, `subtle` = menos). `--color-on-warning-mark` (texto sobre `--color-warning-mark`) vive en `tokens.css`, con el resto de la familia warning.
+- El hex de `grupo-detail-page.component.css:10` (hero de grupo) pasa a `--color-on-primary-strong-muted` en `brand.css`. El `#CBD5E1` del toast (`components.css`) y del reloj del topbar (`shell.component.css`) pasa a `--color-on-primary-strong-subtle`, su par en `brand.css` (`muted` = más contraste, `subtle` = menos). `--color-on-warning-mark` (texto sobre `--color-warning-mark`) vive en `tokens.css`, con el resto de la familia warning.
 - `components.css` no cambia.
 
 ## 7. Configuración de build y ambientes
@@ -148,7 +148,7 @@ Con esto, en código de producción `features/*` importa de `@data` **únicament
 
 - `README.md` reemplaza el boilerplate de Angular CLI: qué es, comandos, resumen de capas, link a `docs/TEMPLATE.md` y a `CLAUDE.md`.
 - `docs/TEMPLATE.md`: la checklist de §2 paso a paso para un producto nuevo, más "cómo agregar un slice" y "cómo agregar un icono".
-- `CLAUDE.md` se commitea (hoy está sin trackear) y se actualiza con las capas nuevas y la regla "features importan `@data` sólo en providers".
+- `CLAUDE.md` queda trackeado y actualizado con las capas nuevas y la regla "features importan `@data` sólo en providers".
 - Maquetas `index-v2.html`, `onboarding.html`, `pipofy_1.html` → `docs/maquetas/`, con sus `<link href="styles/...">` reapuntados. `assets/` (brandboard) → `docs/brandboard/`. La raíz queda con lo que hace al build.
 - `main.ts` vacío de la raíz se borra.
 

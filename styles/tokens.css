@@ -54,6 +54,8 @@
   --color-warning:#B45309; --color-warning-mark:#F59E0B;
   --color-warning-soft:#FEF3C7; --color-on-warning-soft:#78350F;   /* 8.15:1 */
   --color-warning-soft-border:#F4DCA0;  /* el borde del par soft (.sess.wait, .notice.hold) */
+  /* Texto sobre --color-warning-mark (badge del icono de plantillas). */
+  --color-on-warning-mark:#451A03;
 
   /* ── Escala tipográfica canónica (base 16px, cómoda).
         index-v2.html la sobreescribe a densidad de dashboard. ── */

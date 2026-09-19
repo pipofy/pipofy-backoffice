@@ -38,7 +38,7 @@
   --color-sidebar-label:#94A3B8; --color-sidebar-line:rgba(255,255,255,.10);
   --color-sidebar-hover:rgba(255,255,255,.07);
   --color-live:#4ADE80;
-  /* Texto secundario del toast (fondo oscuro). */
+  /* Texto secundario sobre fondo oscuro: el toast y el reloj del topbar. */
   --color-on-dark-muted:#CBD5E1;
 
   /* ── Tipografía ── */

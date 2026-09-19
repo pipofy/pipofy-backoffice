@@ -10,9 +10,8 @@ import { CreateUserRequestSchema, CurrentUserDto, CurrentUserDtoSchema } from '.
 import { toCreateUserRequest } from '../mappers/user.mapper';
 
 /**
- * El usuario logueado, los roles del club y el alta de usuarios. Sin contrato abstracto en
- * `domain`, mismo criterio que CatalogsRepository: no hay dos implementaciones ni las va a
- * haber, así que los consumidores lo inyectan como clase concreta.
+ * El usuario logueado, los roles del club y el alta de usuarios. Todavía sin contrato
+ * abstracto en `domain`: los consumidores lo inyectan como clase concreta.
  *
  * SIN cache, a diferencia de CatalogsRepository: memoizar `me()` acá sería un bug de
  * identidad — un logout seguido de un login en la misma pestaña mostraría el nombre del

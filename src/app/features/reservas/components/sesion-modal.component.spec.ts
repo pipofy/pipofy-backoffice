@@ -18,7 +18,7 @@ import {
   SessionAttendanceMark,
   SessionAttendanceResult,
 } from '@domain/entities/session-attendance';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const session: ClassSession = {
   id: '10',

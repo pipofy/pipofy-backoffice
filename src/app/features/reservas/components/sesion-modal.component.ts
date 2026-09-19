@@ -11,7 +11,7 @@ import { Plan } from '@domain/entities/plan';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { domainErrorMessage } from '@domain/errors';
-import { catalogLabel } from '@data/catalog-labels';
+import { catalogLabel } from '@domain/catalog-labels';
 import { localDateKey } from '@domain/local-date';
 import { reservationStatusLabel } from '@domain/entities/session-reservation';
 import { SessionAttendanceMark } from '@domain/entities/session-attendance';

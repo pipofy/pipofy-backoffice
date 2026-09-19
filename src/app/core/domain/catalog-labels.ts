@@ -2,11 +2,8 @@
  * Los catálogos llegan con el `name` crudo del seed, en snake_case, y no se puede mostrar
  * `polvo_ladrillo` en un select.
  *
- * Vive en `data`, junto a `catalogs.dto.ts` y `CatalogsRepository` (su familia), y no en
- * `shared`: lo consumen el mapper del dashboard (capa `data`) y las pantallas de
- * Configuración (capa `features`), y `data` no puede importar de `shared` (boundaries) —
- * sólo de `domain` y de sí misma. No tiene un solo import propio, así que puede vivir en
- * cualquiera de las dos capas sin arrastrar nada; `data` es la que respeta la regla.
+ * Vive en `domain` porque es copy del producto sobre nombres del seed, TS puro sin imports, y
+ * lo consumen tanto `data` (mapper del dashboard) como `features`: desde acá los dos llegan.
  *
  * El mapa es explícito porque el humanizador genérico no acierta ni el "de" de "polvo de
  * ladrillo" ni la tilde de "sintético". El fallback existe para que un valor nuevo del seed

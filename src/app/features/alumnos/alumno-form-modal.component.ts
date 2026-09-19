@@ -3,8 +3,8 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { DOMINANT_HANDS, Student, StudentInput } from '@domain/entities/student';
 import { dominantHandLabel } from './hand-label';
 import { Category } from '@domain/entities/category';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 import { NoticeComponent } from '@shared/ui/notice.component';
 
 /**

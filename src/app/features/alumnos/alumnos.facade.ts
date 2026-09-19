@@ -5,8 +5,8 @@ import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Student, StudentInput, createStudentDraft } from '@domain/entities/student';
 import { Category } from '@domain/entities/category';
 import { DomainError, asDomainError } from '@domain/errors';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
-import { CatalogItem } from '@data/dto/catalogs.dto';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
 
 /**
  * ponytail: create/update/remove reusan `loading`, así que la tabla muestra su spinner

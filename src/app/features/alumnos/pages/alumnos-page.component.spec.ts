@@ -8,7 +8,7 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { Student, StudentDraft } from '@domain/entities/student';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const ALUMNO: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',

@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal, vi
 import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { Court, CourtInput } from '@domain/entities/court';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(cancha)` es edición.

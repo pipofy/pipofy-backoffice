@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
-import { CatalogsRepository } from './catalogs.repository';
+import { HttpCatalogsRepository } from './http-catalogs.repository';
 import { ApiClient } from '../http/api-client';
 
 function setup(get: (path: string) => Observable<unknown>) {
@@ -12,14 +12,14 @@ function setup(get: (path: string) => Observable<unknown>) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      CatalogsRepository,
+      HttpCatalogsRepository,
       { provide: ApiClient, useValue: api },
     ],
   });
-  return { facade: TestBed.inject(CatalogsRepository), paths };
+  return { facade: TestBed.inject(HttpCatalogsRepository), paths };
 }
 
-describe('CatalogsRepository', () => {
+describe('HttpCatalogsRepository', () => {
   it('pide el catálogo y lo valida', async () => {
     const { facade, paths } = setup(() => of([{ id: '1', name: 'cemento' }]));
     expect(await facade.surfaceTypes()).toEqual([{ id: '1', name: 'cemento' }]);
@@ -56,7 +56,7 @@ describe('CatalogsRepository', () => {
   });
 });
 
-describe('CatalogsRepository.paymentMethods', () => {
+describe('HttpCatalogsRepository.paymentMethods', () => {
   it('pide el catálogo y lo valida, igual que los otros cuatro', async () => {
     const { facade, paths } = setup(() => of([{ id: '3', name: 'efectivo' }]));
     expect(await facade.paymentMethods()).toEqual([{ id: '3', name: 'efectivo' }]);
@@ -74,7 +74,7 @@ describe('CatalogsRepository.paymentMethods', () => {
   });
 });
 
-describe('CatalogsRepository.studentStatuses', () => {
+describe('HttpCatalogsRepository.studentStatuses', () => {
   it('pide /catalogs/student-statuses y memoiza como los demás', async () => {
     const { facade, paths } = setup(() => of([{ id: '2', name: 'pending_classification' }]));
     expect(await facade.studentStatuses()).toEqual([{ id: '2', name: 'pending_classification' }]);

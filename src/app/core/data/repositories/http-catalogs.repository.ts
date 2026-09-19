@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import * as v from 'valibot';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { ApiClient } from '../http/api-client';
 import { toDomainError } from '../http/to-domain-error';
-import { CatalogItem, CatalogListDtoSchema } from '../dto/catalogs.dto';
+import { CatalogListDtoSchema } from '../dto/catalogs.dto';
 
 type CatalogName =
   | 'surface-types'
@@ -21,15 +23,12 @@ type CatalogName =
  * `features/*` no puede importar de otra feature (boundaries). Es un repositorio y siempre
  * lo fue: hace HTTP y valida el borde con valibot.
  *
- * Sin contrato abstracto en `domain`: no hay dos implementaciones ni las va a haber, y el
- * resto de la app lo consume como clase concreta desde hace tres slices.
- *
  * Se memoiza la PROMESA y no el resultado para que dos componentes que arrancan a la vez
  * compartan una sola request. En el error se borra la entrada: si no, un corte de red deja
  * el catálogo roto hasta recargar la página.
  */
 @Injectable()
-export class CatalogsRepository {
+export class HttpCatalogsRepository extends CatalogsRepository {
   private readonly api = inject(ApiClient);
   private readonly cache = new Map<CatalogName, Promise<CatalogItem[]>>();
 

@@ -18,8 +18,8 @@ import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
 import { DomainError, asDomainError } from '@domain/errors';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { localDateKey } from '@domain/local-date';
 
 /**

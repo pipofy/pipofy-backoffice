@@ -2,9 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import * as v from 'valibot';
 import { NewUser } from '@domain/entities/new-user';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { ApiClient } from '../http/api-client';
 import { toDomainError } from '../http/to-domain-error';
-import { CatalogItem, CatalogListDtoSchema } from '../dto/catalogs.dto';
+import { CatalogListDtoSchema } from '../dto/catalogs.dto';
 import { CreateUserRequestSchema, CurrentUserDto, CurrentUserDtoSchema } from '../dto/users.dto';
 import { toCreateUserRequest } from '../mappers/user.mapper';
 

@@ -18,7 +18,8 @@ import { ClubRepository } from '@domain/contracts/club.repository';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { HttpAuthRepository } from '@data/repositories/http-auth.repository';
 import { HttpClubRepository } from '@data/repositories/http-club.repository';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { HttpCatalogsRepository } from '@data/repositories/http-catalogs.repository';
 import { UsersRepository } from '@data/repositories/users.repository';
 
 export const appConfig: ApplicationConfig = {
@@ -41,7 +42,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ClubRepository, useClass: HttpClubRepository },
     // Mismo motivo que ClubRepository: lo necesitan DOS rutas lazy distintas — Configuración
     // y el dashboard. Bindeado en cada ruta, cada una recibía su propio cache.
-    CatalogsRepository,
+    { provide: CatalogsRepository, useClass: HttpCatalogsRepository },
     // En ROOT porque su único consumidor es ShellComponent, que vive en `layout/` y no
     // cuelga de ninguna ruta lazy.
     UsersRepository,

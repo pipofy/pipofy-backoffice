@@ -3,8 +3,8 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { Plan, PlanInput } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(plan)` es edición.

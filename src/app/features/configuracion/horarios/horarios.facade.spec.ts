@@ -10,8 +10,8 @@ import { Schedule, ScheduleDraft, ScheduleInput, SessionGenerationDraft } from '
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const ROW: Schedule = {
   id: 'row', courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',

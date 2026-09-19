@@ -6,7 +6,7 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Student, StudentDraft, StudentInput } from '@domain/entities/student';
 import { Category } from '@domain/entities/category';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const alumno: Student = {
   id: '1', phone: '1155667788', firstName: 'Ana', lastName: 'Pérez',

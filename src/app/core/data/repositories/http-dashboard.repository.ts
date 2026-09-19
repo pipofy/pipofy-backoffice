@@ -8,7 +8,7 @@ import { DashboardSnapshot } from '@domain/entities/dashboard-snapshot';
 import { localDateKey } from '@domain/local-date';
 import { toDashboardSnapshot } from '../mappers/dashboard.mapper';
 import { toDomainError } from '../http/to-domain-error';
-import { CatalogsRepository } from './catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 /**
  * No hay endpoint agregador: este repositorio COMPONE el snapshot desde cinco llamadas en

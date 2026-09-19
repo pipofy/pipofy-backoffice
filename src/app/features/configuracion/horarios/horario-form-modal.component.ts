@@ -6,8 +6,8 @@ import { Schedule, ScheduleInput } from '@domain/entities/schedule';
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
 
 /**

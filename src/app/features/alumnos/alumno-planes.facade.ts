@@ -6,8 +6,8 @@ import { StudentPlan, studentPlanIsExpired, usableCredits } from '@domain/entiti
 import { Plan } from '@domain/entities/plan';
 import { PlanPurchaseInput, createPlanPurchaseDraft } from '@domain/entities/payment';
 import { DomainError, asDomainError } from '@domain/errors';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
-import { CatalogItem } from '@data/dto/catalogs.dto';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { localDateKey } from '@domain/local-date';
 
 /**

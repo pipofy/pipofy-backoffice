@@ -3,7 +3,7 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { CanchasPageComponent } from './canchas-page.component';
 import { CanchasFacade } from './canchas.facade';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { Court, CourtDraft } from '@domain/entities/court';
 

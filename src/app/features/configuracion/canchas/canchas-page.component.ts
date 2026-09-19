@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { CanchasFacade } from './canchas.facade';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { catalogLabel } from '@domain/catalog-labels';
 import { CanchaFormModalComponent } from './cancha-form-modal.component';
 import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
 import { Court, CourtInput } from '@domain/entities/court';
-import { CatalogItem } from '@data/dto/catalogs.dto';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { NoticeComponent } from '@shared/ui/notice.component';

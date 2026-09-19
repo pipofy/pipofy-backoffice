@@ -5,7 +5,6 @@
   /* --color-scrim y --color-on-warning-mark subieron a styles/tokens.css (:root): son
      globales (dialog.modal::backdrop; el badge de --color-warning-mark) y dependían de
      heredarlos por anidamiento — se rompían fuera del shell. Acá quedan heredados. */
-  --wa:var(--color-accent-strong);
   --z-nav:20; --z-header:30; --z-scrim:40; --z-drawer:50;
   /* Densidad tipográfica de dashboard (cascada a las vistas hijas del outlet) */
   --text-base:.875rem; --text-md:.9375rem; --text-lg:1.0625rem; --text-xl:1.25rem; --text-2xl:1.5rem;

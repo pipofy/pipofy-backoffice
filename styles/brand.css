@@ -21,8 +21,10 @@
   --color-primary-hover:#1B5595;        /* blanco: 7.55:1 */
   --color-primary-strong:#082658;       /* blanco: 14.70:1 — superficies oscuras */
   --color-primary-soft:#EAF2FA; --color-on-primary-soft:#1B5595;   /* 6.68:1 sobre soft */
-  /* Texto secundario SOBRE primary-strong (hero de grupo). 5.28:1 */
+  /* Texto secundario SOBRE primary-strong. muted = más contraste (hero de grupo, 5.28:1);
+     subtle = menos (descripción del toast y fecha del reloj del topbar). */
   --color-on-primary-strong-muted:#DBE5F5;
+  --color-on-primary-strong-subtle:#CBD5E1;
 
   /* ponytail: "ok" y primario son el mismo azul. Si hace falta distinguirlos, entra una
      familia --color-success-* y estos alias apuntan ahí; los consumidores no cambian. */
@@ -38,8 +40,6 @@
   --color-sidebar-label:#94A3B8; --color-sidebar-line:rgba(255,255,255,.10);
   --color-sidebar-hover:rgba(255,255,255,.07);
   --color-live:#4ADE80;
-  /* Texto secundario sobre fondo oscuro: el toast y el reloj del topbar. */
-  --color-on-dark-muted:#CBD5E1;
 
   /* ── Tipografía ── */
   /* El brandboard nombra "Pipofy Sans", que no existe publicada; se resuelve en Poppins

@@ -54,7 +54,7 @@
 .clock{display:flex;align-items:center;gap:var(--space-sm);padding:0 var(--space-sm);height:42px;background:var(--color-primary-strong);color:#fff;border-radius:var(--radius-sm);flex:0 0 auto;white-space:nowrap;margin-left:auto}
 .clock .live{width:8px;height:8px;border-radius:50%;background:var(--color-live);animation:pulse 2s infinite}
 .clock .t{font-family:var(--font-mono);font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums}
-.clock .d{display:none;font-size:var(--text-2xs);color:var(--color-on-dark-muted);text-transform:capitalize}
+.clock .d{display:none;font-size:var(--text-2xs);color:var(--color-on-primary-strong-subtle);text-transform:capitalize}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 /* El pie va SIEMPRE al fondo de la pantalla: .scroll es columna y .content crece, así que
    con poco contenido el pie se apoya en el borde inferior en vez de flotar a media altura, y

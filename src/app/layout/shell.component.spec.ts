@@ -5,8 +5,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { EnConstruccionComponent } from '@shared/ui/en-construccion.component';
 import { SessionFacade } from '@features/auth/session.facade';
 import { SessionStore } from '@data/auth/session-store';
-import { UsersRepository } from '@data/repositories/users.repository';
-import { CurrentUserDto } from '@data/dto/users.dto';
+import { UsersRepository } from '@domain/contracts/users.repository';
+import { CurrentUser } from '@domain/entities/current-user';
 import { ShellComponent } from './shell.component';
 import { NAV_ITEMS } from './nav.model';
 
@@ -24,11 +24,11 @@ const SESSION_STORE_STUB = sessionStore();
  * Doble de UsersRepository (root, igual que SessionStore). `null` simula que /users/me
  * falló: el shell tiene que seguir renderizando con el rol solo.
  */
-function usersRepo(user: Partial<CurrentUserDto> | null = { nombre: 'Ana', apellido: 'Pérez' }) {
+function usersRepo(user: Partial<CurrentUser> | null = { displayName: 'Ana Pérez' }) {
   return {
     me: async () => {
       if (user === null) throw { kind: 'network' };
-      return { id: '9', clubId: '42', email: null, nombre: null, apellido: null, roles: [], ...user };
+      return { id: '9', email: null, displayName: '', ...user };
     },
   } as UsersRepository;
 }
@@ -227,7 +227,9 @@ describe('ShellComponent · pie del sidebar y decoración muerta', () => {
   });
 
   it('un usuario sin nombre cargado muestra su email', async () => {
-    const harness = await setup('/dashboard', SESSION_STORE_STUB, usersRepo({ email: 'ana@club.com' }));
+    // El fallback real (nombre → email → '') lo cubre user.mapper.spec.ts; acá sólo
+    // verificamos que el shell pinte lo que el repo le devuelva.
+    const harness = await setup('/dashboard', SESSION_STORE_STUB, usersRepo({ displayName: 'ana@club.com' }));
     const foot: HTMLElement = harness.fixture.nativeElement.querySelector('.side-foot');
     expect(foot.querySelector('.u-name')?.textContent).toContain('ana@club.com');
   });

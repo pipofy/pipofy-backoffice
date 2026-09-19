@@ -9,7 +9,8 @@ import { AuthRepository } from '@domain/contracts/auth.repository';
 import { ApiClient } from '@data/http/api-client';
 import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { HttpCatalogsRepository } from '@data/repositories/http-catalogs.repository';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { UsersRepository } from '@domain/contracts/users.repository';
+import { HttpUsersRepository } from '@data/repositories/http-users.repository';
 import { SessionStore } from '@data/auth/session-store';
 import { API_CONFIG } from '@config/api-config';
 import { SessionFacade } from '@features/auth/session.facade';
@@ -45,7 +46,7 @@ async function harnessAt(url: string, conSesion = true, mustChangePassword = fal
       // Igual que CatalogsRepository: en root porque su consumidor es ShellComponent, que no
       // cuelga de ninguna ruta lazy. Corre el real contra el ApiClient stubeado — devuelve
       // `[]`, el parse falla y el shell se lo come en silencio, que es justo su contrato.
-      UsersRepository,
+      { provide: UsersRepository, useClass: HttpUsersRepository },
     ],
   });
   if (conSesion) {

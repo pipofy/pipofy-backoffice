@@ -8,8 +8,7 @@ import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { ToastHostComponent } from '@shared/ui/toast/toast-host.component';
 import { SessionFacade } from '@features/auth/session.facade';
 import { SessionStore } from '@data/auth/session-store';
-import { UsersRepository } from '@data/repositories/users.repository';
-import { currentUserName } from '@data/dto/users.dto';
+import { UsersRepository } from '@domain/contracts/users.repository';
 import { NavBadgesService } from './nav-badges.service';
 import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from './nav.model';
 
@@ -77,7 +76,7 @@ export class ShellComponent {
    */
   private async loadUser(): Promise<void> {
     try {
-      this.userName.set(currentUserName(await this.usersRepo.me()));
+      this.userName.set((await this.usersRepo.me()).displayName);
     } catch {
       this.userName.set('');
     }

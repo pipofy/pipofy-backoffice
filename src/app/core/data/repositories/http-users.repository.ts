@@ -1,17 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import * as v from 'valibot';
+import { UsersRepository } from '@domain/contracts/users.repository';
 import { NewUser } from '@domain/entities/new-user';
 import { CatalogItem } from '@domain/entities/catalog-item';
+import { CurrentUser } from '@domain/entities/current-user';
 import { ApiClient } from '../http/api-client';
 import { toDomainError } from '../http/to-domain-error';
 import { CatalogListDtoSchema } from '../dto/catalogs.dto';
-import { CreateUserRequestSchema, CurrentUserDto, CurrentUserDtoSchema } from '../dto/users.dto';
-import { toCreateUserRequest } from '../mappers/user.mapper';
+import { CreateUserRequestSchema, CurrentUserDtoSchema } from '../dto/users.dto';
+import { toCreateUserRequest, toCurrentUser } from '../mappers/user.mapper';
 
 /**
- * El usuario logueado, los roles del club y el alta de usuarios. Todavía sin contrato
- * abstracto en `domain`: los consumidores lo inyectan como clase concreta.
+ * El usuario logueado, los roles del club y el alta de usuarios.
  *
  * SIN cache, a diferencia de CatalogsRepository: memoizar `me()` acá sería un bug de
  * identidad — un logout seguido de un login en la misma pestaña mostraría el nombre del
@@ -22,13 +23,13 @@ import { toCreateUserRequest } from '../mappers/user.mapper';
  * y tampoco hace falta: no hay estado que invalidar.
  */
 @Injectable()
-export class UsersRepository {
+export class HttpUsersRepository extends UsersRepository {
   private readonly api = inject(ApiClient);
 
-  async me(): Promise<CurrentUserDto> {
+  async me(): Promise<CurrentUser> {
     try {
       const raw = await firstValueFrom(this.api.get<unknown>('/users/me'));
-      return v.parse(CurrentUserDtoSchema, raw);
+      return toCurrentUser(v.parse(CurrentUserDtoSchema, raw));
     } catch (err) {
       throw toDomainError(err);
     }

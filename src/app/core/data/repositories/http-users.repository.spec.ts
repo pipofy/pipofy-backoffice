@@ -3,9 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
-import { UsersRepository } from './users.repository';
+import { HttpUsersRepository } from './http-users.repository';
 import { ApiClient } from '../http/api-client';
-import { currentUserName } from '../dto/users.dto';
 
 const ME = {
   id: '9',
@@ -33,23 +32,23 @@ function setup(get: () => Observable<unknown>, post: () => Observable<unknown> =
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      UsersRepository,
+      HttpUsersRepository,
       { provide: ApiClient, useValue: api },
     ],
   });
-  return { repo: TestBed.inject(UsersRepository), paths, bodies };
+  return { repo: TestBed.inject(HttpUsersRepository), paths, bodies };
 }
 
-describe('UsersRepository', () => {
+describe('HttpUsersRepository', () => {
   it('pide /users/me y valida la respuesta', async () => {
     const { repo, paths } = setup(() => of(ME));
-    expect(await repo.me()).toEqual(ME);
+    expect(await repo.me()).toEqual({ id: '9', email: 'ana@club.com', displayName: 'Ana Pérez' });
     expect(paths).toEqual(['/users/me']);
   });
 
   it('acepta nombre, apellido y email en null: los tres son String? en el schema', async () => {
     const { repo } = setup(() => of({ ...ME, email: null, nombre: null, apellido: null }));
-    await expect(repo.me()).resolves.toMatchObject({ nombre: null });
+    await expect(repo.me()).resolves.toEqual({ id: '9', email: null, displayName: '' });
   });
 
   it('normaliza el error de red a DomainError', async () => {
@@ -67,26 +66,7 @@ describe('UsersRepository', () => {
   });
 });
 
-describe('currentUserName', () => {
-  it('arma "Nombre Apellido"', () => {
-    expect(currentUserName(ME)).toBe('Ana Pérez');
-  });
-
-  it('con uno solo de los dos, usa el que hay', () => {
-    expect(currentUserName({ ...ME, apellido: null })).toBe('Ana');
-    expect(currentUserName({ ...ME, nombre: '   ' })).toBe('Pérez');
-  });
-
-  it('sin nombre ni apellido cae al email', () => {
-    expect(currentUserName({ ...ME, nombre: null, apellido: null })).toBe('ana@club.com');
-  });
-
-  it('sin ninguno de los tres devuelve vacío, para que el sidebar no dibuje el renglón', () => {
-    expect(currentUserName({ ...ME, nombre: null, apellido: null, email: null })).toBe('');
-  });
-});
-
-describe('UsersRepository.roles', () => {
+describe('HttpUsersRepository.roles', () => {
   const ROLES = [
     { id: '3', name: 'admin' },
     { id: '7', name: 'profesor' },
@@ -113,7 +93,7 @@ describe('UsersRepository.roles', () => {
   });
 });
 
-describe('UsersRepository.create', () => {
+describe('HttpUsersRepository.create', () => {
   const DRAFT = { email: 'ana@club.com', nombre: 'Ana', apellido: 'Pérez', roleId: '7' };
 
   it('postea a /users el body del mapper', async () => {

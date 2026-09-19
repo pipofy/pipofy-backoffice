@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ProfesoresFacade } from './profesores.facade';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach, CoachDraft } from '@domain/entities/coach';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { UsersRepository } from '@domain/contracts/users.repository';
 
 const COACHES: Coach[] = [
   { id: '2', displayName: 'Zulema Paz', description: null },

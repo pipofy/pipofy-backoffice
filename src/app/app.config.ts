@@ -20,7 +20,8 @@ import { HttpAuthRepository } from '@data/repositories/http-auth.repository';
 import { HttpClubRepository } from '@data/repositories/http-club.repository';
 import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { HttpCatalogsRepository } from '@data/repositories/http-catalogs.repository';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { UsersRepository } from '@domain/contracts/users.repository';
+import { HttpUsersRepository } from '@data/repositories/http-users.repository';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -45,6 +46,6 @@ export const appConfig: ApplicationConfig = {
     { provide: CatalogsRepository, useClass: HttpCatalogsRepository },
     // En ROOT porque su único consumidor es ShellComponent, que vive en `layout/` y no
     // cuelga de ninguna ruta lazy.
-    UsersRepository,
+    { provide: UsersRepository, useClass: HttpUsersRepository },
   ],
 };

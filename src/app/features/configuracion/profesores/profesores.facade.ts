@@ -3,7 +3,7 @@ import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach, CoachInput, createCoachDraft } from '@domain/entities/coach';
 import { DomainError, InvalidUserError, asDomainError } from '@domain/errors';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { UsersRepository } from '@domain/contracts/users.repository';
 import { NewUserInput, createNewUserDraft } from '@domain/entities/new-user';
 
 /** El backend crea el CoachProfile cuando el rol se llama EXACTAMENTE así (users.service.ts). */

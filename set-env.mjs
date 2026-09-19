@@ -1,12 +1,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const REQUIRED = [
-  'NG_API_BASE_URL',
-  'NG_REALTIME_BASE_URL',
-  'NG_STORAGE_BASE_PATH',
-  'NG_MERCADOPAGO_PUBLIC_KEY',
-];
+/** La única clave sin la que la app no puede hacer nada. El resto es opcional y se emite si está. */
+const REQUIRED = ['NG_API_BASE_URL'];
 const SECRET_RE = /_(SECRET|TOKEN)$|ACCESS_TOKEN|PASSWORD|PRIVATE/i;
 
 // production regenera el archivo base que reemplazan los otros configs
@@ -36,6 +32,14 @@ export function parseEnv(text) {
   return out;
 }
 
+/** NG_API_BASE_URL → apiBaseUrl. El modelo tipado vive en environment.model.ts. */
+export function fieldName(key) {
+  return key
+    .replace(/^NG_/, '')
+    .toLowerCase()
+    .replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+
 export function buildEnvironment(env, vars) {
   const secret = Object.keys(vars).find((k) => SECRET_RE.test(k));
   if (secret) {
@@ -47,13 +51,13 @@ export function buildEnvironment(env, vars) {
   if (missing.length) {
     throw new Error(`Faltan claves en .env.${env}: ${missing.join(', ')}`);
   }
-  const fields = {
-    production: env === 'production',
-    apiBaseUrl: vars['NG_API_BASE_URL'],
-    realtimeBaseUrl: vars['NG_REALTIME_BASE_URL'],
-    storageBasePath: vars['NG_STORAGE_BASE_PATH'],
-    mercadopagoPublicKey: vars['NG_MERCADOPAGO_PUBLIC_KEY'],
-  };
+  // Toda NG_* presente se emite. Una clave que el modelo no declara rompe el build con un
+  // error de TS que la nombra (`satisfies Environment` hace chequeo de propiedades de más):
+  // es el aviso de "esta variable ya no la lee nadie".
+  const fields = { production: env === 'production' };
+  for (const [k, v] of Object.entries(vars)) {
+    if (k.startsWith('NG_') && v !== '') fields[fieldName(k)] = v;
+  }
   const body = Object.entries(fields)
     .map(([k, v]) => `  ${k}: ${typeof v === 'string' ? `'${v}'` : v},`)
     .join('\n');

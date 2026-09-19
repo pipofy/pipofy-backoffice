@@ -1,7 +1,8 @@
 # Blueprint del backoffice (sitio estático). El de la API vive en pipofy-backend/render.yaml.
 #
 # `npm run build` corre `node set-env.mjs production && ng build`: set-env NO encuentra
-# .env.production acá (está gitignoreado) y cae al fallback que lee las NG_* de este bloque.
+# .env.production acá (está gitignoreado) y cae al fallback que lee las NG_* de este bloque;
+# sólo NG_API_BASE_URL es obligatoria.
 services:
   - type: web
     name: pipofy-backoffice
@@ -12,16 +13,6 @@ services:
     envVars:
       - key: NG_API_BASE_URL
         value: https://pipofy-api.onrender.com/api
-      # La API no expone /stream todavía: SseRealtimeConnection no tiene consumidor. Se
-      # completa igual porque set-env exige las cuatro claves.
-      - key: NG_REALTIME_BASE_URL
-        value: https://pipofy-api.onrender.com/api/stream
-      - key: NG_STORAGE_BASE_PATH
-        value: /uploads
-      # Placeholder: hoy no lo lee nadie (el módulo de pagos no existe). Reemplazar por la
-      # public key real cuando llegue ese slice — es pública, va en el bundle por diseño.
-      - key: NG_MERCADOPAGO_PUBLIC_KEY
-        value: APP_USR-xxxxxxxx
       # 20.18 (el de la API) NO sirve: Angular 20 pide ^20.19 || ^22.12 || >=24.
       - key: NODE_VERSION
         value: 22.12.0

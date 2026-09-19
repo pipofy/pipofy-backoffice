@@ -2,6 +2,7 @@ import { signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { APP_CONFIG, DEFAULT_APP_CONFIG } from '@config/app-config';
 import { NAV_CONFIG, type NavConfig } from '@config/nav';
 import { EnConstruccionComponent } from '@shared/ui/en-construccion.component';
 import { SessionFacade } from '@features/auth/session.facade';
@@ -38,7 +39,7 @@ const NAV: NavConfig = {
 // SessionStore vive en root (app.config.ts) y el TestBed no lo trae: el shell lo inyecta
 // para leer el rol del token, así que va un doble con los dos signals que consume.
 // Parametrizable por `roles` para cubrir las dos ramas del fallback de rol() (ver el describe
-// de "pie del sidebar" más abajo): lista vacía y un rol fuera de ROLE_LABELS.
+// de "pie del sidebar" más abajo): lista vacía y un rol fuera de roleLabels.
 function sessionStore(roles: readonly string[] = ['admin']) {
   return { roles: signal(roles), clubId: signal<string | null>('42') };
 }
@@ -80,6 +81,7 @@ async function setup(url: string, store = SESSION_STORE_STUB, users = usersRepo(
       { provide: SessionStore, useValue: store },
       { provide: UsersRepository, useValue: users },
       { provide: NAV_CONFIG, useValue: NAV },
+      { provide: APP_CONFIG, useValue: { ...DEFAULT_APP_CONFIG, roleLabels: { admin: 'Administrador' } } },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -169,6 +171,7 @@ describe('ShellComponent', () => {
         { provide: SessionStore, useValue: SESSION_STORE_STUB },
         { provide: UsersRepository, useValue: usersRepo() },
         { provide: NAV_CONFIG, useValue: NAV },
+        { provide: APP_CONFIG, useValue: { ...DEFAULT_APP_CONFIG, roleLabels: { admin: 'Administrador' } } },
       ],
     });
     const fixture = TestBed.createComponent(ShellComponent);
@@ -193,6 +196,7 @@ describe('ShellComponent', () => {
         { provide: SessionStore, useValue: SESSION_STORE_STUB },
         { provide: UsersRepository, useValue: usersRepo() },
         { provide: NAV_CONFIG, useValue: NAV },
+        { provide: APP_CONFIG, useValue: { ...DEFAULT_APP_CONFIG, roleLabels: { admin: 'Administrador' } } },
       ],
     });
     const fixture = TestBed.createComponent(ShellComponent);
@@ -220,8 +224,8 @@ describe('ShellComponent · pie del sidebar y decoración muerta', () => {
     expect(root.querySelector('.side-foot .u-role')?.textContent).toContain('Sin rol');
   });
 
-  it('un rol fuera de ROLE_LABELS se muestra crudo, no oculto', async () => {
-    // Si alguien renombra una clave de ROLE_LABELS, el sidebar tiene que seguir mostrando ALGO
+  it('un rol fuera de roleLabels se muestra crudo, no oculto', async () => {
+    // Si alguien renombra una clave de roleLabels, el sidebar tiene que seguir mostrando ALGO
     // (el rol crudo) en vez de fallar en silencio o mostrar un rótulo viejo.
     const harness = await setup('/dashboard', sessionStore(['coordinador']));
     const root: HTMLElement = harness.fixture.nativeElement;

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { APP_CONFIG } from '@config/app-config';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
@@ -26,7 +27,7 @@ import { VerificationFacade } from '../verification.facade';
             <svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </div>
           <h2>Tu email está verificado</h2>
-          <p>Ya podés entrar a PipoFy.</p>
+          <p>Ya podés entrar a {{ brand.name }}.</p>
           <a class="btn btn-cta" routerLink="/login">Iniciar sesión</a>
         } @else {
           <div class="badge err" aria-hidden="true">
@@ -69,6 +70,7 @@ export class VerifyEmailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly facade = inject(VerificationFacade);
+  protected readonly brand = inject(APP_CONFIG).brand;
 
   private readonly sinToken = signal(false);
 

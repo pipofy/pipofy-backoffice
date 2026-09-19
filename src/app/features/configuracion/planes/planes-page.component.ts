@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, LOCALE_ID, signal, viewChild } from '@angular/core';
 import { PlanesFacade } from './planes.facade';
 import { PlanFormModalComponent } from './plan-form-modal.component';
 import { PlanCategoriasModalComponent } from './plan-categorias-modal.component';
@@ -34,6 +34,7 @@ export class PlanesPageComponent {
   private readonly catalogs = inject(CatalogsRepository);
   private readonly categoriesRepo = inject(CategoriesRepository);
   private readonly toast = inject(ToastService);
+  private readonly locale = inject(LOCALE_ID);
 
   private readonly form = viewChild.required(PlanFormModalComponent);
   private readonly confirm = viewChild.required(ConfirmDeleteModalComponent);
@@ -86,7 +87,7 @@ export class PlanesPageComponent {
     this.query.set((e.target as HTMLInputElement).value);
   }
 
-  protected price(raw: string | null): string { return formatPlanPrice(raw); }
+  protected price(raw: string | null): string { return formatPlanPrice(raw, this.locale); }
 
   /** El nombre del catálogo por id; '—' cuando todavía no llegó o el id no está. */
   protected planTypeName(id: string): string {

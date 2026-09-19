@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { RealtimeConnection } from './realtime-connection';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 @Injectable()
 export class SseRealtimeConnection extends RealtimeConnection {
-  private readonly realtimeBaseUrl = inject(API_CONFIG).realtimeBaseUrl;
+  private readonly realtimeBaseUrl = inject(API_CONFIG).realtimeBaseUrl ?? '';
 
   topic<T>(name: string): Observable<T> {
     return new Observable<T>((subscriber) => {

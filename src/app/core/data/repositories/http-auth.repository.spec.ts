@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { HttpAuthRepository } from './http-auth.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 import { Registration } from '@domain/entities/registration';
 
 const club: Registration = {

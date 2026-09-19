@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, firstValueFrom } from 'rxjs';
 import { ApiClient } from './api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 function make(httpMock: Partial<HttpClient>) {
   TestBed.configureTestingModule({

@@ -10,7 +10,7 @@ import { ApiClient } from '@data/http/api-client';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
 import { UsersRepository } from '@data/repositories/users.repository';
 import { SessionStore } from '@data/auth/session-store';
-import { API_CONFIG } from '@data/config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 import { SessionFacade } from '@features/auth/session.facade';
 import { routes } from './app.routes';
 

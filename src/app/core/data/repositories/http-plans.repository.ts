@@ -9,7 +9,7 @@ import { toPlan, toPlanRequest } from '../mappers/plan.mapper';
 import { toDomainError } from '../http/to-domain-error';
 import { ignoringStatus } from '../http/ignoring-status';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 /**
  * ApiClient ya normaliza los errores HTTP a DomainError, pero v.parse tira ValiError fuera

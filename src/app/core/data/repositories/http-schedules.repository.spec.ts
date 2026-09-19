@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpSchedulesRepository } from './http-schedules.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 const ROW = {
   id: '1', clubId: '1', courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',

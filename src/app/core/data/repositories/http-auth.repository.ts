@@ -15,7 +15,7 @@ import {
 } from '../dto/auth.dto';
 import { toSession, toSignupDto } from '../mappers/auth.mapper';
 import { toDomainError } from '../http/to-domain-error';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 /**
  * El significado de un código HTTP depende del endpoint: un 401 en /students es "tu sesión

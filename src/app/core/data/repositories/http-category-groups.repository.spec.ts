@@ -5,7 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
 import { HttpCategoryGroupsRepository } from './http-category-groups.repository';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 interface Call { readonly method: string; readonly path: string; readonly body?: unknown }
 

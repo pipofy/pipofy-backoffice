@@ -5,7 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
 import { HttpPlansRepository } from './http-plans.repository';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 import { PlanDraft } from '@domain/entities/plan';
 
 interface Call { readonly method: string; readonly path: string; readonly body?: unknown }

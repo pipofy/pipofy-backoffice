@@ -10,7 +10,7 @@ import { TokenRefresher } from './token-refresher';
 import { SessionStore } from '../auth/session-store';
 import { HttpAuthRepository } from '../repositories/http-auth.repository';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 // El repo devuelve Promise (patrón del proyecto), así que `from(promise)` en TokenRefresher
 // resuelve en un microtask: entre el flush del refresh y la salida del reintento hay que

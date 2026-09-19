@@ -54,7 +54,8 @@ Usar siempre los alias de `tsconfig.json`, no rutas relativas largas (`layout/` 
 
 ### Auth y multi-tenant
 
-`SessionStore` (root) es el dueño único de los tokens, espejados en `localStorage` (`PipoFy:session:v1`) y rehidratados en el constructor; `clubId` y `roles` se leen del JWT, no de la respuesta del login. `authInterceptor` + `TokenRefresher` refrescan; `tenantInterceptor` agrega `X-Tenant-Id` desde `TenantContext`. `authGuard` redirige a `/cambiar-clave` si `mustChangePassword`, y esa ruta cuelga **fuera** del shell con su propio `mustBeLoggedIn` para no entrar en loop.
+`SessionStore` (root) es el dueño único de los tokens, espejados en `localStorage`
+(`${storagePrefix}:session:v1`, para Pipofy `PipoFy:session:v1`) y rehidratados en el constructor; `clubId` y `roles` se leen del JWT, no de la respuesta del login. `authInterceptor` + `TokenRefresher` refrescan; `tenantInterceptor` agrega `X-Tenant-Id` desde `TenantContext`. `authGuard` redirige a `/cambiar-clave` si `mustChangePassword`, y esa ruta cuelga **fuera** del shell con su propio `mustBeLoggedIn` para no entrar en loop.
 
 ## Convenciones
 

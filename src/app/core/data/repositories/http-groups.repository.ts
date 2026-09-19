@@ -7,7 +7,7 @@ import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
 import { Group } from '@domain/entities/group';
 import { localDateKey, shiftDateKey } from '@domain/local-date';
-import { toGroups } from '../mappers/groups.mapper';
+import { toGroups } from '@domain/derive-groups';
 import { toDomainError } from '../http/to-domain-error';
 
 /**

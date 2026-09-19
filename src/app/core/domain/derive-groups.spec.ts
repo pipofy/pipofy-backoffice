@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toGroups, toRoster, toGroupWaitlist, GroupsInput } from './groups.mapper';
+import { toGroups, toRoster, toGroupWaitlist, GroupsInput } from './derive-groups';
 import { Schedule } from '@domain/entities/schedule';
 import { ClassSession } from '@domain/entities/class-session';
 import { SessionReservation } from '@domain/entities/session-reservation';

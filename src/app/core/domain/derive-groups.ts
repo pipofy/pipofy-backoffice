@@ -1,3 +1,9 @@
+/**
+ * Deriva grupos, roster y lista de espera a partir de entidades ya mapeadas, no de DTOs.
+ * Vive en `domain` (y no en `data/mappers`, donde estuvo antes) porque sólo depende de
+ * `@domain/entities/*`; la consumen tanto `data` (`HttpGroupsRepository`) como `features`
+ * (`GruposFacade`), y desde acá los dos llegan sin cruzar capas.
+ */
 import { Group, GroupSession, GroupWaitlistEntry, RosterMember } from '@domain/entities/group';
 import { Schedule } from '@domain/entities/schedule';
 import { ClassSession, occupiedSpots } from '@domain/entities/class-session';

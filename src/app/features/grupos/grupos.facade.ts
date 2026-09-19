@@ -14,7 +14,7 @@ import { Category } from '@domain/entities/category';
 import { Student } from '@domain/entities/student';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { DomainError, asDomainError } from '@domain/errors';
-import { toGroupWaitlist, toRoster } from '@data/mappers/groups.mapper';
+import { toGroupWaitlist, toRoster } from '@domain/derive-groups';
 
 @Injectable()
 export class GruposFacade extends SignalStore<Group[], DomainError> {

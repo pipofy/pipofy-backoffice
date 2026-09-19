@@ -57,10 +57,17 @@ module.exports = tseslint.config(
       },
       "import/extensions": [".ts", ".js"],
       "boundaries/elements": [
+        { type: "config", pattern: "src/app/core/config" },
         { type: "domain", pattern: "src/app/core/domain" },
         { type: "data", pattern: "src/app/core/data" },
         { type: "shared", pattern: "src/app/shared" },
+        { type: "layout", pattern: "src/app/layout" },
+        // ANTES de features/*: auth es la feature del kernel y el único destino que layout
+        // puede importar (el shell hace logout vía SessionFacade). Si el plugin no priorizara
+        // este patrón sobre el genérico, el Step 4 lo detecta.
+        { type: "auth", pattern: "src/app/features/auth" },
         { type: "features", pattern: "src/app/features/*", capture: ["feature"] },
+        { type: "product", pattern: "src/app/product" },
       ],
     },
     rules: {
@@ -68,15 +75,18 @@ module.exports = tseslint.config(
       "boundaries/dependencies": ["error", {
         default: "disallow",
         policies: [
+          // config no aparece como `from`: sólo puede importarse a sí mismo (relación interna).
           { from: { element: { type: "domain" } }, allow: { to: { element: { type: "domain" } } } },
-          { from: { element: { type: "data" } }, allow: { to: { element: { types: { anyOf: ["domain", "data"] } } } } },
-          { from: { element: { type: "shared" } }, allow: { to: { element: { type: "shared" } } } },
-          // Same-feature file-to-file imports are an "internal" relationship (same element
-          // instance) and are already allowed implicitly — the dependencies rule only
-          // evaluates cross-element dependencies by default. So the only case this policy
-          // needs to cover is: a feature may depend on domain/data/shared, but not on
-          // another feature (that stays disallowed by the default).
-          { from: { element: { type: "features" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared"] } } } } },
+          { from: { element: { type: "data" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "config"] } } } } },
+          { from: { element: { type: "shared" } }, allow: { to: { element: { types: { anyOf: ["shared", "config"] } } } } },
+          // TEMPORAL hasta que el shell inyecte los contratos de domain (SessionStore,
+          // UsersRepository): entonces se saca "data" de esta lista y layout queda con
+          // domain, shared, config y auth. Ver plan Task 6.
+          { from: { element: { type: "layout" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config", "auth"] } } } } },
+          { from: { element: { type: "auth" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config"] } } } } },
+          { from: { element: { type: "features" } }, allow: { to: { element: { types: { anyOf: ["domain", "data", "shared", "config"] } } } } },
+          // product es DATOS del producto: lo consume app.config.ts (fuera de elements) y nadie más.
+          { from: { element: { type: "product" } }, allow: { to: { element: { types: { anyOf: ["config", "shared"] } } } } },
         ],
       }],
       // domain -> @angular/* is an external-package check, which the native "dependencies"

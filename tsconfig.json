@@ -16,6 +16,7 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
+      "@config/*": ["src/app/core/config/*"],
       "@domain/*": ["src/app/core/domain/*"],
       "@data/*": ["src/app/core/data/*"],
       "@shared/*": ["src/app/shared/*"],

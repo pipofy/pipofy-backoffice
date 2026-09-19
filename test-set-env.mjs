@@ -22,6 +22,13 @@ const minimo = buildEnvironment('development', { NG_API_BASE_URL: '/api' });
 assert.match(minimo, /production: false/);
 assert.doesNotMatch(minimo, /realtimeBaseUrl/);
 
+// Clave presente pero vacía (NG_X=) no se emite: es lo mismo que no ponerla.
+const vacia = buildEnvironment('development', {
+  NG_API_BASE_URL: '/api',
+  NG_REALTIME_BASE_URL: '',
+});
+assert.doesNotMatch(vacia, /realtimeBaseUrl/);
+
 // Sin la obligatoria -> falla
 assert.throws(() => buildEnvironment('development', {}), /Faltan claves/);
 
@@ -32,7 +39,11 @@ assert.throws(
 );
 
 // Fallback al entorno (Render/CI): SÓLO entran las NG_*.
-const fromEnv = ngVarsFrom({ NG_API_BASE_URL: 'https://x/api', AWS_SECRET_ACCESS_KEY: 'no', PATH: '/usr/bin' });
+const fromEnv = ngVarsFrom({
+  NG_API_BASE_URL: 'https://x/api',
+  AWS_SECRET_ACCESS_KEY: 'no',
+  PATH: '/usr/bin',
+});
 assert.deepEqual(Object.keys(fromEnv), ['NG_API_BASE_URL']);
 
 console.log('✓ set-env self-check OK');

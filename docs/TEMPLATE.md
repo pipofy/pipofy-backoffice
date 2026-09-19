@@ -34,12 +34,23 @@ token, no importes `product/`.
 Las features de Pipofy (`grupos`, `reservas`, `alumnos`, `configuracion/*`, `dashboard`) son
 del producto. Para sacar una: borrar `src/app/features/<x>`, su ruta en `app.routes.ts`, su
 item en `product/nav.ts`, y sus entidades/contratos/DTOs/mappers/repos en `core/`. `npm run lint`
-y `npm test` te dicen qué quedó colgado. `auth` y `onboarding` son kernel: se quedan.
+y `npm test` te dicen qué quedó colgado.
+
+`auth` y `onboarding` son kernel en su mecánica (login, refresh, guard, wizard, persistencia,
+validadores) y del producto en su modelo y copy: los roles (`registration.ts`), el campo
+`nombreClub`, los textos de los pasos y la frase del login son de Pipofy y hay que adaptarlos.
+
+También hay que revisar/adaptar:
+
+- Las `Invalid*Error` de `core/domain/errors.ts` que correspondan a entidades borradas.
+- `core/domain/catalog-labels.ts` (copy del seed de Pipofy).
+- `README.md`.
 
 ## 4. Agregar un slice
 
     npm run new-slice -- court courts canchas cancha
     # <entity> <entities> <feature> <label>  →  imprime los 3 pasos manuales
+    # cada argumento: minúsculas y dígitos, sin guiones ni "/"
 
 Genera entidad, contrato, DTO, mapper, repo HTTP, facade, modal, página, providers, rutas y
 tests, con un solo campo `name`. Después: ruta en `app.routes.ts`, item en `product/nav.ts`,

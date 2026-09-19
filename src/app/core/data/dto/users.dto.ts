@@ -9,7 +9,7 @@ import * as v from 'valibot';
  * los del signup viejo pueden no tenerlos. Por eso `toCurrentUser()` (user.mapper.ts) tiene
  * cadena de fallback y no un `!`.
  *
- * `clubId` y `roles` viajan pero NO se leen: los dos ya salen del JWT (session-store.ts),
+ * `clubId` y `roles` viajan pero NO se leen: los dos ya salen del JWT (local-storage-session-store.ts),
  * que los tiene sin pagar una request y sin quedarse en blanco mientras carga. Se declaran
  * igual porque están en la respuesta y el schema documenta el borde real.
  */

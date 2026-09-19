@@ -1,0 +1,48 @@
+<section class="panel">
+  <div class="panel-head">
+    <h3>__Feature__</h3>
+    <div class="search-box">
+      <label class="sr-only" for="__feature__-q">Buscar __label__ por nombre</label>
+      <input id="__feature__-q" type="search" placeholder="Buscar __label__…" (input)="onSearch($event)" />
+    </div>
+    <button type="button" class="btn btn-primary" (click)="openNew()">+ Nueva __label__</button>
+  </div>
+
+  @if (errorText()) {
+    <app-notice tone="bad">{{ errorText() }}</app-notice>
+  }
+
+  @if (facade.loading()) {
+    <app-placeholder tone="loading" title="Cargando __feature__…" />
+  } @else if (filtered().length) {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col" class="cell-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.id) {
+            <tr>
+              <td>{{ item.name || '(sin nombre)' }}</td>
+              <td class="cell-end">
+                <button type="button" class="btn btn-ghost btn-sm" (click)="openEdit(item)">Editar</button>
+                <button type="button" class="btn btn-danger btn-sm" (click)="askDelete(item)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (facade.data()) {
+    <app-placeholder [title]="emptyTitle()" />
+  }
+</section>
+
+<app-__feature__-form-modal [error]="errorText()" (saved)="onSaved($event)" />
+
+<app-confirm-delete-modal
+  [itemName]="deleting()?.name || 'esta __label__'"
+  (confirmed)="onDeleteConfirmed()" />

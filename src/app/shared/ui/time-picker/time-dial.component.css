@@ -1,0 +1,68 @@
+.dial-head { display: flex; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-sm); }
+.dial-head .unit {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-fg-subtle);
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+.dial-head .unit.on { color: var(--color-primary); background: var(--color-primary-soft); }
+.dial-head .sep { font-size: var(--text-xl); font-weight: 700; color: var(--color-fg-subtle); }
+.dial-head .hint { margin-left: auto; font-size: var(--text-2xs); color: var(--color-fg-subtle); }
+
+/* Cuadrada por aspect-ratio y acotada por max-width: las marcas se posicionan en % de ESTA
+   caja, así que mientras siga siendo un cuadrado el reloj es redondo en cualquier ancho. */
+.dial-face {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+
+.dial-face .tick {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  /* Por encima de la aguja, que si no tapa el número que uno viene a leer. */
+  z-index: 1;
+}
+.dial-face .tick:hover { background: var(--color-primary-soft); }
+.dial-face .tick.on { background: var(--color-primary); color: var(--color-on-primary); font-weight: 700; }
+
+.dial-face .hand {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 2px;
+  background: var(--color-primary);
+  transform-origin: 50% 100%;
+}
+.dial-face .pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+/* Sin animación para quien la pidió apagada: la aguja salta en vez de barrer. */
+@media (prefers-reduced-motion: no-preference) {
+  .dial-face .hand { transition: transform var(--duration) var(--ease), height var(--duration) var(--ease); }
+}

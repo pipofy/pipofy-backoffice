@@ -1,0 +1,9 @@
+/* La caja (borde, padding, alto, foco) la da el primitivo `.field .control-btn` del DS
+   (styles/components.css). Acá queda sólo lo que es de ESTE control. */
+.time-trigger { gap: var(--space-sm); }
+.time-trigger .tt-val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.time-trigger .tt-val.empty { color: var(--color-fg-subtle); }
+.time-trigger svg { width: 18px; height: 18px; margin-left: auto; opacity: .7; }

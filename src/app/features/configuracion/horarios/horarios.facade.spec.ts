@@ -21,7 +21,7 @@ const ROW: Schedule = {
 
 const INPUT: ScheduleInput = {
   courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',
-  weekday: '1', startTime: '18:00', endTime: '19:30', capacity: '8', price: '5000',
+  weekdays: ['1'], startTime: '18:00', endTime: '19:30', capacity: '8', price: '5000',
   active: true, validFrom: '', validTo: '',
 };
 
@@ -252,5 +252,78 @@ describe('HorariosFacade', () => {
     await f.generate({ from: '2026-08-03', to: '2026-08-30' });
     f.clearGenerateError();
     expect(f.generateError()).toBeNull();
+  });
+});
+
+describe('HorariosFacade.create · éxito parcial y ventana de doble submit', () => {
+  it('con un día fallado publica los que SÍ entraron, y los cuenta', async () => {
+    // Regresión: con Promise.all + run(), el rechazo dejaba data() intacto y creados en 0.
+    // La tabla no mostraba los dos que habían entrado y reintentar los duplicaba: el backend
+    // no tiene @@unique (§3.11).
+    const creados: number[] = [];
+    let listas = 0;
+    const { facade } = setup({
+      create: async (d: ScheduleDraft) => {
+        if (d.weekday === 3) throw { kind: 'network' };
+        creados.push(d.weekday);
+      },
+      list: async () => { listas += 1; return [ROW]; },
+    });
+
+    const out = await facade.create({ ...INPUT, weekdays: ['1', '3', '5'] });
+
+    expect(creados.sort()).toEqual([1, 5]);
+    expect(out.creados).toBe(2);
+    expect(facade.error()).not.toBeNull();
+    // Releyó pese al fallo: los dos que entraron tienen que estar en la tabla.
+    expect(listas).toBe(1);
+    expect(facade.data()).toEqual([ROW]);
+  });
+
+  it('si NINGUNO entra no relee y no publica nada: reintentar es seguro', async () => {
+    let listas = 0;
+    const { facade } = setup({
+      create: async () => { throw { kind: 'network' }; },
+      list: async () => { listas += 1; return [ROW]; },
+    });
+
+    const out = await facade.create({ ...INPUT, weekdays: ['1', '3'] });
+
+    expect(out.creados).toBe(0);
+    expect(listas).toBe(0);
+    expect(facade.error()).not.toBeNull();
+  });
+
+  it('loading() sigue en true mientras se generan las clases', async () => {
+    // Regresión: run() lo apagaba al terminar los POST, pero el modal queda abierto durante
+    // toda la generación. Con el botón Guardar habilitado en esa ventana, un segundo click
+    // creaba el juego de horarios de nuevo.
+    let soltarGeneracion!: (r: { created: number; skipped: number }) => void;
+    let loadingDuranteGeneracion: boolean | null = null;
+    const { facade } = setup({
+      generateSessions: () =>
+        new Promise((resolve) => {
+          loadingDuranteGeneracion = facade.loading();
+          soltarGeneracion = resolve;
+        }),
+    });
+
+    const pendiente = facade.create(INPUT);
+    // Un microtask por cada await del camino hasta el generateSessions.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+
+    expect(loadingDuranteGeneracion).toBe(true);
+    expect(facade.loading()).toBe(true);
+    soltarGeneracion({ created: 4, skipped: 0 });
+    await pendiente;
+    expect(facade.loading()).toBe(false);
+  });
+
+  it('el alta sin días no toca el repo y deja el error del dominio', async () => {
+    const { facade, calls } = setup();
+    const out = await facade.create({ ...INPUT, weekdays: [] });
+    expect(out).toEqual({ creados: 0, generacion: null });
+    expect(calls).toEqual([]);
+    expect(facade.error()).not.toBeNull();
   });
 });

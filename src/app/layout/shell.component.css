@@ -24,12 +24,23 @@
 .brand{display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-lg) var(--space-md) var(--space-md)}
 .nav{padding:var(--space-xs) var(--space-sm);flex:1;overflow-y:auto}
 .nav .lbl{font-size:var(--text-2xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-sidebar-label);padding:var(--space-md) var(--space-sm) var(--space-xs);font-weight:600}
-.nav a{display:flex;align-items:center;gap:var(--space-sm);width:100%;padding:var(--space-sm);min-height:42px;border-radius:var(--radius-sm);color:var(--color-sidebar-idle);font-weight:500;font-size:var(--text-sm);text-decoration:none;transition:background var(--duration) var(--ease),color var(--duration) var(--ease)}
-.nav a svg{width:18px;height:18px;flex:0 0 auto;opacity:.85}
-.nav a:hover{background:var(--color-sidebar-hover);color:#fff}
+.nav a,.nav summary{display:flex;align-items:center;gap:var(--space-sm);width:100%;padding:var(--space-sm);min-height:42px;border-radius:var(--radius-sm);color:var(--color-sidebar-idle);font-weight:500;font-size:var(--text-sm);text-decoration:none;transition:background var(--duration) var(--ease),color var(--duration) var(--ease)}
+.nav a svg,.nav summary svg{width:18px;height:18px;flex:0 0 auto;opacity:.85}
+.nav a:hover,.nav summary:hover{background:var(--color-sidebar-hover);color:#fff}
 .nav a:active{background:rgba(255,255,255,.14)}
 .nav a.on{background:var(--color-surface);color:var(--color-fg);font-weight:600}
 .nav a.on svg{opacity:1;color:var(--color-primary)}
+/* Submenú desplegable (<details>). `summary` COMPARTE la caja de `.nav a` sumándose a sus
+   selectores de arriba —no copiándolos— para que el padre y los hermanos sin hijos no puedan
+   quedar desalineados; acá queda sólo lo que es suyo. El marker nativo se saca porque el
+   chevrón propio es el que rota. */
+.nav summary{cursor:pointer;list-style:none}
+.nav summary::-webkit-details-marker{display:none}
+.nav summary .chev{margin-left:auto;width:14px;height:14px;opacity:.6}
+.nav details[open] summary .chev{transform:rotate(180deg)}
+/* Los hijos ya heredan `.nav a`: acá sólo se los indenta bajo el icono del padre y se los
+   achica, que es lo que los lee como subordinados y no como destinos de primer nivel. */
+.nav .nav-sub a{padding-left:calc(var(--space-sm) + 18px + var(--space-sm));min-height:36px;font-size:var(--text-xs)}
 .nav .badge{margin-left:auto;background:var(--color-warning);color:#fff;font-size:var(--text-2xs);font-weight:700;min-width:20px;height:20px;border-radius:var(--radius-full);display:grid;place-items:center;padding:0 6px;font-family:var(--font-mono)}
 .side-foot{padding:var(--space-sm) var(--space-md);border-top:1px solid var(--color-sidebar-line);display:flex;align-items:center;gap:var(--space-sm)}
 /* min-width:0 + ellipsis: sin eso un nombre largo empuja el botón de salir fuera del panel
@@ -43,14 +54,20 @@
 .topbar{min-height:var(--header-h);background:color-mix(in srgb,var(--color-surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--color-border);display:flex;align-items:center;gap:var(--space-md);padding:0 var(--space-md);position:sticky;top:0;z-index:var(--z-header)}
 .topbar h1{font-size:var(--text-lg)}
 .topbar .crumb{font-size:var(--text-2xs);color:var(--color-fg-subtle);letter-spacing:var(--tracking-wide);text-transform:uppercase;font-weight:600;margin-bottom:1px}
-.topbar-signup{display:none}
 .clock{display:flex;align-items:center;gap:var(--space-sm);padding:0 var(--space-sm);height:42px;background:var(--color-primary-strong);color:#fff;border-radius:var(--radius-sm);flex:0 0 auto;white-space:nowrap;margin-left:auto}
 .clock .live{width:8px;height:8px;border-radius:50%;background:var(--color-live);animation:pulse 2s infinite}
 .clock .t{font-family:var(--font-mono);font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums}
 .clock .d{display:none;font-size:var(--text-2xs);color:#CBD5E1;text-transform:capitalize}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
-.scroll{flex:1;overflow-y:auto}
-.content{padding:var(--space-md) var(--space-md) 96px}
+/* El pie va SIEMPRE al fondo de la pantalla: .scroll es columna y .content crece, así que
+   con poco contenido el pie se apoya en el borde inferior en vez de flotar a media altura, y
+   con mucho scrollea con el resto. `flex:1 0 auto` y no `1`: sin el `0` de flex-shrink, una
+   pantalla larga se comprimiría para que entre el pie.
+   El padding-bottom de .scroll (y NO de .content) es el despeje de la tab-bar fija de móvil:
+   ahora el último elemento del scroll es el pie, así que la reserva tiene que quedar debajo
+   de él. A partir de 1024px la tab-bar no existe y se saca. */
+.scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:96px}
+.content{flex:1 0 auto;padding:var(--space-md) var(--space-md) var(--space-2xl)}
 
 /* ── NAV MÓVIL ── */
 .backdrop{display:block;position:fixed;inset:0;background:var(--color-scrim);z-index:var(--z-scrim);opacity:0;pointer-events:none;transition:opacity var(--duration) var(--ease)}
@@ -64,18 +81,17 @@
 /* ── BREAKPOINTS ── */
 @media(min-width:768px){
   .clock .d{display:block}
-  .content{padding:var(--space-lg) var(--space-lg) 96px}
+  .content{padding:var(--space-lg) var(--space-lg) var(--space-2xl)}
 }
 @media(min-width:1024px){
   .app{grid-template-columns:var(--sidebar-w) 1fr}
   .side{position:sticky;top:0;transform:none;width:auto;transition:none}
   .backdrop{display:none}
   .hamb{display:none}
-  .topbar-signup{display:inline-flex;align-items:center;gap:var(--space-xs);padding:8px 14px;min-height:38px;border-radius:var(--radius-sm);background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:600;text-decoration:none;white-space:nowrap}
-  .topbar-signup:hover{background:var(--color-primary-hover)}
   .mobile-tab{display:none}
   .topbar{padding:0 var(--space-lg)}
   .topbar h1{font-size:var(--text-xl)}
+  .scroll{padding-bottom:0}
   .content{padding:var(--space-lg) var(--space-lg) var(--space-3xl)}
 }
 @media(min-width:1440px){

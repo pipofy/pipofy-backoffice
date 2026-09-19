@@ -80,7 +80,13 @@
 .field .req{color:var(--color-destructive)}
 .field .optional{color:var(--color-fg-subtle);font-weight:400}
 .control{position:relative;display:flex;align-items:center}
-.field input,.field textarea,.field select{
+/* `.control-btn`: un <button> que ABRE algo (un popup, un selector) pero se lee como un campo.
+   Entra a las listas de abajo junto a input/textarea/select porque es la misma caja; sin esto
+   un botón con class="control" sale sin borde ni padding, que es como se ve un campo roto.
+   Consumidor: TimePickerFieldComponent. `text-align:left` porque un <button> centra por
+   defecto y un campo alinea a la izquierda. */
+.field .control-btn{text-align:left;cursor:pointer}
+.field input,.field textarea,.field select,.field .control-btn{
   width:100%;border:1px solid var(--color-border-strong);border-radius:var(--radius-sm);
   padding:12px 16px;min-height:48px;font-size:16px;font-family:inherit;
   color:var(--color-fg);background:var(--color-surface);
@@ -88,8 +94,8 @@
 }
 .field textarea{min-height:88px;resize:vertical;line-height:var(--leading-normal)}
 .field input::placeholder,.field textarea::placeholder{color:var(--color-fg-subtle)}
-.field input:hover,.field textarea:hover,.field select:hover{border-color:var(--color-fg-subtle)}
-.field input:focus,.field textarea:focus,.field select:focus{
+.field input:hover,.field textarea:hover,.field select:hover,.field .control-btn:hover{border-color:var(--color-fg-subtle)}
+.field input:focus,.field textarea:focus,.field select:focus,.field .control-btn:focus-visible{
   outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(37,99,235,.16);
 }
 /* estado success: campo válido tras blur */
@@ -98,7 +104,7 @@
 .field .ok-ic{position:absolute;right:14px;color:var(--color-accent-strong);display:none;pointer-events:none}
 .field.ok .ok-ic{display:block}
 /* estado error */
-.field.err input,.field.err textarea,.field.err select{border-color:var(--color-destructive);background:var(--color-destructive-soft)}
+.field.err input,.field.err textarea,.field.err select,.field.err .control-btn{border-color:var(--color-destructive);background:var(--color-destructive-soft)}
 .field.err input:focus,.field.err textarea:focus{box-shadow:0 0 0 3px rgba(220,38,38,.16)}
 .field .hint{font-size:var(--text-xs);color:var(--color-fg-subtle);margin-top:var(--space-xs)}
 /* Sin `display`: app-field-error decide su visibilidad con @if, y una regla global

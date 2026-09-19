@@ -72,6 +72,17 @@ const el = (f: { nativeElement: HTMLElement }, sel: string) =>
 const opciones = (f: { nativeElement: HTMLElement }, sel: string) =>
   Array.from(f.nativeElement.querySelectorAll<HTMLOptionElement>(`${sel} option`));
 
+/** Los chips de día. `.on` es el marcado, que es lo que reemplazó al value del select. */
+const chips = (f: { nativeElement: HTMLElement }) =>
+  Array.from(f.nativeElement.querySelectorAll<HTMLButtonElement>('[data-test="dia"]'));
+const diasMarcados = (f: { nativeElement: HTMLElement }) =>
+  chips(f).filter((c) => c.classList.contains('on')).map((c) => c.textContent?.trim());
+const chip = (f: { nativeElement: HTMLElement }, label: string) =>
+  chips(f).find((c) => c.textContent?.trim() === label)!;
+/** El trigger del reloj ya no es un <input>: lo elegido se lee del texto del botón. */
+const hora = (f: { nativeElement: HTMLElement }, controlId: string) =>
+  f.nativeElement.querySelector<HTMLElement>(`#${controlId} .tt-val`)!.textContent?.trim();
+
 describe('HorarioFormModalComponent', () => {
   it('precarga los once campos en edición', () => {
     const f = setup(HORARIO);
@@ -79,9 +90,9 @@ describe('HorarioFormModalComponent', () => {
     expect(el(f, '[data-test="profesor"]').value).toBe('20');
     expect(el(f, '[data-test="grupo"]').value).toBe('30');
     expect(el(f, '[data-test="tipo"]').value).toBe('40');
-    expect(el(f, '[data-test="dia"]').value).toBe('1');
-    expect(el(f, '#horario-inicio').value).toBe('18:00');
-    expect(el(f, '#horario-fin').value).toBe('19:30');
+    expect(diasMarcados(f)).toEqual(['Lunes']);
+    expect(hora(f, 'horario-inicio')).toBe('18:00');
+    expect(hora(f, 'horario-fin')).toBe('19:30');
     expect(el(f, '#horario-cupo').value).toBe('8');
     expect(el(f, '#horario-precio').value).toBe('12000');
     expect(el(f, '#horario-desde').value).toBe('2026-08-01');
@@ -95,16 +106,46 @@ describe('HorarioFormModalComponent', () => {
   });
 
   it('en el ALTA el día arranca en LUNES', () => {
-    expect(el(setup(null), '[data-test="dia"]').value).toBe('1');
+    expect(diasMarcados(setup(null))).toEqual(['Lunes']);
+  });
+
+  it('en el ALTA los días son MÚLTIPLES: se marcan y se desmarcan', () => {
+    const f = setup(null);
+    chip(f, 'Miércoles').click();
+    chip(f, 'Viernes').click();
+    f.detectChanges();
+    expect(diasMarcados(f)).toEqual(['Lunes', 'Miércoles', 'Viernes']);
+    chip(f, 'Lunes').click();
+    f.detectChanges();
+    expect(diasMarcados(f)).toEqual(['Miércoles', 'Viernes']);
+  });
+
+  it('los días marcados viajan TODOS en el emit', () => {
+    const f = setup(null);
+    chip(f, 'Jueves').click();
+    f.detectChanges();
+    let emitido: { weekdays: readonly string[] } | undefined;
+    f.componentInstance.saved.subscribe((v) => { emitido = v; });
+    (f.nativeElement.querySelector('[data-test="save"]') as HTMLButtonElement).click();
+    expect(emitido?.weekdays).toEqual(['1', '4']);
+  });
+
+  it('en EDICIÓN los chips son excluyentes: marcar otro día REEMPLAZA', () => {
+    // Una fila de la tabla es UNA plantilla con UN weekday: dejar marcar dos ofrecería algo
+    // que el PATCH no puede hacer.
+    const f = setup(HORARIO);
+    chip(f, 'Sábado').click();
+    f.detectChanges();
+    expect(diasMarcados(f)).toEqual(['Sábado']);
   });
 
   it('en el ALTA activo arranca en true', () => {
     expect(el(setup(null), '#horario-activo').checked).toBe(true);
   });
 
-  it('NINGUNO de los cinco selects ofrece opción vacía: los cinco son obligatorios', () => {
+  it('NINGUNO de los cuatro selects ofrece opción vacía: los cuatro son obligatorios', () => {
     const f = setup(HORARIO);
-    for (const sel of ['cancha', 'profesor', 'grupo', 'tipo', 'dia']) {
+    for (const sel of ['cancha', 'profesor', 'grupo', 'tipo']) {
       expect(opciones(f, `[data-test="${sel}"]`).some((o) => o.value === '' && !o.disabled)).toBe(false);
     }
   });
@@ -132,21 +173,32 @@ describe('HorarioFormModalComponent', () => {
     expect(el(f, '[data-test="cancha"]').value).toBe('10');
   });
 
-  it('EDITAR un horario con weekday null NO muestra Lunes', () => {
+  it('EDITAR un horario con weekday null NO marca ningún día', () => {
     // La instancia excepcional del slice. §6.4 dice que estas filas existen y que la tabla
-    // las muestra, o sea que tienen botón Editar. WEEKDAY_OPTIONS no tiene ninguna opción
-    // que matchee null: sin la opción huérfana, el navegador cae en selectedIndex 0 y la
-    // pantalla dice Lunes sobre una fila que no tiene día.
-    const f = setup({ ...HORARIO, weekday: null });
-    const sel = el(f, '[data-test="dia"]');
-    expect(sel.value).toBe('');
-    expect(sel.options[sel.selectedIndex].textContent?.trim()).toBe('— sin día —');
+    // las muestra, o sea que tienen botón Editar. Con el select viejo el riesgo era caer en
+    // selectedIndex 0 y decir "Lunes" sobre una fila sin día; con chips el equivalente es
+    // que NINGUNO quede marcado, y no que se marque el primero.
+    expect(diasMarcados(setup({ ...HORARIO, weekday: null }))).toEqual([]);
   });
 
-  it('editar un horario sin horas deja los campos de hora vacíos', () => {
+  it('editar un horario sin horas deja los relojes vacíos', () => {
     const f = setup({ ...HORARIO, startTime: null, endTime: null });
-    expect(el(f, '#horario-inicio').value).toBe('');
-    expect(el(f, '#horario-fin').value).toBe('');
+    expect(hora(f, 'horario-inicio')).toBe('--:--');
+    expect(hora(f, 'horario-fin')).toBe('--:--');
+  });
+
+  it('reabrir el modal cierra el popup del reloj que había quedado abierto', () => {
+    // Ninguno de los dos <dialog> se destruye entre aperturas, y el reloj guarda su propio
+    // abierto/cerrado: sin el close() de open(), queda arriba mostrando la hora del horario
+    // ANTERIOR.
+    const f = setup(HORARIO);
+    const root: HTMLElement = f.nativeElement;
+    root.querySelector<HTMLButtonElement>('#horario-inicio')!.click();
+    f.detectChanges();
+    expect(root.querySelector('.dial-face')).toBeTruthy();
+    f.componentInstance.open(null);
+    f.detectChanges();
+    expect(root.querySelector('.dial-face')).toBeNull();
   });
 
   it('reabrir en alta después de tipear deja el formulario limpio', () => {
@@ -182,7 +234,7 @@ describe('HorarioFormModalComponent', () => {
     (f.nativeElement.querySelector('[data-test="save"]') as HTMLButtonElement).click();
     expect(emitido).toEqual({
       courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
-      weekday: '1', startTime: '18:00', endTime: '19:30',
+      weekdays: ['1'], startTime: '18:00', endTime: '19:30',
       capacity: '8', price: '12000', active: true,
       validFrom: '2026-08-01', validTo: '',
     });

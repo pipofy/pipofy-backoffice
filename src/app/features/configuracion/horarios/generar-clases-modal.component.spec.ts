@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { GenerarClasesModalComponent } from './generar-clases-modal.component';
+import { sessionRangeForSchedule } from '@domain/entities/schedule';
+import { localDateKey } from '@domain/local-date';
 
 function setup(generables: number, error = ''): ComponentFixture<GenerarClasesModalComponent> {
   // reset explícito: mismo patrón que horario-form-modal.component.spec.ts, necesario porque
@@ -36,13 +38,19 @@ const el = (f: { nativeElement: HTMLElement }, sel: string) =>
   f.nativeElement.querySelector(sel) as HTMLInputElement;
 
 describe('GenerarClasesModalComponent', () => {
-  it('arranca con hoy y hoy + 28 días', () => {
-    // Cuatro semanas: el horizonte con el que trabaja un club, y obliga a ampliar a
-    // propósito si se quiere más.
+  it('arranca con las cuatro semanas que define el dominio, y desde HOY en local', () => {
+    // El horizonte (§4) lo define sessionRangeForSchedule, el mismo que usa el alta al
+    // generar: acá se compara contra él y no contra un 28 escrito a mano, que es lo que los
+    // tenía peleados por un día. `localDateKey` y no toISOString: después de las 21 local
+    // el UTC ya es mañana.
     const f = setup(8);
-    const desde = new Date(el(f, '[data-test="desde"]').value + 'T00:00:00Z');
-    const hasta = new Date(el(f, '[data-test="hasta"]').value + 'T00:00:00Z');
-    expect((hasta.getTime() - desde.getTime()) / 86_400_000).toBe(28);
+    const esperado = sessionRangeForSchedule({ validFrom: null, validTo: null }, localDateKey(new Date()))!;
+    expect(el(f, '[data-test="desde"]').value).toBe(esperado.from);
+    expect(el(f, '[data-test="hasta"]').value).toBe(esperado.to);
+    const desde = new Date(esperado.from + 'T00:00:00Z');
+    const hasta = new Date(esperado.to + 'T00:00:00Z');
+    // 28 días CONTANDO el de hoy.
+    expect((hasta.getTime() - desde.getTime()) / 86_400_000).toBe(27);
   });
 
   it('dice HASTA cuántos horarios, no un número exacto', () => {

@@ -12,8 +12,6 @@ import { HttpPlansRepository } from '@data/repositories/http-plans.repository';
 import { HttpCoachesRepository } from '@data/repositories/http-coaches.repository';
 import { HttpSchedulesRepository } from '@data/repositories/http-schedules.repository';
 
-// A diferencia de dashboard y grupos, acá no hay impl in-memory: la API existe y responde,
-// así que el binding va derecho a la HTTP.
 export const CONFIGURACION_PROVIDERS: Provider[] = [
   { provide: CourtsRepository, useClass: HttpCourtsRepository },
   { provide: CategoriesRepository, useClass: HttpCategoriesRepository },

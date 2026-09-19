@@ -8,6 +8,8 @@ import {
   Schedule,
   ScheduleInput,
   createScheduleDraft,
+  createScheduleDrafts,
+  sessionRangeForSchedule,
   SessionGenerationInput,
   SessionGenerationResult,
   createSessionGenerationDraft,
@@ -19,6 +21,18 @@ import { DomainError } from '@domain/errors';
 import { toDomainError } from '@data/http/to-domain-error';
 import { CatalogItem } from '@data/dto/catalogs.dto';
 import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { localDateKey } from '@domain/local-date';
+
+/**
+ * Lo que deja un alta: cuántos horarios ENTRARON —puede ser menos que los días marcados, ver
+ * create()— y cómo salió la generación de clases que viene pegada. `generacion: null` puede
+ * ser tres cosas distintas: no había nada que generar, la generación falló, o el alta falló
+ * antes de llegar. Las separan `generateError()` y `error()`.
+ */
+export interface CreateScheduleOutcome {
+  readonly creados: number;
+  readonly generacion: SessionGenerationResult | null;
+}
 
 /**
  * ponytail: create/update/remove reusan `loading`, así que la tabla muestra su spinner
@@ -123,18 +137,76 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
   }
 
   /**
-   * createScheduleDraft tira de forma síncrona ante cualquier invariante (FK vacío, día sin
-   * elegir, horas inválidas); va DENTRO de la promesa para que run()/toDomainError
-   * normalicen tanto la invariante de dominio como el fallo del repo. Mismo patrón que
-   * CanchasFacade.create().
+   * El alta: crea UN horario por día marcado y, con los horarios ya en la base, genera sus
+   * clases. Devuelve cuántos horarios ENTRARON —no cuántos se pidieron— y cómo salió la
+   * generación.
+   *
+   * NO usa run(), y son tres motivos distintos, cada uno con su bug si se "simplifica":
+   *
+   *  1. ÉXITO PARCIAL. Son N POST y el backend no tiene @@unique (§3.11): que entren tres de
+   *     cinco es un resultado posible. run() publica el fallo SIN tocar data(), así que la
+   *     tabla no mostraría los tres que sí entraron y el reintento los duplicaría. Acá se
+   *     relee siempre que haya entrado alguno, y el conteo real viaja al llamador para que
+   *     pueda decir "3 de 5" en vez de "no se guardó nada".
+   *  2. EL BOTÓN GUARDAR. run() apaga loading() al terminar los POST, pero el modal sigue
+   *     abierto durante toda la generación que viene después: un segundo click en esa ventana
+   *     crea el juego de horarios otra vez. loading() se apaga recién en el finally de abajo,
+   *     cuando ya no queda nada en vuelo.
+   *  3. LA GENERACIÓN NO ES EL GUARDADO. Los horarios ya existen: si falla el generate, decir
+   *     "no se pudo guardar" es mentira y el reintento duplica. Su error va a generateError(),
+   *     el mismo signal que usa el botón "Generar clases".
+   *
+   * Los N POST salen en paralelo con allSettled y no con all: `all` rechaza en el primero y
+   * deja a los otros en vuelo sin saber cómo terminaron, que es justo lo que hay que contar.
+   * La relectura y la generación también van en paralelo: ver abajo.
    */
-  create(input: ScheduleInput): Promise<void> {
-    return this.run(
-      Promise.resolve()
-        .then(() => this.repo.create(createScheduleDraft(input)))
-        .then(() => this.repo.list()),
-      toDomainError,
-    );
+  async create(input: ScheduleInput): Promise<CreateScheduleOutcome> {
+    this.setLoading(true);
+    this.setError(null);
+    try {
+      // createScheduleDrafts tira SÍNCRONO ante cualquier invariante (FK vacío, ningún día,
+      // horas inválidas). Adentro del try para que salga normalizado igual que un fallo de red.
+      const drafts = createScheduleDrafts(input);
+      const results = await Promise.allSettled(drafts.map((d) => this.repo.create(d)));
+      const creados = results.filter((r) => r.status === 'fulfilled').length;
+      const fallo = results.find((r) => r.status === 'rejected');
+
+      // La generación ARRANCA ACÁ, antes de esperar la relectura: `GET /schedules` y
+      // `POST /schedules/generate-sessions` no dependen entre sí —a la generación le alcanza
+      // con que los POST hayan aterrizado— y la generación es la lenta (recorre todas las
+      // plantillas del club). Encadenarlas le sumaba un round-trip entero a cada alta, con el
+      // modal bloqueado. El rango sale de la VIGENCIA del horario recién creado, acotado por
+      // el dominio; null = la vigencia ya terminó y no hay un solo día que generar.
+      const rango = fallo
+        ? null
+        : sessionRangeForSchedule(
+            { validFrom: input.validFrom || null, validTo: input.validTo || null },
+            localDateKey(new Date()),
+          );
+      const generacion = rango === null ? Promise.resolve(null) : this.generate(rango);
+
+      // La relectura va ANTES de publicar el error: si entraron tres de cinco, la tabla tiene
+      // que mostrarlos. Su propio fallo se traga — la lista vieja es mejor que ninguna, y el
+      // error que importa es el del guardado.
+      if (creados > 0) {
+        try {
+          this.setData(await this.repo.list());
+        } catch {
+          /* la tabla se queda como estaba */
+        }
+      }
+
+      if (fallo) {
+        this.setError(toDomainError(fallo.reason));
+        return { creados, generacion: null };
+      }
+      return { creados, generacion: await generacion };
+    } catch (e) {
+      this.setError(toDomainError(e));
+      return { creados: 0, generacion: null };
+    } finally {
+      this.setLoading(false);
+    }
   }
 
   update(id: string, input: ScheduleInput): Promise<void> {
@@ -172,6 +244,10 @@ export class HorariosFacade extends SignalStore<Schedule[], DomainError> {
    * no existe cuando el test lo invoca, y la promesa queda colgada para siempre). §8.4 lo
    * mostraba con Promise.resolve().then() por copiar el molde de run(); acá no aplica.
    */
+  // OJO CON EL ALCANCE: `POST /schedules/generate-sessions` toma sólo {from,to} y recorre
+  // TODAS las plantillas activas del club (schedules.service.ts:169). No existe filtro por
+  // plantilla. Por eso las cifras que devuelve son DEL CLUB y no del horario recién creado: el
+  // copy que las muestre no puede atribuírselas a una fila.
   async generate(input: SessionGenerationInput): Promise<SessionGenerationResult | null> {
     this._generating.set(true);
     this._generateError.set(null);

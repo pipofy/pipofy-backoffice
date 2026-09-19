@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
-import { SessionGenerationInput } from '@domain/entities/schedule';
+import { SessionGenerationInput, sessionRangeForSchedule } from '@domain/entities/schedule';
+import { localDateKey } from '@domain/local-date';
 
 /**
  * El guardarraíl de "Generar clases" (§4): crea ClassSession que NO se pueden borrar —no
@@ -73,17 +74,18 @@ export class GenerarClasesModalComponent {
   protected value(e: Event): string { return (e.target as HTMLInputElement).value; }
 
   /**
-   * Siembra el rango en CADA apertura, con aritmética UTC para que el huso no corra el día.
-   * Cuatro semanas es el horizonte con el que trabaja un club (§4), y obliga a la persona a
-   * ampliar a propósito si quiere más.
+   * Siembra el rango en CADA apertura, y lo pide al DOMINIO en vez de calcularlo acá: el
+   * horizonte de cuatro semanas (§4) lo define `sessionRangeForSchedule`, que es el mismo que
+   * usa el alta al generar. Calcularlo por separado los tenía peleados por un día —y esta
+   * copia usaba `toISOString()`, que después de las 21 local devuelve el día siguiente, que es
+   * exactamente el bug que `@domain/local-date` existe para evitar.
+   *
+   * Sin vigencia nunca devuelve null (el `!`): sólo lo hace cuando la vigencia ya terminó.
    */
   open(): void {
-    const hoy = new Date();
-    const from = hoy.toISOString().slice(0, 10);
-    const to = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate() + 28))
-      .toISOString().slice(0, 10);
-    this.from.set(from);
-    this.to.set(to);
+    const rango = sessionRangeForSchedule({ validFrom: null, validTo: null }, localDateKey(new Date()))!;
+    this.from.set(rango.from);
+    this.to.set(rango.to);
     this.modal().open();
   }
 

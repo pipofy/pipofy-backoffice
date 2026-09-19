@@ -1,5 +1,6 @@
 import { InvalidScheduleError } from '../errors';
 import { optionalInt } from '../optional-int';
+import { shiftDateKey } from '../local-date';
 
 /**
  * Una plantilla de horario: "los lunes de 18:00 a 19:30, en la cancha 1, el grupo
@@ -45,13 +46,18 @@ export interface ScheduleDraft {
   readonly validTo: string | null;
 }
 
-/** Lo que sale de los controles: todo string salvo el checkbox. */
+/** Lo que sale de los controles: todo string salvo el checkbox y los días. */
 export interface ScheduleInput {
   readonly courtId: string;
   readonly coachId: string;
   readonly categoryGroupId: string;
   readonly sessionTypeId: string;
-  readonly weekday: string;
+  /**
+   * Uno o más días, como los emiten los chips. La plantilla del backend tiene UN weekday
+   * (`ScheduleTemplate.weekday`), así que N días son N plantillas: por eso el plural vive acá
+   * y no en ScheduleDraft, que sigue siendo lo que viaja en un POST.
+   */
+  readonly weekdays: readonly string[];
   readonly startTime: string;
   readonly endTime: string;
   readonly capacity: string;
@@ -66,7 +72,43 @@ const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 /** 'YYYY-MM-DD'. <input type="date"> ya devuelve este formato o ''. */
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * El valor de un chip de día. El vacío se chequea ANTES de convertir, y no es una
+ * formalidad: Number('') es 0, que es un weekday VÁLIDO (domingo, §3.4) — sin esto, un chip
+ * con value roto se guardaría como domingo en silencio.
+ */
+function parseWeekday(raw: string): number {
+  if (raw.trim() === '') throw new InvalidScheduleError('Elegí al menos un día de la semana.');
+  const weekday = Number(raw);
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+    throw new InvalidScheduleError('Elegí al menos un día de la semana.');
+  }
+  return weekday;
+}
+
+/**
+ * UN draft, el de la edición: una fila de la tabla es UNA plantilla, así que cambiarle el día
+ * es cambiar un día. Con más de uno tira en vez de guardar el primero y perder los otros en
+ * silencio.
+ */
 export function createScheduleDraft(input: ScheduleInput): ScheduleDraft {
+  const drafts = createScheduleDrafts(input);
+  if (drafts.length > 1) {
+    throw new InvalidScheduleError('Se edita un día a la vez: elegí uno solo.');
+  }
+  return drafts[0];
+}
+
+/**
+ * UN draft por día elegido: todo lo demás se valida UNA vez y se comparte. Es el alta, y es
+ * el PRIMITIVO — `createScheduleDraft` es este mismo con un día. Al revés (el singular como
+ * primitivo y el plural llamándolo con un día recortado) el plural tenía que doctorear su
+ * argumento para esquivar la invariante del singular, y `weekdays[0]` se parseaba dos veces.
+ *
+ * Los días se deduplican porque dos chips iguales serían dos plantillas idénticas, y el
+ * backend no tiene @@unique que las frene (§3.11).
+ */
+export function createScheduleDrafts(input: ScheduleInput): ScheduleDraft[] {
   // Los cuatro FK son @IsString() SIN @IsOptional(), y también en el PATCH porque
   // UpdateScheduleDto reexporta CreateScheduleDto. El backend responde 400 sin decir cuál
   // falta: validar acá es lo que permite nombrarlo.
@@ -75,14 +117,10 @@ export function createScheduleDraft(input: ScheduleInput): ScheduleDraft {
   if (input.categoryGroupId === '') throw new InvalidScheduleError('Elegí un grupo de categoría.');
   if (input.sessionTypeId === '') throw new InvalidScheduleError('Elegí un tipo de clase.');
 
-  // El vacío se chequea ANTES de convertir, y no es una formalidad: Number('') es 0, que es
-  // un weekday VÁLIDO (domingo, §3.4). Sin esta línea, un select sin elegir se guardaría
-  // como un domingo en silencio.
-  if (input.weekday.trim() === '') throw new InvalidScheduleError('Elegí un día de la semana.');
-  const weekday = Number(input.weekday);
-  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
-    throw new InvalidScheduleError('Elegí un día de la semana.');
+  if (input.weekdays.length === 0) {
+    throw new InvalidScheduleError('Elegí al menos un día de la semana.');
   }
+  const weekdays = [...new Set(input.weekdays.map(parseWeekday))];
 
   if (!HHMM.test(input.startTime)) throw new InvalidScheduleError('Poné una hora de inicio válida.');
   if (!HHMM.test(input.endTime)) throw new InvalidScheduleError('Poné una hora de fin válida.');
@@ -112,12 +150,11 @@ export function createScheduleDraft(input: ScheduleInput): ScheduleDraft {
     throw new InvalidScheduleError('La vigencia "hasta" no puede ser anterior a "desde".');
   }
 
-  return {
+  const base = {
     courtId: input.courtId,
     coachId: input.coachId,
     categoryGroupId: input.categoryGroupId,
     sessionTypeId: input.sessionTypeId,
-    weekday,
     startTime: input.startTime,
     endTime: input.endTime,
     // OJO: optionalInt tira InvalidNumberError, NO InvalidScheduleError. Es el patrón que
@@ -131,6 +168,7 @@ export function createScheduleDraft(input: ScheduleInput): ScheduleDraft {
     validFrom,
     validTo,
   };
+  return weekdays.map((weekday) => ({ ...base, weekday }));
 }
 
 export interface SessionGenerationInput {
@@ -202,4 +240,38 @@ export function createSessionGenerationDraft(input: SessionGenerationInput): Ses
     );
   }
   return { from: input.from, to: input.to };
+}
+
+/**
+ * Cuatro semanas: el horizonte con el que trabaja un club (§4), y el default del modal.
+ * INCLUSIVE, como MAX_GENERATION_DAYS — por eso los dos usos restan 1 al desplazar.
+ */
+const VENTANA_SIN_VIGENCIA_DIAS = 28;
+
+/**
+ * El rango con el que se generan las clases al guardar un horario: SU VIGENCIA, acotada a lo
+ * que tiene sentido crear. Tres recortes, cada uno por un motivo distinto:
+ *
+ *  1. Arranca HOY aunque la vigencia empiece antes. Generar clases pasadas llena el calendario
+ *     de historia que después nadie puede sacar: no existe DELETE de ClassSession (§3.11).
+ *  2. Sin "vigente hasta", cuatro semanas.
+ *  3. Nunca más de MAX_GENERATION_DAYS. Ese es el tope que valida createSessionGenerationDraft,
+ *     así que una vigencia de un año no generaría "un año de clases": sería rechazada entera y
+ *     no se generaría NADA. Recortar es lo único que deja el guardado útil.
+ *
+ * `null` cuando la vigencia ya terminó: no hay ni un día que generar, y pedirlo igual sería
+ * una request para que el backend devuelva 0 y 0.
+ */
+export function sessionRangeForSchedule(
+  vigencia: { readonly validFrom: string | null; readonly validTo: string | null },
+  hoy: string,
+): SessionGenerationInput | null {
+  const from = vigencia.validFrom !== null && vigencia.validFrom > hoy ? vigencia.validFrom : hoy;
+  if (vigencia.validTo !== null && vigencia.validTo < from) return null;
+  // -1 en los dos porque cuentan días INCLUSIVE: from + 59 son 60 días contando el from.
+  const tope = shiftDateKey(from, MAX_GENERATION_DAYS - 1);
+  const to = vigencia.validTo ?? shiftDateKey(from, VENTANA_SIN_VIGENCIA_DIAS - 1);
+  // El recorte se aplica a las DOS ramas: sobre la ventana de 28 días es un no-op demostrable
+  // (28 < 60), y así no hay que leer un ternario para ver cuál de las dos queda sin acotar.
+  return { from, to: to > tope ? tope : to };
 }

@@ -127,9 +127,12 @@ export class HorariosPageComponent {
     this.toast.show('ok', 'Clases generadas', `${r.created} creadas · ${r.skipped} ya existían.`);
   }
 
-  /** clearError() antes de abrir: sin esto un error viejo del load() aparecería en un alta. */
+  /** clearError() antes de abrir: sin esto un error viejo del load() aparecería en un alta.
+   *  Y clearGenerateError() porque el alta AHORA genera clases: un fallo viejo del botón
+   *  "Generar clases" haría que un alta impecable se anuncie como "sin clases". */
   protected openNew(): void {
     this.facade.clearError();
+    this.facade.clearGenerateError();
     this.editing.set(null);
     this.form().open(null);
   }
@@ -157,14 +160,58 @@ export class HorariosPageComponent {
     const editing = this.editing();
     if (editing) {
       await this.facade.update(editing.id, input);
-    } else {
-      await this.facade.create(input);
+      // El modal queda ABIERTO si falló: es donde el usuario puede corregir.
+      if (this.facade.error()) return;
+      this.form().close();
+      this.toast.show('ok', 'Horario guardado', 'Se actualizaron los datos.');
+      return;
     }
 
-    // El modal queda ABIERTO si falló: es donde el usuario puede corregir.
-    if (this.facade.error()) return;
+    // El alta crea un horario por día elegido Y le genera las clases de su vigencia.
+    const { creados, generacion } = await this.facade.create(input);
+    const horarios = `${creados} horario${creados === 1 ? '' : 's'}`;
+
+    // El ÚNICO caso en que el modal queda abierto: no entró nada, así que no hay nada hecho,
+    // el banner está donde se corrige y reintentar es seguro. En todos los demás algo quedó
+    // guardado y el modal se va — con alguno creado, reintentar DUPLICA lo que ya entró (el
+    // backend no tiene @@unique).
+    if (this.facade.error() && creados === 0) return;
     this.form().close();
-    this.toast.show('ok', 'Horario guardado', editing ? 'Se actualizaron los datos.' : 'Se creó el horario.');
+
+    if (this.facade.error()) {
+      // El toast dice exactamente cuántos quedaron: lo que falta se carga de nuevo eligiendo
+      // sólo los días que no entraron.
+      this.toast.show(
+        'info',
+        'Se guardó a medias',
+        `Entraron ${horarios} de ${input.weekdays.length}. Cargá de nuevo SÓLO los días que falten: repetir los que entraron los duplica.`,
+      );
+      return;
+    }
+
+    if (generacion !== null) {
+      // Las cifras son DEL CLUB, no de este horario: generate-sessions recorre todas las
+      // plantillas activas (no acepta filtro por plantilla). Atribuírselas a la fila recién
+      // creada sería inventar. Ver HorariosFacade.generate().
+      this.toast.show(
+        'ok',
+        'Horario guardado',
+        `${horarios} · ${generacion.created} clase(s) nueva(s) en el club, ${generacion.skipped} ya existían.`,
+      );
+      return;
+    }
+    // Los horarios YA están creados: el desenlace de las clases es un aviso, nunca un error
+    // de guardado. Las dos ramas dicen cosas distintas — una falló, la otra no tenía nada
+    // que hacer— y confundirlas mandaría a reintentar algo que ya salió bien.
+    if (this.facade.generateError()) {
+      this.toast.show(
+        'info',
+        'Horario guardado, clases pendientes',
+        `${horarios}. No pudimos generar las clases: ${this.generarErrorText()} Probá con "Generar clases".`,
+      );
+      return;
+    }
+    this.toast.show('ok', 'Horario guardado', `${horarios}. Sin clases que generar: la vigencia ya terminó.`);
   }
 
   protected async onDeleteConfirmed(): Promise<void> {

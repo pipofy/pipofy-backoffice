@@ -13,19 +13,46 @@
       @for (group of groups; track group) {
         <div class="lbl">{{ group }}</div>
         @for (item of itemsIn(group); track item.path) {
-          <a
-            [routerLink]="item.path"
-            routerLinkActive="on"
-            #rla="routerLinkActive"
-            [attr.aria-current]="rla.isActive ? 'page' : null"
-            (click)="closeSide()"
-          >
-            <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
-            {{ item.label }}
-            @if (badgeCount(item); as n) {
-              <span class="badge">{{ n }}</span>
-            }
-          </a>
+          @if (item.children; as children) {
+            <!-- <details> nativo: el desplegable trae accesibilidad de teclado y aria-expanded
+                 puestos por el navegador, sin un signal de abierto/cerrado ni handlers.
+                 Quién está adentro de la sección lo dice routerLinkActive, que mira los
+                 routerLink DESCENDIENTES —los hijos de abajo— y ya maneja params y matrices;
+                 un `url().startsWith(path)` a mano era una copia peor de eso.
+                 [open] es la SIEMBRA, no un candado: un deep-link a /configuracion/planes
+                 entra con el submenú abierto, y el usuario lo puede cerrar a mano porque
+                 Angular no lo vuelve a escribir hasta que el valor cambie. -->
+            <details class="nav-sub" routerLinkActive #sec="routerLinkActive" [open]="sec.isActive">
+              <summary>
+                <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+                {{ item.label }}
+                <svg class="chev" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </summary>
+              @for (child of children; track child.path) {
+                <a
+                  [routerLink]="child.path"
+                  routerLinkActive="on"
+                  #crla="routerLinkActive"
+                  [attr.aria-current]="crla.isActive ? 'page' : null"
+                  (click)="closeSide()"
+                >{{ child.label }}</a>
+              }
+            </details>
+          } @else {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="on"
+              #rla="routerLinkActive"
+              [attr.aria-current]="rla.isActive ? 'page' : null"
+              (click)="closeSide()"
+            >
+              <ng-container [ngTemplateOutlet]="icon" [ngTemplateOutletContext]="{ $implicit: item.icon }" />
+              {{ item.label }}
+              @if (badgeCount(item); as n) {
+                <span class="badge">{{ n }}</span>
+              }
+            </a>
+          }
         }
       }
     </nav>
@@ -54,10 +81,6 @@
         <div class="crumb">{{ crumb() }}</div>
         <h1>{{ title() }}</h1>
       </div>
-      <a class="topbar-signup" routerLink="/onboarding">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        Crear cuenta
-      </a>
       <div class="clock">
         <span class="live" aria-hidden="true"></span>
         <div class="t">{{ clock().t }}</div>

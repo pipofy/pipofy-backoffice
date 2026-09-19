@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild, viewChildren } from '@angular/core';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
+import { TimePickerFieldComponent } from '@shared/ui/time-picker/time-picker-field.component';
 import { Schedule, ScheduleInput } from '@domain/entities/schedule';
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
@@ -18,7 +19,7 @@ import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
 @Component({
   selector: 'app-horario-form-modal',
   standalone: true,
-  imports: [ModalComponent, NoticeComponent],
+  imports: [ModalComponent, NoticeComponent, TimePickerFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal #modal [title]="schedule() ? 'Editar horario' : 'Nuevo horario'" icon="primary">
@@ -87,36 +88,36 @@ import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
           </select>
         </div>
 
-        <div class="field field-dense">
-          <label for="horario-dia">Día</label>
-          <select id="horario-dia" class="control" data-test="dia"
-                  [value]="weekday()" (change)="weekday.set(value($event))">
-            <!-- La opción huérfana acá NO es por un lookup que puede fallar —la lista de días
-                 es estática— sino por las filas con weekday null, que §6.4 dice que existen y
-                 que la tabla muestra en vez de esconder. Sin ella el navegador cae en la
-                 primera opción y la pantalla dice "Lunes" sobre una fila sin día; si además
-                 se guardara, quedaría un lunes que nadie eligió.
-                 Por lo mismo NO necesita el effect() que sí llevan los otros cuatro: no hay
-                 nada asíncrono que pueda llegar tarde. -->
-            @if (weekday() === '') {
-              <option value="" [selected]="true" disabled>— sin día —</option>
-            }
+        <!-- fieldset/legend y no label+div: son SIETE controles que forman UN campo, y es la
+             única agrupación que los lectores de pantalla anuncian como tal. -->
+        <fieldset class="field field-dense dias">
+          <legend>{{ schedule() ? 'Día' : 'Días' }}</legend>
+          <div class="dia-chips" role="group">
             @for (opt of weekdayOptions; track opt.value) {
-              <option [value]="opt.value" [selected]="opt.value === weekday()">{{ opt.label }}</option>
+              <button type="button" class="fchip" data-test="dia"
+                      [class.on]="hasDay(opt.value)" [attr.aria-pressed]="hasDay(opt.value)"
+                      (click)="toggleDay(opt.value)">{{ opt.label }}</button>
             }
-          </select>
-        </div>
+          </div>
+          @if (schedule()) {
+            <!-- En edición los chips son EXCLUYENTES: la fila que se está editando es UNA
+                 plantilla del backend (un weekday), así que marcar otro día reemplaza. -->
+            <p class="hint">Se edita un día a la vez.</p>
+          } @else {
+            <p class="hint">Se crea un horario por cada día elegido.</p>
+          }
+        </fieldset>
 
         <div class="field-pair">
           <div class="field field-dense">
             <label for="horario-inicio">Hora de inicio</label>
-            <input id="horario-inicio" class="control" type="time"
-                   [value]="startTime()" (input)="startTime.set(value($event))" />
+            <app-time-picker-field controlId="horario-inicio" label="Hora de inicio"
+                                   [value]="startTime()" (valueChange)="startTime.set($event)" />
           </div>
           <div class="field field-dense">
             <label for="horario-fin">Hora de fin</label>
-            <input id="horario-fin" class="control" type="time"
-                   [value]="endTime()" (input)="endTime.set(value($event))" />
+            <app-time-picker-field controlId="horario-fin" label="Hora de fin"
+                                   [value]="endTime()" (valueChange)="endTime.set($event)" />
           </div>
         </div>
 
@@ -173,6 +174,11 @@ import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
        contra los 668 que permite max-height:min(90dvh,900px) (components.css:251), y
        scrollea hasta en un monitor 4K. Con dos columnas baja a ~592 y entra en desktop. */
     .field-pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)}
+    /* El fieldset trae borde y padding propios del user-agent: se apagan para que el campo
+       mida igual que los .field de al lado. */
+    .dias{border:0;padding:0;margin:0;min-width:0}
+    .dias legend{padding:0}
+    .dia-chips{display:flex;flex-wrap:wrap;gap:var(--space-xs)}
   `],
 })
 export class HorarioFormModalComponent {
@@ -189,6 +195,8 @@ export class HorarioFormModalComponent {
   protected readonly weekdayOptions = WEEKDAY_OPTIONS;
 
   private readonly modal = viewChild.required(ModalComponent);
+  /** Los dos relojes, para cerrarlos al reabrir el modal: ver open(). */
+  private readonly dials = viewChildren(TimePickerFieldComponent);
   /** Input de precio, NO controlado: ver el comentario del template junto al input. */
   private readonly priceInput = viewChild.required<ElementRef<HTMLInputElement>>('precioInput');
   private readonly modalBody = viewChild.required<ElementRef<HTMLElement>>('body');
@@ -200,7 +208,8 @@ export class HorarioFormModalComponent {
   protected readonly coachId = signal('');
   protected readonly categoryGroupId = signal('');
   protected readonly sessionTypeId = signal('');
-  protected readonly weekday = signal('');
+  /** Los días marcados, como strings de weekday. En edición es siempre 0 o 1 (ver toggleDay). */
+  protected readonly weekdays = signal<readonly string[]>([]);
   protected readonly startTime = signal('');
   protected readonly endTime = signal('');
   protected readonly capacity = signal('');
@@ -283,6 +292,25 @@ export class HorarioFormModalComponent {
   });
 
   protected label(name: string): string { return catalogLabel(name); }
+
+  protected hasDay(value: string): boolean { return this.weekdays().includes(value); }
+
+  /**
+   * En el ALTA suma y saca (varios días = varios horarios). En la EDICIÓN reemplaza: la fila
+   * que se está editando es UNA plantilla con UN weekday, y dejar marcar dos ofrecería algo
+   * que el PATCH no puede hacer.
+   *
+   * Destildar el último chip deja la lista VACÍA a propósito, también en edición: es el
+   * equivalente al '— sin día —' del select viejo, y createScheduleDraft lo rechaza con un
+   * mensaje. Reponerlo solo sería elegir un día por la persona.
+   */
+  protected toggleDay(value: string): void {
+    if (this.schedule() !== null) {
+      this.weekdays.update((d) => (d.includes(value) ? [] : [value]));
+      return;
+    }
+    this.weekdays.update((d) => (d.includes(value) ? d.filter((x) => x !== value) : [...d, value]));
+  }
   protected value(e: Event): string { return (e.target as HTMLInputElement | HTMLSelectElement).value; }
   protected checked(e: Event): boolean { return (e.target as HTMLInputElement).checked; }
 
@@ -298,9 +326,11 @@ export class HorarioFormModalComponent {
     this.coachId.set(schedule?.coachId ?? this.coaches()[0]?.id ?? '');
     this.categoryGroupId.set(schedule?.categoryGroupId ?? this.categoryGroups()[0]?.id ?? '');
     this.sessionTypeId.set(schedule?.sessionTypeId ?? this.sessionTypes()[0]?.id ?? '');
-    // En el alta, lunes. En la edición, '' cuando la fila no tiene día — y NO un fallback a
-    // lunes, que guardaría en silencio un día que nadie eligió.
-    this.weekday.set(schedule === null ? '1' : (schedule.weekday === null ? '' : String(schedule.weekday)));
+    // En el alta, lunes. En la edición, VACÍO cuando la fila no tiene día — y NO un fallback
+    // a lunes, que guardaría en silencio un día que nadie eligió.
+    this.weekdays.set(
+      schedule === null ? ['1'] : schedule.weekday === null ? [] : [String(schedule.weekday)],
+    );
     this.startTime.set(schedule?.startTime ?? '');
     this.endTime.set(schedule?.endTime ?? '');
     this.capacity.set(schedule?.capacity != null ? String(schedule.capacity) : '');
@@ -309,6 +339,9 @@ export class HorarioFormModalComponent {
     this.active.set(schedule?.active ?? true);
     this.validFrom.set(schedule?.validFrom ?? '');
     this.validTo.set(schedule?.validTo ?? '');
+    // Los relojes son popups con estado propio: sin esto, reabrir el formulario mientras uno
+    // quedó abierto lo deja arriba, mostrando la hora del horario ANTERIOR.
+    for (const dial of this.dials()) dial.close();
     this.modal().open();
   }
 
@@ -320,7 +353,7 @@ export class HorarioFormModalComponent {
       coachId: this.coachId(),
       categoryGroupId: this.categoryGroupId(),
       sessionTypeId: this.sessionTypeId(),
-      weekday: this.weekday(),
+      weekdays: this.weekdays(),
       startTime: this.startTime(),
       endTime: this.endTime(),
       capacity: this.capacity(),

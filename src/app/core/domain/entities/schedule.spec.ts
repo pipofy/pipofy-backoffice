@@ -4,12 +4,14 @@ import {
   createScheduleDraft,
   createSessionGenerationDraft,
   MAX_GENERATION_DAYS,
+  createScheduleDrafts,
+  sessionRangeForSchedule,
 } from './schedule';
 import { InvalidScheduleError, InvalidNumberError } from '../errors';
 
 const BASE: ScheduleInput = {
   courtId: '1', coachId: '2', categoryGroupId: '3', sessionTypeId: '4',
-  weekday: '1', startTime: '18:00', endTime: '19:30',
+  weekdays: ['1'], startTime: '18:00', endTime: '19:30',
   capacity: '8', price: '12000', active: true,
   validFrom: '', validTo: '',
 };
@@ -47,19 +49,19 @@ describe('createScheduleDraft', () => {
   it('weekday vacío NO puede caer en domingo', () => {
     // §3.4: Number('') es 0, que es un weekday VÁLIDO. Sin el chequeo del vacío ANTES de
     // convertir, un select sin elegir se guardaría como domingo en silencio.
-    expect(() => createScheduleDraft({ ...BASE, weekday: '' })).toThrow(InvalidScheduleError);
-    expect(() => createScheduleDraft({ ...BASE, weekday: '   ' })).toThrow(InvalidScheduleError);
+    expect(() => createScheduleDraft({ ...BASE, weekdays: [''] })).toThrow(InvalidScheduleError);
+    expect(() => createScheduleDraft({ ...BASE, weekdays: ['   '] })).toThrow(InvalidScheduleError);
   });
 
   it('weekday 0 (domingo) SÍ es válido', () => {
-    expect(createScheduleDraft({ ...BASE, weekday: '0' }).weekday).toBe(0);
+    expect(createScheduleDraft({ ...BASE, weekdays: ['0'] }).weekday).toBe(0);
   });
 
   it('weekday 6 (sábado) SÍ es válido, y 7 no', () => {
-    expect(createScheduleDraft({ ...BASE, weekday: '6' }).weekday).toBe(6);
-    expect(() => createScheduleDraft({ ...BASE, weekday: '7' })).toThrow(InvalidScheduleError);
-    expect(() => createScheduleDraft({ ...BASE, weekday: '-1' })).toThrow(InvalidScheduleError);
-    expect(() => createScheduleDraft({ ...BASE, weekday: 'lunes' })).toThrow(InvalidScheduleError);
+    expect(createScheduleDraft({ ...BASE, weekdays: ['6'] }).weekday).toBe(6);
+    expect(() => createScheduleDraft({ ...BASE, weekdays: ['7'] })).toThrow(InvalidScheduleError);
+    expect(() => createScheduleDraft({ ...BASE, weekdays: ['-1'] })).toThrow(InvalidScheduleError);
+    expect(() => createScheduleDraft({ ...BASE, weekdays: ['lunes'] })).toThrow(InvalidScheduleError);
   });
 
   it('las horas con formato inválido tiran', () => {
@@ -195,5 +197,67 @@ describe('createSessionGenerationDraft', () => {
 
   it('MAX_GENERATION_DAYS es 60', () => {
     expect(MAX_GENERATION_DAYS).toBe(60);
+  });
+});
+
+describe('createScheduleDrafts', () => {
+  it('devuelve UN draft por día, con todo lo demás igual', () => {
+    const drafts = createScheduleDrafts({ ...BASE, weekdays: ['1', '3', '5'] });
+    expect(drafts.map((d) => d.weekday)).toEqual([1, 3, 5]);
+    expect(new Set(drafts.map((d) => d.startTime))).toEqual(new Set(['18:00']));
+  });
+
+  it('deduplica: dos chips del mismo día no son dos horarios idénticos', () => {
+    expect(createScheduleDrafts({ ...BASE, weekdays: ['2', '2'] }).map((d) => d.weekday)).toEqual([2]);
+  });
+
+  it('sin ningún día tira, en vez de crear cero horarios en silencio', () => {
+    expect(() => createScheduleDrafts({ ...BASE, weekdays: [] })).toThrow(InvalidScheduleError);
+  });
+
+  it('valida las horas UNA vez, antes de multiplicar por día', () => {
+    expect(() => createScheduleDrafts({ ...BASE, weekdays: ['1', '3'], endTime: '17:00' }))
+      .toThrow(InvalidScheduleError);
+  });
+
+  it('createScheduleDraft (la edición) RECHAZA más de un día', () => {
+    expect(() => createScheduleDraft({ ...BASE, weekdays: ['1', '3'] })).toThrow(InvalidScheduleError);
+  });
+});
+
+describe('sessionRangeForSchedule', () => {
+  it('sin vigencia, cuatro semanas desde hoy — 28 días CONTANDO el de hoy', () => {
+    expect(sessionRangeForSchedule({ validFrom: null, validTo: null }, '2026-03-01'))
+      .toEqual({ from: '2026-03-01', to: '2026-03-28' });
+  });
+
+  it('respeta la vigencia cuando entra en el tope', () => {
+    expect(sessionRangeForSchedule({ validFrom: '2026-04-10', validTo: '2026-04-20' }, '2026-03-01'))
+      .toEqual({ from: '2026-04-10', to: '2026-04-20' });
+  });
+
+  it('una vigencia que ya empezó arranca HOY: las clases pasadas no se pueden borrar', () => {
+    expect(sessionRangeForSchedule({ validFrom: '2026-01-01', validTo: '2026-03-10' }, '2026-03-01'))
+      .toEqual({ from: '2026-03-01', to: '2026-03-10' });
+  });
+
+  it('una vigencia larga se RECORTA al tope en vez de ser rechazada entera', () => {
+    // Sin el recorte, createSessionGenerationDraft tiraría por pasarse de los 60 días y no se
+    // generaría NINGUNA clase — el peor desenlace de los tres.
+    const r = sessionRangeForSchedule({ validFrom: null, validTo: '2027-12-31' }, '2026-03-01')!;
+    expect(r.from).toBe('2026-03-01');
+    expect(() => createSessionGenerationDraft(r)).not.toThrow();
+    expect(r.to).toBe('2026-04-29');
+    // 60 días contando el from, que es como los cuenta createSessionGenerationDraft.
+  });
+
+  it('el recorte cae EXACTAMENTE en el tope del dominio', () => {
+    const r = sessionRangeForSchedule({ validFrom: null, validTo: '2099-01-01' }, '2026-03-01')!;
+    const dias = (Date.parse(`${r.to}T00:00:00Z`) - Date.parse(`${r.from}T00:00:00Z`)) / 86_400_000 + 1;
+    expect(dias).toBe(MAX_GENERATION_DAYS);
+  });
+
+  it('una vigencia ya terminada no genera nada', () => {
+    expect(sessionRangeForSchedule({ validFrom: null, validTo: '2020-01-01' }, '2026-03-01')).toBeNull();
   });
 });

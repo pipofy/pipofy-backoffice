@@ -17,6 +17,50 @@ const ROW: Schedule = {
   active: true, validFrom: null, validTo: null,
 };
 
+/**
+ * Elige una hora en el reloj: abre el popup del control, toca la hora, toca el minuto y
+ * confirma. Es lo que reemplazó al `input.value = '10:00'` de cuando era `<input type="time">`.
+ */
+async function elegirHora(
+  fixture: ComponentFixture<HorariosPageComponent>,
+  controlId: string,
+  hh: number,
+  mm: number,
+): Promise<void> {
+  const field = await abrirReloj(fixture, controlId);
+  tick(field, String(hh)).click();
+  await settle(fixture);
+  tick(field, String(mm).padStart(2, '0')).click();
+  await settle(fixture);
+  field.querySelector<HTMLButtonElement>('[data-test="time-ok"]')!.click();
+  await settle(fixture);
+}
+
+/** Abre el reloj de un control y devuelve su host, que ACOTA las búsquedas a ESE campo y no
+ *  al otro reloj del mismo formulario. */
+async function abrirReloj(
+  fixture: ComponentFixture<HorariosPageComponent>,
+  controlId: string,
+): Promise<HTMLElement> {
+  const trigger = (fixture.nativeElement as HTMLElement)
+    .querySelector<HTMLButtonElement>(`#${controlId}`)!;
+  trigger.click();
+  await settle(fixture);
+  return trigger.parentElement!;
+}
+
+const tick = (dentro: HTMLElement, label: string) =>
+  Array.from(dentro.querySelectorAll<HTMLButtonElement>('.tick'))
+    .find((b) => b.textContent?.trim() === label)!;
+
+const chip = (el: HTMLElement, label: string) =>
+  Array.from(el.querySelectorAll<HTMLButtonElement>('[data-test="dia"]'))
+    .find((c) => c.textContent?.trim() === label)!;
+
+const porTexto = (dentro: HTMLElement, texto: string) =>
+  Array.from(dentro.querySelectorAll<HTMLButtonElement>('button'))
+    .find((b) => b.textContent?.trim() === texto)!;
+
 async function settle(fixture: ComponentFixture<HorariosPageComponent>): Promise<void> {
   await fixture.whenStable();
   await new Promise((r) => setTimeout(r, 0));
@@ -154,12 +198,8 @@ describe('HorariosPageComponent', () => {
     await settle(fixture);
     // La cancha, el profesor, el grupo, el tipo y el día ya vienen sembrados por open(null)
     // desde los lookups; sólo faltan las horas para que createScheduleDraft no invariante.
-    const inicio = el.querySelector<HTMLInputElement>('#horario-inicio')!;
-    inicio.value = '10:00';
-    inicio.dispatchEvent(new Event('input'));
-    const fin = el.querySelector<HTMLInputElement>('#horario-fin')!;
-    fin.value = '11:00';
-    fin.dispatchEvent(new Event('input'));
+    await elegirHora(fixture, 'horario-inicio', 10, 0);
+    await elegirHora(fixture, 'horario-fin', 11, 0);
     guardar(el).click();
     await settle(fixture);
     expect(form(el).open).toBe(false);
@@ -170,8 +210,84 @@ describe('HorariosPageComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     editarBtn(el).click();
     await settle(fixture);
-    expect(el.querySelector<HTMLInputElement>('#horario-inicio')!.value).toBe('18:00');
-    expect(el.querySelector<HTMLInputElement>('#horario-fin')!.value).toBe('19:30');
+    expect(el.querySelector<HTMLElement>('#horario-inicio .tt-val')!.textContent?.trim()).toBe('18:00');
+    expect(el.querySelector<HTMLElement>('#horario-fin .tt-val')!.textContent?.trim()).toBe('19:30');
+  });
+
+  it('cancelar el reloj NO cambia la hora que ya estaba', async () => {
+    const fixture = await mount();
+    const el = fixture.nativeElement as HTMLElement;
+    editarBtn(el).click();
+    await settle(fixture);
+    const field = await abrirReloj(fixture, 'horario-inicio');
+    tick(field, '7').click();
+    await settle(fixture);
+    porTexto(field, 'Cancelar').click();
+    await settle(fixture);
+    expect(el.querySelector<HTMLElement>('#horario-inicio .tt-val')!.textContent?.trim()).toBe('18:00');
+  });
+
+  it('guardar un alta crea UN horario por día marcado', async () => {
+    const creados: ScheduleDraft[] = [];
+    const fixture = await mount({ create: async (d: ScheduleDraft) => { creados.push(d); } });
+    const el = fixture.nativeElement as HTMLElement;
+    nueva(el).click();
+    await settle(fixture);
+    chip(el, 'Miércoles').click();
+    chip(el, 'Viernes').click();
+    await settle(fixture);
+    await elegirHora(fixture, 'horario-inicio', 10, 0);
+    await elegirHora(fixture, 'horario-fin', 11, 0);
+    guardar(el).click();
+    await settle(fixture);
+    // Lunes (sembrado) + los dos marcados, todos con las mismas horas.
+    expect(creados.map((d) => d.weekday).sort()).toEqual([1, 3, 5]);
+    expect(creados.every((d) => d.startTime === '10:00' && d.endTime === '11:00')).toBe(true);
+  });
+
+  it('guardar un alta TAMBIÉN genera las clases, con el rango de la vigencia', async () => {
+    const rangos: SessionGenerationDraft[] = [];
+    const fixture = await mount({
+      generateSessions: async (d: SessionGenerationDraft): Promise<SessionGenerationResult> => {
+        rangos.push(d);
+        return { created: 4, skipped: 1 };
+      },
+    });
+    const el = fixture.nativeElement as HTMLElement;
+    nueva(el).click();
+    await settle(fixture);
+    await elegirHora(fixture, 'horario-inicio', 10, 0);
+    await elegirHora(fixture, 'horario-fin', 11, 0);
+    // Vigencia corta y futura: el rango pedido tiene que ser EXACTAMENTE ése.
+    const desde = el.querySelector<HTMLInputElement>('#horario-desde')!;
+    desde.value = '2099-01-05';
+    desde.dispatchEvent(new Event('input'));
+    const hasta = el.querySelector<HTMLInputElement>('#horario-hasta')!;
+    hasta.value = '2099-01-20';
+    hasta.dispatchEvent(new Event('input'));
+    guardar(el).click();
+    await settle(fixture);
+    expect(rangos).toEqual([{ from: '2099-01-05', to: '2099-01-20' }]);
+    expect(form(el).open).toBe(false);
+  });
+
+  it('si falla la generación, el horario NO se reporta como fallido', async () => {
+    // Los POST de horarios ya entraron: decir "no se pudo guardar" mandaría a reintentar y
+    // crearía los horarios de nuevo (el backend no tiene @@unique).
+    const fixture = await mount({
+      generateSessions: async () => { throw { kind: 'network' }; },
+    });
+    const el = fixture.nativeElement as HTMLElement;
+    nueva(el).click();
+    await settle(fixture);
+    await elegirHora(fixture, 'horario-inicio', 10, 0);
+    await elegirHora(fixture, 'horario-fin', 11, 0);
+    guardar(el).click();
+    await settle(fixture);
+    expect(form(el).open).toBe(false);
+    // Acotado al banner DE LA PÁGINA: el error sí se muestra —en el modal de Generar clases,
+    // que es donde se reintenta—, pero no puede aparecer como un fallo del guardado.
+    expect(el.querySelector('section.panel > app-notice')).toBeNull();
   });
 
   it('un guardado fallido muestra el error DENTRO del modal y NO borra la tabla', async () => {
@@ -251,7 +367,9 @@ describe('HorariosPageComponent', () => {
     (el.querySelector('[data-test="confirmar"]') as HTMLButtonElement).click();
     await f.whenStable();
     f.detectChanges();
-    expect(el.querySelectorAll('dialog')[1].open).toBe(true);
+    // Por su contenido y NO por índice: el formulario de horario ahora tiene DOS <dialog>
+    // adentro (los relojes), así que el de Generar clases dejó de ser el segundo.
+    expect(el.querySelector('[data-test="confirmar"]')!.closest('dialog')!.open).toBe(true);
   });
 
   it('coaches vacío por una falla previa: reconstruir la página reintenta loadLookups() aunque courts ya esté poblado', async () => {
@@ -308,4 +426,27 @@ describe('HorariosPageComponent', () => {
     await settle(segundo);
     expect(coachesCalls).toBe(2);
   });
+
+  it('un alta a medias CIERRA el modal y dice cuántos entraron', async () => {
+    // Reintentar duplicaría los que sí entraron (el backend no tiene @@unique), así que
+    // dejar el modal abierto con los mismos días marcados es una trampa.
+    const fixture = await mount({
+      create: async (d: ScheduleDraft) => { if (d.weekday === 3) throw { kind: 'network' }; },
+    });
+    const el = fixture.nativeElement as HTMLElement;
+    nueva(el).click();
+    await settle(fixture);
+    chip(el, 'Miércoles').click();
+    await settle(fixture);
+    await elegirHora(fixture, 'horario-inicio', 10, 0);
+    await elegirHora(fixture, 'horario-fin', 11, 0);
+    guardar(el).click();
+    await settle(fixture);
+
+    expect(form(el).open).toBe(false);
+    const toast = TestBed.inject(ToastService).toasts()[0];
+    expect(toast.type).toBe('info');
+    expect(toast.desc).toContain('1 horario de 2');
+  });
+
 });

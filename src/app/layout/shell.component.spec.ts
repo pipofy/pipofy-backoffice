@@ -40,6 +40,7 @@ const routes = [
     children: [
       { path: 'dashboard', component: EnConstruccionComponent, data: { title: 'Operaciones en tiempo real', crumb: 'Operación' } },
       { path: 'grupos', component: EnConstruccionComponent, data: { title: 'Grupos y clases', crumb: 'Grupos' } },
+      { path: 'configuracion/planes', component: EnConstruccionComponent, data: { title: 'Planes', crumb: 'Gestión' } },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' as const },
     ],
   },
@@ -66,13 +67,38 @@ async function setup(url: string, store = SESSION_STORE_STUB, users = usersRepo(
 }
 
 describe('ShellComponent', () => {
+  // 'summary' además de 'a': el item con hijos despliega en vez de navegar, así que su
+  // etiqueta ya no vive en un <a>.
   it('renderiza los 7 destinos de la nav', async () => {
     const harness = await setup('/dashboard');
-    const labels = Array.from(harness.fixture.nativeElement.querySelectorAll('.nav a'))
-      .map((a) => (a as HTMLElement).textContent?.trim() ?? '');
+    const labels = Array.from(harness.fixture.nativeElement.querySelectorAll('.nav a, .nav summary'))
+      .map((el) => (el as HTMLElement).textContent?.trim() ?? '');
     for (const item of NAV_ITEMS) {
       expect(labels.some((l) => l.includes(item.label))).toBe(true);
     }
+  });
+
+  it('el item con hijos los lista y arranca desplegado dentro de su sección', async () => {
+    const harness = await setup('/configuracion/planes');
+    const root: HTMLElement = harness.fixture.nativeElement;
+    const details = root.querySelector<HTMLDetailsElement>('.nav details')!;
+    expect(details.open).toBe(true);
+    const subs = Array.from(details.querySelectorAll('a')).map((a) => a.textContent?.trim());
+    expect(subs).toEqual(['Club', 'Canchas', 'Categorías', 'Grupos de categoría', 'Planes', 'Profesores', 'Horarios']);
+    expect(details.querySelector('a.on')?.textContent?.trim()).toBe('Planes');
+  });
+
+  it('fuera de su sección el submenú arranca cerrado', async () => {
+    const harness = await setup('/dashboard');
+    const root: HTMLElement = harness.fixture.nativeElement;
+    const details = root.querySelector<HTMLDetailsElement>('.nav details')!;
+    expect(details.open).toBe(false);
+  });
+
+  it('no ofrece crear cuenta: el shell es sólo para sesión iniciada', async () => {
+    const harness = await setup('/dashboard');
+    expect(harness.fixture.nativeElement.querySelector('.topbar')?.textContent)
+      .not.toContain('Crear cuenta');
   });
 
   it('marca el destino activo según la URL', async () => {

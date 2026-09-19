@@ -1,5 +1,0 @@
-/* .cat-filter y .fchip son primitivos del design system (styles/components.css); acá sólo
-   se separa la barra de tabs del panel que viene abajo. */
-.cat-filter {
-  margin-bottom: var(--space-md);
-}

@@ -7,7 +7,9 @@ let nextModalId = 0;
  * sobre el resto y ::backdrop. Lo único que agrega es cerrar al clickear el backdrop.
  *
  * ponytail: delgado a propósito. No hay servicio de modales, ni stack, ni registry,
- * ni animaciones custom — <dialog> ya hace todo eso. Hoy nunca hay dos abiertos.
+ * ni animaciones custom — <dialog> ya hace todo eso, APILADO incluido: el reloj de
+ * TimePickerFieldComponent se abre desde adentro del formulario de Horarios y el top layer
+ * los ordena solo, sin que este componente sepa que hay otro abajo.
  *
  * AUTOFOCUS: showModal() enfoca SÓLO un elemento con el atributo HTML `autofocus`;
  * si no hay ninguno, enfoca el <dialog>. El CONSUMIDOR debe poner `autofocus` en su

@@ -36,8 +36,10 @@ export const CONFIGURACION_ROUTES: Routes = [
       HorariosFacade,
       ...CONFIGURACION_PROVIDERS,
     ],
-    loadComponent: () =>
-      import('./pages/configuracion-page.component').then((m) => m.ConfiguracionPageComponent),
+    // SIN componente contenedor: la sub-navegación son los hijos del item Configuración en
+    // la sidebar (nav.model.ts), así que acá no queda nada que envolver y los hijos entran
+    // derecho al outlet del shell. Una ruta sin componente igual provee: las facades de abajo
+    // siguen scoped a toda la sección.
     children: [
       {
         path: 'club',

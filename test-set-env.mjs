@@ -15,7 +15,7 @@ const out = buildEnvironment('production', vars);
 assert.match(out, /production: true/);
 assert.match(out, /apiBaseUrl: '\/api'/);
 assert.match(out, /realtimeBaseUrl: '\/api\/stream'/);
-assert.match(out, /satisfies Environment/);
+assert.match(out, /environment: Environment = \{/);
 
 // Sólo NG_API_BASE_URL es obligatoria: con ella sola alcanza.
 const minimo = buildEnvironment('development', { NG_API_BASE_URL: '/api' });
@@ -45,5 +45,16 @@ const fromEnv = ngVarsFrom({
   PATH: '/usr/bin',
 });
 assert.deepEqual(Object.keys(fromEnv), ['NG_API_BASE_URL']);
+
+// Las NG_* del Angular CLI (llegan por process.env en Render/CI) nunca se emiten.
+const conCli = buildEnvironment(
+  'production',
+  ngVarsFrom({
+    NG_API_BASE_URL: 'https://x/api',
+    NG_CLI_ANALYTICS: 'false',
+    NG_FORCE_TTY: '1',
+  }),
+);
+assert.doesNotMatch(conCli, /cliAnalytics|forceTty/);
 
 console.log('✓ set-env self-check OK');

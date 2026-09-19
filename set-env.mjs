@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 /** La única clave sin la que la app no puede hacer nada. El resto es opcional y se emite si está. */
 const REQUIRED = ['NG_API_BASE_URL'];
 const SECRET_RE = /_(SECRET|TOKEN)$|ACCESS_TOKEN|PASSWORD|PRIVATE/i;
+/** Variables NG_* que son del Angular CLI, no de la app: nunca van al bundle. */
+const CLI_RE = /^NG_(CLI_|BUILD_|FORCE_TTY|DEBUG|PERSISTENT_BUILD_CACHE)/;
 
 // production regenera el archivo base que reemplazan los otros configs
 const OUT = {
@@ -51,12 +53,14 @@ export function buildEnvironment(env, vars) {
   if (missing.length) {
     throw new Error(`Faltan claves en .env.${env}: ${missing.join(', ')}`);
   }
-  // Toda NG_* presente se emite. Una clave que el modelo no declara rompe el build con un
-  // error de TS que la nombra (`satisfies Environment` hace chequeo de propiedades de más):
+  // Toda NG_* presente se emite, salvo las del Angular CLI (NG_CLI_ANALYTICS, NG_FORCE_TTY...):
+  // en Render/CI el fallback a process.env las trae puestas y Environment no las declara.
+  // Una clave que el modelo no declara rompe el build con un error de TS que la nombra
+  // (el archivo generado anota `environment: Environment`, chequeo de propiedades de más):
   // es el aviso de "esta variable ya no la lee nadie".
   const fields = { production: env === 'production' };
   for (const [k, v] of Object.entries(vars)) {
-    if (k.startsWith('NG_') && v !== '') fields[fieldName(k)] = v;
+    if (k.startsWith('NG_') && !CLI_RE.test(k) && v !== '') fields[fieldName(k)] = v;
   }
   const body = Object.entries(fields)
     .map(([k, v]) => `  ${k}: ${typeof v === 'string' ? `'${v}'` : v},`)
@@ -64,7 +68,7 @@ export function buildEnvironment(env, vars) {
   return (
     `// GENERADO por set-env.mjs — no editar a mano.\n` +
     `import type { Environment } from './environment.model';\n\n` +
-    `export const environment = {\n${body}\n} satisfies Environment;\n`
+    `export const environment: Environment = {\n${body}\n};\n`
   );
 }
 

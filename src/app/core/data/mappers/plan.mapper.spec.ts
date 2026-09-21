@@ -37,22 +37,31 @@ describe('toPlan', () => {
 });
 
 describe('toPlanRequest', () => {
-  it('OMITE coachId cuando es null', () => {
-    // plans.service.validateReferences() hace BigInt(dto.coachId) apenas la clave está
-    // presente, y BigInt(null) tira TypeError → 500 (§3.2). Verificado con node.
-    const body = toPlanRequest({ ...draft, coachId: null });
-    expect('coachId' in body).toBe(false);
+  it('OMITE coachId null en el ALTA', () => {
+    // plans.service.create sí pasa por fkOpcional() y aguantaría el null (verificado contra
+    // el server: POST con coachId:null devuelve 201). Se omite igual para que los tres
+    // mappers tengan UNA sola regla: en el alta, un FK vacío es una clave ausente.
+    expect('coachId' in toPlanRequest({ ...draft, coachId: null }, 'alta')).toBe(false);
+  });
+
+  it('MANDA coachId en null al EDITAR: es la única forma de vaciarlo', () => {
+    // Omitirlo le daría a Prisma `undefined`, o sea "no toques este campo", y el profesor
+    // viejo sobreviviría en silencio (§3.3).
+    const body = toPlanRequest({ ...draft, coachId: null }, 'edicion');
+    expect('coachId' in body).toBe(true);
+    expect(body.coachId).toBeNull();
   });
 
   it('manda coachId cuando lo hay', () => {
-    expect(toPlanRequest(draft).coachId).toBe('5');
+    expect(toPlanRequest(draft, 'alta').coachId).toBe('5');
+    expect(toPlanRequest(draft, 'edicion').coachId).toBe('5');
   });
 
   it('SÍ manda null en los opcionales que se pueden vaciar', () => {
     // @IsOptional() saltea la validación cuando el valor es null, así que el null llega a
     // Prisma y borra el campo. Omitirlos daría `undefined`, que en Prisma significa "no
     // toques este campo": el valor viejo sobreviviría en silencio (§3.3).
-    const body = toPlanRequest({ ...draft, classCount: null, price: null, validityDays: null });
+    const body = toPlanRequest({ ...draft, classCount: null, price: null, validityDays: null }, 'edicion');
     expect('classCount' in body).toBe(true);
     expect(body.classCount).toBeNull();
     expect('price' in body).toBe(true);
@@ -63,7 +72,8 @@ describe('toPlanRequest', () => {
 
   it('manda exactamente las claves del DTO del backend', () => {
     // forbidNonWhitelisted: true → cualquier clave de más devuelve 400.
-    expect(Object.keys(toPlanRequest(draft)).sort())
-      .toEqual(['active', 'classCount', 'coachId', 'name', 'planTypeId', 'price', 'validityDays']);
+    const claves = ['active', 'classCount', 'coachId', 'name', 'planTypeId', 'price', 'validityDays'];
+    expect(Object.keys(toPlanRequest(draft, 'alta')).sort()).toEqual(claves);
+    expect(Object.keys(toPlanRequest(draft, 'edicion')).sort()).toEqual(claves);
   });
 });

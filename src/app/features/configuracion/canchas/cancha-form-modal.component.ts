@@ -39,12 +39,7 @@ import { catalogLabel } from '@domain/catalog-labels';
         <label for="cancha-superficie">Superficie</label>
         <select id="cancha-superficie" class="control" data-test="surface"
                 [value]="surfaceTypeId()" (change)="surfaceTypeId.set(value($event))">
-          <!-- La opción vacía SÓLO mientras el FK es null: una vez asignado no se puede
-               volver a vaciar contra este backend (§4.5), y ofrecerla sería mentir.
-               ponytail: se saca el @if el día que el backend acepte el null. -->
-          @if (canClearSurface()) {
-            <option value="" [selected]="surfaceTypeId() === ''">— sin especificar —</option>
-          }
+          <option value="" [selected]="surfaceTypeId() === ''">— sin especificar —</option>
           @if (orphanSurfaceId(); as orphan) {
             <option [value]="orphan" [selected]="true" disabled>(no disponible)</option>
           }
@@ -67,9 +62,7 @@ import { catalogLabel } from '@domain/catalog-labels';
         <label for="cancha-estado">Estado</label>
         <select id="cancha-estado" class="control" data-test="status"
                 [value]="courtStatusId()" (change)="courtStatusId.set(value($event))">
-          @if (canClearStatus()) {
-            <option value="" [selected]="courtStatusId() === ''">— sin especificar —</option>
-          }
+          <option value="" [selected]="courtStatusId() === ''">— sin especificar —</option>
           @if (orphanStatusId(); as orphan) {
             <option [value]="orphan" [selected]="true" disabled>(no disponible)</option>
           }
@@ -103,17 +96,6 @@ export class CanchaFormModalComponent {
   protected readonly surfaceTypeId = signal('');
   protected readonly indoor = signal(false);
   protected readonly courtStatusId = signal('');
-
-  /** En alta (court === null) siempre se puede dejar vacío; en edición, sólo si todavía lo está. */
-  protected readonly canClearSurface = computed(() => {
-    const c = this.court();
-    return c === null || c.surfaceTypeId === null;
-  });
-
-  protected readonly canClearStatus = computed(() => {
-    const c = this.court();
-    return c === null || c.courtStatusId === null;
-  });
 
   /**
    * El valor guardado que no tiene ninguna <option> que lo matchee — porque el catálogo

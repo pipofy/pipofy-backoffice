@@ -43,7 +43,7 @@ export class HttpPlansRepository extends PlansRepository {
 
   async create(draft: PlanDraft): Promise<void> {
     try {
-      const body = v.parse(PlanRequestSchema, toPlanRequest(draft));
+      const body = v.parse(PlanRequestSchema, toPlanRequest(draft, 'alta'));
       await firstValueFrom(this.api.post<unknown>('/plans', body));
     } catch (err) {
       throw toDomainError(err);
@@ -52,7 +52,7 @@ export class HttpPlansRepository extends PlansRepository {
 
   async update(id: string, draft: PlanDraft): Promise<void> {
     try {
-      const body = v.parse(PlanRequestSchema, toPlanRequest(draft));
+      const body = v.parse(PlanRequestSchema, toPlanRequest(draft, 'edicion'));
       await firstValueFrom(this.api.patch<unknown>(`/plans/${id}`, body));
     } catch (err) {
       throw toDomainError(err);

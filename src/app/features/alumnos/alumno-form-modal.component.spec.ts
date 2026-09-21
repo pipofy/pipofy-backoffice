@@ -87,10 +87,11 @@ describe('AlumnoFormModalComponent', () => {
     expect(el(f, '#alumno-nombre').value).toBe('');
   });
 
-  it('la categoría ofrece vaciarse sólo mientras el alumno no tiene ninguna', () => {
-    // categoryId se OMITE cuando es null (BigInt(null) → 500) y omitirlo no lo borra.
+  it('la categoría SIEMPRE ofrece vaciarse, tenga o no una asignada', () => {
+    // El PATCH manda categoryId en null y students.service.update lo pasa por fkOpcional(),
+    // así que desasignar funciona. Verificado contra el server: PATCH con null → 200.
     expect(opciones(setup(SIN_DATOS), '[data-test="alumno-categoria"]').some((o) => o.value === '')).toBe(true);
-    expect(opciones(setup(ALUMNO), '[data-test="alumno-categoria"]').some((o) => o.value === '')).toBe(false);
+    expect(opciones(setup(ALUMNO), '[data-test="alumno-categoria"]').some((o) => o.value === '')).toBe(true);
   });
 
   it('la mano hábil SIEMPRE ofrece vaciarse', () => {

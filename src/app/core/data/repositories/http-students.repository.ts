@@ -34,7 +34,7 @@ export class HttpStudentsRepository extends StudentsRepository {
 
   async create(draft: StudentDraft): Promise<void> {
     try {
-      const body = v.parse(StudentRequestSchema, toStudentRequest(draft));
+      const body = v.parse(StudentRequestSchema, toStudentRequest(draft, 'alta'));
       await firstValueFrom(this.api.post<unknown>('/students', body));
     } catch (err) {
       throw toDomainError(err);
@@ -43,7 +43,7 @@ export class HttpStudentsRepository extends StudentsRepository {
 
   async update(id: string, draft: StudentDraft): Promise<void> {
     try {
-      const body = v.parse(StudentRequestSchema, toStudentRequest(draft));
+      const body = v.parse(StudentRequestSchema, toStudentRequest(draft, 'edicion'));
       await firstValueFrom(this.api.patch<unknown>(`/students/${id}`, body));
     } catch (err) {
       throw toDomainError(err);

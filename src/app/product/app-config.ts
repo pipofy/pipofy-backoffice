@@ -8,7 +8,7 @@ export const PIPOFY_CONFIG: AppConfig = {
   brand: {
     name: 'PipoFy',
     tagline:
-      'Gestión de clubes de pádel y tenis: grupos, créditos, pagos y WhatsApp en un solo lugar.',
+      'Gestión de clubes de pádel: grupos, créditos, pagos y WhatsApp en un solo lugar.',
     logoHorizontal: 'brand/logo-horizontal.svg',
     // ponytail: href null = las páginas no existen. Techo: un producto real las necesita.
     // Salida: crearlas y poner la ruta.

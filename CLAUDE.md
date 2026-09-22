@@ -41,7 +41,7 @@ Usar siempre los alias de `tsconfig.json`, no rutas relativas largas (`layout/` 
 `DTO valibot` → `mapper` → `contrato abstracto en domain` → `repositorio HTTP en data` → `facade SignalStore` → `página standalone`.
 
 - **DTO** (`core/data/dto/*.dto.ts`): schema valibot del borde HTTP. Suele haber uno de lectura (`XDtoSchema`, tolerante: `v.nullable` en casi todo porque el backend guarda filas incompletas) y otro de escritura (`XRequestSchema`).
-- **Mapper** (`core/data/mappers/`): DTO ↔ entidad. Ahí viven las rarezas de la API (p. ej. omitir FK en vez de mandarlos `null`, porque el backend hace `BigInt(null)` y devuelve 500).
+- **Mapper** (`core/data/mappers/`): DTO ↔ entidad. Ahí viven las rarezas de la API. La más presente: los write-mappers de FK opcionales toman un `modo: 'alta' | 'edicion'` — en la edición mandan el FK en `null` (única forma de vaciarlo), en el alta lo omiten, porque el `create` del backend hace `BigInt(null)` y devuelve 500 mientras que el `update` pasa por `fkOpcional`.
 - **Contrato** (`core/domain/contracts/*.repository.ts`): **clase abstracta**, no interface — hace de token DI sin arrastrar Angular al dominio. Las escrituras devuelven `void` y la facade re-lee; no se parchea la lista en memoria.
 - **Entidad** (`core/domain/entities/`): interfaces `readonly` + un `createXDraft(input)` que valida las invariantes de escritura y tira una `DomainRuleError`. La lectura es siempre tolerante.
 - **Repositorio** (`core/data/repositories/http-*.repository.ts`): `ApiClient` + `v.parse` dentro de un `try/catch` que normaliza todo con `toDomainError` (`v.parse` tira fuera del observable, por eso el catch).

@@ -23,12 +23,6 @@ export interface Schedule {
   readonly startTime: string | null;
   readonly endTime: string | null;
   readonly capacity: number | null;
-  /**
-   * Decimal sin redondear, como string. SÓLO LECTURA: el backend devuelve la columna pero
-   * no acepta el campo al escribir (ver `ScheduleRequestSchema`), así que no está en
-   * `ScheduleDraft` ni en `ScheduleInput`. El formateo es cosa de la pantalla.
-   */
-  readonly price: string | null;
   readonly active: boolean;
   /** 'YYYY-MM-DD', el formato que quiere <input type="date"> (§3.2). */
   readonly validFrom: string | null;

@@ -3,12 +3,22 @@
 } @else if (facade.error()) {
   <app-placeholder tone="error" size="page" title="No se pudo cargar el grupo" [body]="errorText()" />
 } @else if (group(); as g) {
-  <a class="btn btn-ghost btn-sm back-btn" routerLink="/grupos">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-      <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    Volver a la lista
-  </a>
+  <div class="detail-actions">
+    <a class="btn btn-ghost btn-sm back-btn" routerLink="/grupos">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+        <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver a la lista
+    </a>
+
+    <!-- Un grupo ES un ScheduleTemplate: editarlo ya existe en Configuración → Horarios, así que
+         esto linkea ahí con el id en vez de duplicar el formulario acá (que además sería importar
+         otra feature, cosa que eslint-plugin-boundaries prohíbe). -->
+    <a class="btn btn-ghost btn-sm editar-btn" data-test="editar-grupo"
+       routerLink="/configuracion/horarios" [queryParams]="{ editar: g.id }">
+      Editar grupo
+    </a>
+  </div>
 
   <div class="stu-wrap">
     <div class="stu-card">
@@ -35,7 +45,6 @@
         <div class="st-fact"><span class="l">Cupo</span>
           <span class="v"><app-cupo-cell [enrolled]="g.enrolled" [capacity]="g.capacity" /></span></div>
         <div class="st-fact"><span class="l">Inscriptos</span><span class="v mono">{{ g.enrolled }}</span></div>
-        <div class="st-fact"><span class="l">En lista de espera</span><span class="v mono">{{ g.waiting }}</span></div>
         <div class="st-fact"><span class="l">Próxima sesión</span><span class="v mono">{{ proxima() }}</span></div>
       </div>
     </div>
@@ -49,48 +58,25 @@
         <app-placeholder tone="error" title="No pudimos traer los inscriptos"
                          [body]="detalleErrorText()" />
       } @else {
-        <app-roster-table [roster]="facade.roster()" [capacity]="g.capacity" />
+        <app-roster-table [roster]="facade.roster()" [capacity]="g.capacity"
+                          [claseLabel]="claseLabel(g)" [quitando]="quitando()"
+                          (quitar)="askQuitar($event)" />
       }
-
-      <div class="acard waitlist-card">
-        <div class="a-head">
-          <span class="ic hold" aria-hidden="true">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path d="M4 8c4 2 12 2 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <circle cx="8" cy="14" r="2" stroke="currentColor" stroke-width="1.8"/>
-              <circle cx="16" cy="14" r="2" stroke="currentColor" stroke-width="1.8"/>
-            </svg>
-          </span>
-          <h3>Lista de espera</h3>
-          <!-- Guión y no 0 mientras no se sepa: el hero ya muestra el conteo que vino con el
-               grupo, y un 0 acá lo contradiría con un número inventado. -->
-          <span class="cnt hold">{{ facade.detalleError() ? '—' : facade.waitlist().length }}</span>
-        </div>
-        <div class="a-body">
-          @if (facade.detalleCargando()) {
-            <app-placeholder tone="loading" title="Cargando la lista de espera…" />
-          } @else if (facade.detalleError()) {
-            <app-placeholder tone="error" title="No pudimos traer la lista de espera"
-                             [body]="detalleErrorText()" />
-          } @else {
-            @for (w of facade.waitlist(); track w.id; let i = $index) {
-              <div class="arow">
-                <span class="avatar-sm amber" aria-hidden="true">{{ ini(w.name) }}</span>
-                <div class="a-main">
-                  <div class="a-title">{{ w.name }}</div>
-                  <div class="a-meta">@if (i === 0) { 1ro en la fila · }anotado {{ fecha(w.requestedAt) }}</div>
-                </div>
-              </div>
-            } @empty {
-              <app-placeholder title="Nadie esperando" body="El grupo cubre su cupo." />
-            }
-          }
-        </div>
-      </div>
 
       <app-sessions-table [sessions]="g.sessions" (attendanceRequested)="openAttendance($event)" />
     </div>
   </div>
+
+  <!-- Confirmación OBLIGATORIA: cancelar la reserva le ofrece el lugar por WhatsApp al primero
+       de la lista de espera (ReservationsRepository.cancel manda offerToWaitingList: true), y
+       eso le llega a una persona real. No es deshacible. -->
+  @if (aQuitar(); as m) {
+    <app-confirm-delete-modal
+      action="Quitar"
+      [itemName]="'a ' + nombreEnFrase(m) + ' de ' + claseLabel(g)"
+      warning="Se le va a ofrecer el lugar por WhatsApp al primero de la lista de espera."
+      (confirmed)="onQuitarConfirmado(g)" />
+  }
 
   @if (attendanceTarget(); as t) {
     <app-attendance-modal [target]="t" (confirmed)="onConfirmed($event)" />

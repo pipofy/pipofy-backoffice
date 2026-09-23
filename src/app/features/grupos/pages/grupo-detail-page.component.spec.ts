@@ -6,6 +6,7 @@ import { GrupoDetailPageComponent } from './grupo-detail-page.component';
 import { GruposFacade } from '../grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { ReservationsRepository } from '@domain/contracts/reservations.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { Group, GroupSession } from '@domain/entities/group';
@@ -17,12 +18,12 @@ const flushRepo = () => new Promise((r) => setTimeout(r, 0));
 
 const sesion = (over: Partial<GroupSession> = {}): GroupSession => ({
   id: '301', startAt: '2026-09-07T21:00:00.000Z', courtName: 'Cancha 1',
-  status: 'programada', enrolled: 2, capacity: 4, waiting: 1, yaPaso: true, ...over,
+  status: 'programada', enrolled: 2, capacity: 4, yaPaso: true, ...over,
 });
 
 const grupo = (over: Partial<Group> = {}): Group => ({
   id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
-  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 2, waiting: 1,
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 2,
   nextSessionId: '301', sessions: [sesion()], ...over,
 });
 
@@ -97,6 +98,10 @@ function setup(o: Opciones = {}) {
       { provide: ClassSessionsRepository, useValue: sessions },
       { provide: CategoriesRepository, useValue: categories },
       { provide: StudentsRepository, useValue: students },
+      {
+        provide: ReservationsRepository,
+        useValue: { cancel: async (id: string) => { calls.push(`cancelReserva:${id}`); } },
+      },
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: o.id ?? '7' }) } } },
     ],
   });
@@ -137,19 +142,50 @@ async function confirmar(fixture: { detectChanges(): void; whenStable(): Promise
 }
 
 describe('GrupoDetailPageComponent', () => {
-  it('renderiza hero, roster, lista de espera y sesiones', async () => {
+  it('renderiza hero, roster y sesiones, SIN lista de espera', async () => {
     const { el } = await mount();
     expect(el.querySelector('.stu-hero h2')!.textContent).toContain('7ma+8va · Lunes 18:00');
     expect(el.querySelector('.stu-hero .st-sub')!.textContent).toContain('Diego A.');
     expect(el.querySelectorAll('app-roster-table tbody tr')).toHaveLength(1);
-    expect(el.querySelector('.waitlist-card')!.textContent).toContain('Julián Vera');
     expect(el.querySelectorAll('app-sessions-table tbody tr')).toHaveLength(1);
+    expect(el.querySelector('.waitlist-card')).toBeNull();
+  });
+
+  it('QUITAR pide confirmación ANTES de cancelar: el click solo no manda nada', async () => {
+    // cancel() manda offerToWaitingList: true, y el backend le ofrece el lugar por WhatsApp al
+    // primero de la lista de espera. Un click de más le escribe a una persona real.
+    const { fixture, el, calls } = await mount();
+    (el.querySelector('[data-test="quitar"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(calls).not.toContain('cancelReserva:500');
+    expect(el.textContent).toContain('WhatsApp');
+  });
+
+  it('confirmar QUITAR cancela la reserva y relee EL ROSTER Y LOS GRUPOS', async () => {
+    // Cancela la RESERVA (id 500), no al alumno. Y relee las dos cosas: el cupo del hero sale
+    // de listGroups() y el roster de reservations(); releer una sola deja 3/4 con 2 filas.
+    const { fixture, el, calls } = await mount();
+    const rosterAntes = calls.filter((c) => c === 'reservations:301').length;
+    const gruposAntes = calls.filter((c) => c === 'listGroups').length;
+    (el.querySelector('[data-test="quitar"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    (el.querySelector('[data-test="confirm"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(calls).toContain('cancelReserva:500');
+    // Mayor y no +1 exacto: el effect de la página también re-lee al cambiar los grupos, así
+    // que puede haber una lectura de sobra. Lo que importa es que el roster NO quede viejo.
+    expect(calls.filter((c) => c === 'reservations:301').length).toBeGreaterThan(rosterAntes);
+    expect(calls.filter((c) => c === 'listGroups').length).toBe(gruposAntes + 1);
   });
 
   it('el detalle pide el roster de la próxima sesión del grupo', async () => {
     const { calls } = await mount();
     expect(calls).toContain('reservations:301');
-    expect(calls).toContain('waitingList:301');
+    expect(calls).not.toContain('waitingList:301');
   });
 
   // Un grupo en receso no tiene próxima sesión programada: no hay roster que pedir.
@@ -165,18 +201,14 @@ describe('GrupoDetailPageComponent', () => {
   it('si falla el roster lo DICE, en vez de mostrar el panel vacío', async () => {
     const { el } = await mount({ reservasFallan: true });
     expect(el.textContent).toContain('No pudimos traer los inscriptos');
-    expect(el.textContent).toContain('No pudimos traer la lista de espera');
     expect(el.textContent).toContain('Revisá tu conexión');
     expect(el.textContent).not.toContain('Nadie inscripto');
-    expect(el.textContent).not.toContain('Nadie esperando');
     // El hero y las sesiones siguen: el grupo ya está cargado y es lo más valioso que hay.
     expect(el.querySelector('.stu-hero h2')!.textContent).toContain('7ma+8va');
     expect(el.querySelectorAll('app-sessions-table tbody tr')).toHaveLength(1);
-    // Y el contador de la lista de espera no inventa un cero.
-    expect(el.querySelector('.waitlist-card .cnt')!.textContent).toContain('—');
   });
 
-  it('las 4 fichas del hero, en orden, con la fecha LOCAL de la próxima programada', async () => {
+  it('las 3 fichas del hero, en orden, con la fecha LOCAL de la próxima programada', async () => {
     const { el } = await mount({
       // nextSessionId apunta a la 302: es la que quedó 'programada' y sin pasar. El fixture lo
       // seteaba mal (quedaba en el default '301', ya pasada) y sólo pasaba porque proxima()
@@ -192,16 +224,8 @@ describe('GrupoDetailPageComponent', () => {
     expect(fichas[0].textContent).toContain('Cupo');
     expect(fichas[1].textContent).toContain('Inscriptos');
     expect(fichas[1].querySelector('.v')!.textContent).toContain('2');
-    expect(fichas[2].textContent).toContain('En lista de espera');
-    expect(fichas[3].textContent).toContain('Próxima sesión');
-    expect(fichas[3].querySelector('.v')!.textContent).toContain('14/12');
-  });
-
-  it('la lista de espera muestra la fecha de anotación y el 1ro en la fila', async () => {
-    const { el } = await mount();
-    const entrada = el.querySelector('.waitlist-card .arow')!;
-    expect(entrada.textContent).toContain('1ro en la fila');
-    expect(entrada.textContent).toContain('anotado 01/09');
+    expect(fichas[2].textContent).toContain('Próxima sesión');
+    expect(fichas[2].querySelector('.v')!.textContent).toContain('14/12');
   });
 
   it('TOMAR ASISTENCIA guarda y avisa con el conteo, sin recargar el grupo', async () => {

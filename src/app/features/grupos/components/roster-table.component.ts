@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RosterMember } from '@domain/entities/group';
 import { initials, occupancyState } from '../grupos-format';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
@@ -37,7 +37,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
           <table>
             <thead>
               <tr>
-                <th>Alumno</th><th>Categoría</th>
+                <th>Alumno</th><th>Categoría</th><th class="col-accion">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -55,6 +55,17 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
                       <span class="cat-badge hold">Sin confirmar</span>
                     }
                   </td>
+                  <td class="col-accion">
+                    <!-- SIEMPRE disponible, y el texto dice "de la clase" y no "del grupo": esto
+                         cancela la reserva de UNA sesión. La inscripción a un grupo no existe en
+                         la base, así que prometer lo otro sería mentir. -->
+                    <button type="button" class="btn btn-ghost btn-sm" data-test="quitar"
+                            [disabled]="quitando() === m.id"
+                            [attr.aria-label]="'Quitar a ' + nombreEnFrase(m) + ' de ' + claseLabel()"
+                            (click)="quitar.emit(m)">
+                      {{ quitando() === m.id ? 'Quitando…' : quitarLabel() }}
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -69,6 +80,26 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 export class RosterTableComponent {
   readonly roster = input.required<readonly RosterMember[]>();
   readonly capacity = input.required<number>();
+  /** 'la clase del lunes 18:00': lo arma la página, que es la que tiene el grupo. */
+  readonly claseLabel = input<string>('esta clase');
+  /** El id de la reserva que se está cancelando, para deshabilitar SÓLO ese botón. */
+  readonly quitando = input<string | null>(null);
+  readonly quitar = output<RosterMember>();
+
+  /**
+   * El texto VISIBLE del botón, no sólo el aria-label: el panel de arriba dice "Inscriptos al
+   * grupo", así que un "Quitar" pelado se lee como "sacar del grupo" — que es justo lo que NO
+   * hace. Con el día y la hora entra; sin ellos cae a "de esta clase".
+   */
+  protected readonly quitarLabel = computed(() => `Quitar de ${this.claseLabel()}`);
+
+  /**
+   * `first_name`/`last_name` son nullables, así que toRoster cae a un guión largo. Dentro de
+   * una frase ("Quitar a — de la clase del Lunes") eso no se lee: ahí va "este alumno".
+   */
+  protected nombreEnFrase(m: RosterMember): string {
+    return m.name === '—' || m.name.trim() === '' ? 'este alumno' : m.name;
+  }
 
   protected readonly full = computed(() => occupancyState(this.roster().length, this.capacity()) === 'full');
   protected ini(name: string): string { return initials(name); }

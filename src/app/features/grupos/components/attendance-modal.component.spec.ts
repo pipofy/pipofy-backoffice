@@ -7,13 +7,13 @@ import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 
 const GRUPO: Group = {
   id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
-  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 2, waiting: 0,
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 2,
   nextSessionId: '301', sessions: [],
 };
 
 const SESION: GroupSession = {
   id: '301', startAt: '2026-09-07T21:00:00.000Z', courtName: 'Cancha 1',
-  status: 'programada', enrolled: 2, capacity: 4, waiting: 0, yaPaso: true,
+  status: 'programada', enrolled: 2, capacity: 4, yaPaso: true,
 };
 
 const miembro = (over: Partial<RosterMember> = {}): RosterMember => ({

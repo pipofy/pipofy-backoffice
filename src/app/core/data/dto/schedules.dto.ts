@@ -5,9 +5,9 @@ import * as v from 'valibot';
  * `validFrom`/`validTo` igual aunque sean @db.Date (§3.2): acá se declaran como string
  * crudo y el mapper los recorta.
  *
- * `price` acepta string|number por el mismo motivo que en Planes: Prisma serializa Decimal
- * vía decimal.js, cuyo toJSON devuelve string, pero no se verificó con el servidor
- * levantado. El mapper normaliza a string.
+ * SIN `price`: la columna existe en la base, pero el panel dejó de mostrarla y el backend
+ * tampoco acepta el campo al escribir (ver `ScheduleRequestSchema`). v.object descarta la
+ * clave que igual sigue viniendo en la respuesta.
  */
 export const ScheduleDtoSchema = v.object({
   id: v.string(),
@@ -19,7 +19,6 @@ export const ScheduleDtoSchema = v.object({
   startTime: v.nullable(v.string()),
   endTime: v.nullable(v.string()),
   capacity: v.nullable(v.number()),
-  price: v.nullable(v.union([v.string(), v.number()])),
   active: v.boolean(),
   validFrom: v.nullable(v.string()),
   validTo: v.nullable(v.string()),
@@ -30,14 +29,11 @@ export const ScheduleListDtoSchema = v.array(ScheduleDtoSchema);
 
 /**
  * Write-path, UNO SOLO para POST y PATCH: `UpdateScheduleDto` reexporta `CreateScheduleDto`,
- * así que en el PATCH todo lo obligatorio sigue siendo obligatorio. Mismo caso que Planes.
+ * así que en el PATCH TODO lo obligatorio sigue siendo obligatorio. No hay updates parciales:
+ * hacer opcional un `weekday` o un `startTime` para "editar sólo un campo" devuelve 400.
  *
- * SIN `price`, y no es un olvido: `CreateScheduleDto` del backend NO declara el campo y el
- * ValidationPipe corre con `forbidNonWhitelisted`, así que mandarlo devuelve
- * `400 "property price should not exist"` y NO se puede crear ni editar un horario.
- * Verificado contra el server: el mismo body sin price da 201. La columna existe y el GET la
- * devuelve —por eso `ScheduleDtoSchema` sí la declara—, pero hoy es de sólo lectura.
- * Cuando el backend acepte `price`, vuelve acá y a `toScheduleRequest`.
+ * SIN `price`: el backend no declara el campo y el pipe corre con forbidNonWhitelisted, así que
+ * mandarlo es `400 "property price should not exist"`. Verificado contra el server.
  *
  * Dos formas distintas de "sin valor", y cada una tiene su motivo:
  *   · `capacity` va EN null — su columna es nullable y el service lo pasa crudo a Prisma,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { HorariosPageComponent } from './horarios-page.component';
 import { HorariosFacade } from './horarios.facade';
 import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
@@ -13,7 +14,7 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 
 const ROW: Schedule = {
   id: 'row', courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',
-  weekday: 1, startTime: '18:00', endTime: '19:30', capacity: 8, price: '5000',
+  weekday: 1, startTime: '18:00', endTime: '19:30', capacity: 8,
   active: true, validFrom: null, validTo: null,
 };
 
@@ -67,7 +68,7 @@ async function settle(fixture: ComponentFixture<HorariosPageComponent>): Promise
   fixture.detectChanges();
 }
 
-async function mount(over: Partial<SchedulesRepository> = {}): Promise<ComponentFixture<HorariosPageComponent>> {
+async function mount(over: Partial<SchedulesRepository> = {}, query: Record<string, string> = {}): Promise<ComponentFixture<HorariosPageComponent>> {
   const repo = {
     list: async () => [ROW],
     create: async (_d: ScheduleDraft) => undefined,
@@ -80,6 +81,7 @@ async function mount(over: Partial<SchedulesRepository> = {}): Promise<Component
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
+      { provide: ActivatedRoute, useValue: rutaCon(query) },
       HorariosFacade,
       { provide: SchedulesRepository, useValue: repo },
       {
@@ -133,6 +135,13 @@ const confirmarBorrado = (el: HTMLElement) => el.querySelector<HTMLButtonElement
 // f.nativeElement es `any`: Array.from(any) degrada a unknown[] en modo strict (TS2571).
 // Se tipa como HTMLElement antes de querySelectorAll, mismo patrón que planes-page.component.spec.ts.
 const filas = (el: HTMLElement) => Array.from(el.querySelectorAll('tbody tr'));
+
+/**
+ * Doble de ActivatedRoute: la página lee `?editar=<id>` para abrir una fila desde el detalle
+ * de un grupo. Sin query param, `get()` devuelve null y el effect ni se arma.
+ */
+const rutaCon = (params: Record<string, string> = {}) =>
+  ({ snapshot: { queryParamMap: { get: (k: string) => params[k] ?? null } } }) as unknown as ActivatedRoute;
 
 describe('HorariosPageComponent', () => {
   it('muestra el horario como rango, y — cuando falta una punta', async () => {
@@ -212,6 +221,23 @@ describe('HorariosPageComponent', () => {
     await settle(fixture);
     expect(el.querySelector<HTMLElement>('#horario-inicio .tt-val')!.textContent?.trim()).toBe('18:00');
     expect(el.querySelector<HTMLElement>('#horario-fin .tt-val')!.textContent?.trim()).toBe('19:30');
+  });
+
+  // El deep link desde el detalle de un grupo: un grupo ES un ScheduleTemplate, así que su id
+  // abre la fila directo en vez de dejar al usuario buscándola en la tabla.
+  it('con ?editar=<id> abre el modal de esa fila al cargar', async () => {
+    const fixture = await mount({}, { editar: 'row' });
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('#horario-inicio')!.closest('dialog')!.open).toBe(true);
+    expect(el.querySelector<HTMLElement>('#horario-inicio .tt-val')!.textContent?.trim()).toBe('18:00');
+  });
+
+  it('con ?editar de un id que no está en la lista NO abre nada', async () => {
+    // Un horario borrado deja el link viejo apuntando a la nada: abrir un modal vacío sería
+    // peor que no abrir ninguno.
+    const fixture = await mount({}, { editar: 'no-existe' });
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('#horario-inicio')!.closest('dialog')!.open).toBe(false);
   });
 
   it('cancelar el reloj NO cambia la hora que ya estaba', async () => {
@@ -381,6 +407,7 @@ describe('HorariosPageComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
+        { provide: ActivatedRoute, useValue: rutaCon() },
         HorariosFacade,
         {
           provide: SchedulesRepository,

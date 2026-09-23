@@ -127,18 +127,6 @@ import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
             <input id="horario-cupo" class="control" type="number" min="0" step="1"
                    [value]="capacity()" (input)="capacity.set(value($event))" />
           </div>
-          <div class="field field-dense">
-            <label for="horario-precio">Precio</label>
-            <!-- READONLY: el backend no acepta el campo price al crear ni al editar un
-                 horario (CreateScheduleDto no lo declara y el pipe corre con
-                 forbidNonWhitelisted), así que mandarlo devolvía 400 y no se podía guardar
-                 NADA. Se muestra el valor guardado y no se ofrece editarlo, que sería mentir.
-                 El día que el backend lo acepte vuelve a ser editable, y ahí sí va sin
-                 [value] como el precio de planes. Por eso ya no hace falta el campo no
-                 controlado que había acá. -->
-            <input id="horario-precio" class="control" type="number" readonly
-                   [value]="price()" />
-          </div>
         </div>
 
         <div class="field-pair">
@@ -214,8 +202,6 @@ export class HorarioFormModalComponent {
   protected readonly startTime = signal('');
   protected readonly endTime = signal('');
   protected readonly capacity = signal('');
-  /** SÓLO para mostrar: el precio no viaja en el save porque el backend lo rechaza. */
-  protected readonly price = signal('');
   protected readonly active = signal(true);
   protected readonly validFrom = signal('');
   protected readonly validTo = signal('');
@@ -335,7 +321,6 @@ export class HorarioFormModalComponent {
     this.startTime.set(schedule?.startTime ?? '');
     this.endTime.set(schedule?.endTime ?? '');
     this.capacity.set(schedule?.capacity != null ? String(schedule.capacity) : '');
-    this.price.set(schedule?.price ?? '');
     this.active.set(schedule?.active ?? true);
     this.validFrom.set(schedule?.validFrom ?? '');
     this.validTo.set(schedule?.validTo ?? '');

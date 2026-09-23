@@ -2,33 +2,31 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { ReservationsRepository } from '@domain/contracts/reservations.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
-import { StudentsRepository } from '@domain/contracts/students.repository';
-import { Group, GroupWaitlistEntry, RosterMember } from '@domain/entities/group';
+import { Group, RosterMember } from '@domain/entities/group';
 import {
   SessionAttendanceMark,
   SessionAttendanceResult,
   createSessionAttendanceDraft,
 } from '@domain/entities/session-attendance';
 import { Category } from '@domain/entities/category';
-import { Student } from '@domain/entities/student';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { DomainError, asDomainError } from '@domain/errors';
-import { toGroupWaitlist, toRoster } from '@domain/derive-groups';
+import { toRoster } from '@domain/derive-groups';
 
 @Injectable()
 export class GruposFacade extends SignalStore<Group[], DomainError> {
   private readonly repo = inject(GroupsRepository);
   private readonly sessions = inject(ClassSessionsRepository);
   private readonly categoriesRepo = inject(CategoriesRepository);
-  private readonly studentsRepo = inject(StudentsRepository);
+  private readonly reservas = inject(ReservationsRepository);
   private readonly tenant = inject(TenantContext, { optional: true });
 
   /** Atajo para los templates: [] mientras no haya datos. */
   readonly groups = computed(() => this.data() ?? []);
 
   private readonly _roster = signal<readonly RosterMember[]>([]);
-  private readonly _waitlist = signal<readonly GroupWaitlistEntry[]>([]);
   private readonly _detalleCargando = signal(false);
   /**
    * El fallo del detalle, APARTE de error(): éste pinta dos paneles, aquél reemplaza la pantalla.
@@ -37,13 +35,11 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
    */
   private readonly _detalleError = signal<DomainError | null>(null);
   readonly roster = this._roster.asReadonly();
-  readonly waitlist = this._waitlist.asReadonly();
   readonly detalleCargando = this._detalleCargando.asReadonly();
   readonly detalleError = this._detalleError.asReadonly();
 
   /** Lookups de nombres. Se piden una vez por vida de la facade, que dura lo que dura /grupos. */
   private categories: readonly Category[] | null = null;
-  private students: readonly Student[] | null = null;
 
   constructor() {
     super();
@@ -55,10 +51,8 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
       if (!seenFirst) { seenFirst = true; return; }
       this.reset();
       this._roster.set([]);
-      this._waitlist.set([]);
       this._detalleError.set(null);
       this.categories = null;
-      this.students = null;
     });
   }
 
@@ -83,27 +77,53 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
     // no un fallo.
     if (nextSessionId === null) {
       this._roster.set([]);
-      this._waitlist.set([]);
       this._detalleError.set(null);
       return;
     }
     this._detalleCargando.set(true);
     this._detalleError.set(null);
     try {
-      const [reservations, esperando, categories, students] = await Promise.all([
+      const [reservations, categories] = await Promise.all([
         this.sessions.reservations(nextSessionId),
-        this.sessions.waitingList(nextSessionId),
         this.lookupCategories(),
-        this.lookupStudents(),
       ]);
       this._roster.set(toRoster(reservations, categories, new Date()));
-      this._waitlist.set(toGroupWaitlist(esperando, students));
     } catch (err) {
       this._roster.set([]);
-      this._waitlist.set([]);
       this._detalleError.set(asDomainError(err));
     } finally {
       this._detalleCargando.set(false);
+    }
+  }
+
+  /**
+   * Saca a un alumno de UNA clase, no del grupo: cancela su reserva de la próxima sesión.
+   *
+   * La inscripción a un grupo no existe en la base (ver el ponytail de entities/group.ts), así
+   * que esto es todo lo que se puede hacer hoy — y por eso el botón de la tabla lo dice con el
+   * día y la hora, en vez de prometer que lo saca del grupo.
+   *
+   * Relee las DOS lecturas, no una: el roster sale de `reservations()` y el cupo del hero de
+   * `listGroups()`. Releer sólo el roster deja "3/4" arriba con 2 filas abajo — justo la
+   * desincronización que esto intenta evitar.
+   *
+   * El roster se relee EXPLÍCITAMENTE y no se confía en que el refresco de grupos lo dispare:
+   * hoy la página del detalle tiene un effect sobre `group()` que lo hace, así que puede haber
+   * una lectura de más, pero atar esta facade a un effect de una página la rompería en silencio
+   * el día que esa página cambie. Una lectura de sobra después de un click es barata.
+   *
+   * El refresco de grupos va con `setData` y NO con `load()`: la página esconde todo detrás de
+   * `@if (loading())`, así que un load() normal parpadearía la pantalla entera después de cada
+   * quitada. Y si la RELECTURA falla, no se reporta como fallo del quitar —que sí anduvo—: sale
+   * por `detalleError`, que es donde el usuario está mirando.
+   */
+  async quitarDeClase(reservationId: string, nextSessionId: string): Promise<void> {
+    await this.reservas.cancel(reservationId);
+    await this.loadDetalle(nextSessionId);
+    try {
+      this.setData(await this.repo.listGroups());
+    } catch (err) {
+      this._detalleError.set(asDomainError(err));
     }
   }
 
@@ -154,8 +174,4 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
     return this.categories;
   }
 
-  private async lookupStudents(): Promise<readonly Student[]> {
-    this.students ??= await this.studentsRepo.list();
-    return this.students;
-  }
 }

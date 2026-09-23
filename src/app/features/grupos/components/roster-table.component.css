@@ -12,3 +12,6 @@
 .roster-occ { margin-left: auto; font-size: var(--text-xs); color: var(--color-fg-muted); }
 .roster-occ b { color: var(--color-on-accent-soft); }
 .roster-occ b.isfull { color: var(--color-primary); }
+
+/* La columna de acciones no crece: se ajusta al botón y queda pegada a la derecha. */
+.col-accion { width: 1%; white-space: nowrap; text-align: right; }

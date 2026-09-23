@@ -8,7 +8,6 @@ const sesion = (over: Partial<GroupSession> = {}): GroupSession => ({
   status: 'programada',
   enrolled: 4,
   capacity: 4,
-  waiting: 0,
   yaPaso: true,
   ...over,
 });

@@ -29,8 +29,6 @@ export function toSchedule(dto: ScheduleDto): Schedule {
     startTime: toHhMm(dto.startTime),
     endTime: toHhMm(dto.endTime),
     capacity: dto.capacity,
-    // String() y no un cast: el DTO acepta number por la incertidumbre del Decimal.
-    price: dto.price === null ? null : String(dto.price),
     active: dto.active,
     validFrom: toYmd(dto.validFrom),
     validTo: toYmd(dto.validTo),
@@ -42,8 +40,8 @@ export function toSchedule(dto: ScheduleDto): Schedule {
  * `undefined` y el valor viejo sobrevive (§3.7). `capacity` SÍ va en null: su columna lo
  * acepta y es la única forma de vaciarlo.
  *
- * NO manda `price`: el backend no declara el campo y lo rechaza con 400 (ver el comentario
- * de `ScheduleRequestSchema`). El GET sí lo devuelve, así que `toSchedule` lo sigue leyendo.
+ * NO manda `price`: el backend no declara el campo y lo rechaza con
+ * `400 "property price should not exist"`. La pantalla tampoco lo muestra.
  *
  * Ojo con "unificar" esto con toPlanRequest, toStudentRequest o toClubRequest: los dos
  * primeros omiten claves distintas y por motivos distintos, y toClubRequest no omite NINGUNA

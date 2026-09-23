@@ -6,13 +6,14 @@ import { GruposListPageComponent } from './grupos-list-page.component';
 import { GruposFacade } from '../grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { ReservationsRepository } from '@domain/contracts/reservations.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { Group } from '@domain/entities/group';
 
 const grupo = (over: Partial<Group> = {}): Group => ({
   id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
-  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 3, waiting: 1,
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 3,
   nextSessionId: '301', sessions: [], ...over,
 });
 
@@ -30,6 +31,7 @@ function providers(repo: GroupsRepository) {
     { provide: GroupsRepository, useValue: repo },
     { provide: ClassSessionsRepository, useValue: {} as unknown as ClassSessionsRepository },
     { provide: CategoriesRepository, useValue: {} as unknown as CategoriesRepository },
+    { provide: ReservationsRepository, useValue: {} as unknown as ReservationsRepository },
     { provide: StudentsRepository, useValue: {} as unknown as StudentsRepository },
   ];
 }
@@ -37,7 +39,7 @@ function providers(repo: GroupsRepository) {
 const repoCon = (groups: Group[]) =>
   ({ listGroups: async () => groups }) as unknown as GroupsRepository;
 
-const DOS = [grupo(), grupo({ id: '8', category: '6ta', teacher: 'Sofía R.', weekday: 3, waiting: 0 })];
+const DOS = [grupo(), grupo({ id: '8', category: '6ta', teacher: 'Sofía R.', weekday: 3,})];
 
 async function mount(repo: GroupsRepository = repoCon(DOS)) {
   TestBed.configureTestingModule({ providers: providers(repo) });
@@ -66,12 +68,6 @@ describe('GruposListPageComponent', () => {
     expect(filas(el)[0].textContent).toContain('Cancha 1');
     expect(filas(el)[0].querySelector('.avatar-sm')!.textContent).toContain('DA');
     expect(filas(el)[0].querySelector('.cupo-num')!.textContent).toContain('3/4');
-  });
-
-  it('muestra el contador de lista de espera sólo cuando hay gente esperando', async () => {
-    const { el } = await mount();
-    expect(filas(el)[0].textContent).toContain('1 en espera');
-    expect(filas(el)[1].textContent).not.toContain('en espera');
   });
 
   it('la búsqueda filtra por TÍTULO del grupo y por profesor', async () => {

@@ -1,10 +1,10 @@
 /**
- * Deriva grupos, roster y lista de espera a partir de entidades ya mapeadas, no de DTOs.
+ * Deriva grupos y roster a partir de entidades ya mapeadas, no de DTOs.
  * Vive en `domain` (y no en `data/mappers`, donde estuvo antes) porque sólo depende de
  * `@domain/entities/*`; la consumen tanto `data` (`HttpGroupsRepository`) como `features`
  * (`GruposFacade`), y desde acá los dos llegan sin cruzar capas.
  */
-import { Group, GroupSession, GroupWaitlistEntry, RosterMember } from '@domain/entities/group';
+import { Group, GroupSession, RosterMember } from '@domain/entities/group';
 import { Schedule } from '@domain/entities/schedule';
 import { ClassSession, occupiedSpots } from '@domain/entities/class-session';
 import { Court } from '@domain/entities/court';
@@ -12,8 +12,6 @@ import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
 import { Category } from '@domain/entities/category';
 import { SessionReservation, asistenciaTomada } from '@domain/entities/session-reservation';
-import { WaitingListEntry } from '@domain/entities/waiting-list';
-import { Student } from '@domain/entities/student';
 
 /** Guión largo (EM DASH, U+2014), como en el resto de la pantalla. */
 const DASH = '—';
@@ -77,7 +75,6 @@ export function toGroups(input: GroupsInput, now: Date): Group[] {
           // reserve() va a rechazar. Cae al template sólo cuando no hay próxima sesión.
           capacity: proxima?.capacity ?? t.capacity ?? 0,
           enrolled: proxima?.enrolled ?? 0,
-          waiting: proxima?.waiting ?? 0,
           nextSessionId: proxima?.id ?? null,
           sessions,
         };
@@ -104,7 +101,6 @@ function toGroupSession(s: ClassSession, courtName: Map<string, string>, now: Da
     status: s.status,
     enrolled: occupiedSpots(s),
     capacity: s.capacity,
-    waiting: s.waitingCount,
     // Sin hora no se puede decir que pasó, así que no pasó: no ofrece tomar asistencia.
     yaPaso: s.startAt !== null && new Date(s.startAt).getTime() <= now.getTime(),
   };
@@ -149,23 +145,3 @@ function ocupaLugar(r: SessionReservation, now: Date): boolean {
   return new Date(r.holdExpiresAt).getTime() > now.getTime();
 }
 
-/**
- * La lista de espera SÍ necesita el padrón: `WaitingListService.list()` devuelve la fila cruda,
- * sin `include: { student }`, así que el `studentId` viene pelado.
- *
- * ponytail: se carga el padrón entero para resolver dos o tres nombres. Es el patrón que ya usa
- * `/reservas`. Salida: `include: { student: true }` en ese `findMany` del backend, una línea, la
- * misma que resolvió la relectura de asistencia.
- */
-export function toGroupWaitlist(
-  entries: readonly WaitingListEntry[],
-  students: readonly Student[],
-): GroupWaitlistEntry[] {
-  const nombre = new Map(students.map((s) => [s.id, `${s.firstName} ${s.lastName}`.trim()]));
-  return entries.map((e) => ({
-    id: e.id,
-    studentId: e.studentId,
-    name: nombre.get(e.studentId) || DASH,
-    requestedAt: e.requestedAt,
-  }));
-}

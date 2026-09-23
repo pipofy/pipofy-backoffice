@@ -28,3 +28,8 @@
    --amber-500/--amber-700, que NO existen en la app: la propia maqueta los define en su línea 60
    como var(--color-warning-mark) y var(--color-warning). Acá van los tokens reales. */
 .avatar-sm.amber { background: linear-gradient(135deg, var(--color-warning-mark), var(--color-warning)); }
+
+/* El link a Horarios va en la MISMA fila que "Volver a la lista", que trae su propio
+   margin-bottom: sin esto los dos anchors quedan desalineados por 16px. */
+.detail-actions { display: flex; align-items: center; gap: var(--space-sm); }
+.detail-actions .back-btn { margin-bottom: 0; }

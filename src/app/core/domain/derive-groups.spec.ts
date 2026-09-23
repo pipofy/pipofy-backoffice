@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toGroups, toRoster, toGroupWaitlist, GroupsInput } from './derive-groups';
+import { toGroups, toRoster, GroupsInput } from './derive-groups';
 import { Schedule } from '@domain/entities/schedule';
 import { ClassSession } from '@domain/entities/class-session';
 import { SessionReservation } from '@domain/entities/session-reservation';
@@ -16,7 +16,6 @@ const template = (over: Partial<Schedule> = {}): Schedule => ({
   startTime: '18:00',
   endTime: '19:30',
   capacity: 4,
-  price: null,
   active: true,
   validFrom: null,
   validTo: null,
@@ -74,7 +73,6 @@ describe('toGroups', () => {
     );
     expect(g.nextSessionId).toBe('proxima');
     expect(g.enrolled).toBe(3);   // capacity 4 − availableSpots 1
-    expect(g.waiting).toBe(2);
   });
 
   it('ordena las sesiones ascendente y marca yaPaso contra el reloj recibido', () => {
@@ -97,7 +95,6 @@ describe('toGroups', () => {
     expect(g.sessions).toEqual([]);
     expect(g.nextSessionId).toBeNull();
     expect(g.enrolled).toBe(0);
-    expect(g.waiting).toBe(0);
   });
 
   // Los inactivos no generan sesiones (generateSessions filtra active: true), así que un grupo
@@ -184,38 +181,5 @@ describe('toRoster', () => {
   it('cae a guión con el alumno sin nombre cargado', () => {
     const [m] = toRoster([reserva({ studentName: '' })], categorias, AHORA);
     expect(m.name).toBe('—');
-  });
-});
-
-describe('toGroupWaitlist', () => {
-  const alumno = {
-    id: '91',
-    phone: '+5491100000000',
-    firstName: 'Julián',
-    lastName: 'Vera',
-    birthDate: null,
-    categoryId: null,
-    studentStatusId: '1',
-    dominantHand: null,
-    ranking: null,
-    notes: null,
-  };
-
-  it('resuelve el nombre contra el padrón', () => {
-    const [e] = toGroupWaitlist(
-      [{ id: '7', studentId: '91', requestedAt: '2026-09-01T12:00:00.000Z' }],
-      [alumno],
-    );
-    expect(e).toEqual({
-      id: '7',
-      studentId: '91',
-      name: 'Julián Vera',
-      requestedAt: '2026-09-01T12:00:00.000Z',
-    });
-  });
-
-  it('cae a guión si el alumno no está en el padrón', () => {
-    const [e] = toGroupWaitlist([{ id: '7', studentId: '404', requestedAt: null }], [alumno]);
-    expect(e.name).toBe('—');
   });
 });

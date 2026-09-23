@@ -4,6 +4,7 @@ import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { GruposFacade } from './grupos.facade';
 import { GroupsRepository } from '@domain/contracts/groups.repository';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
+import { ReservationsRepository } from '@domain/contracts/reservations.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { StudentsRepository } from '@domain/contracts/students.repository';
 import { TenantContext } from '@shared/tenant/tenant-context';
@@ -12,7 +13,7 @@ import { SessionReservation } from '@domain/entities/session-reservation';
 
 const grupo = (over: Partial<Group> = {}): Group => ({
   id: '7', category: '7ma+8va', teacher: 'Diego A.', courtName: 'Cancha 1',
-  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 3, waiting: 1,
+  weekday: 1, startTime: '18:00', capacity: 4, enrolled: 3,
   nextSessionId: '301', sessions: [], ...over,
 });
 
@@ -53,6 +54,10 @@ function setup(
   } as unknown as StudentsRepository;
 
   // TenantContext se inyecta con { optional: true }: sólo lo provee el test que lo mira.
+  const reservas = {
+    cancel: async (id: string) => { calls.push(`cancelReserva:${id}`); },
+  } as unknown as ReservationsRepository;
+
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
@@ -61,6 +66,7 @@ function setup(
       { provide: ClassSessionsRepository, useValue: sessions },
       { provide: CategoriesRepository, useValue: categories },
       { provide: StudentsRepository, useValue: students },
+      { provide: ReservationsRepository, useValue: reservas },
       ...(over.tenant ? [{ provide: TenantContext, useValue: over.tenant }] : []),
     ],
   });
@@ -76,21 +82,21 @@ describe('GruposFacade', () => {
     expect(facade.error()).toBeNull();
   });
 
-  it('loadDetalle() trae roster y lista de espera de esa sesión', async () => {
+  it('loadDetalle() trae el roster de esa sesión y NO pide lista de espera', async () => {
+    // La lista de espera se sacó de la pantalla: pedirla sería una request que nadie mira.
     const { facade, calls } = setup();
     await facade.loadDetalle('301');
     expect(calls).toContain('reservations:301');
-    expect(calls).toContain('waitingList:301');
+    expect(calls).not.toContain('waitingList:301');
     expect(facade.roster().map((m) => m.id)).toEqual(['500']);
     expect(facade.detalleCargando()).toBe(false);
   });
 
   // Un grupo sin próxima sesión programada no tiene roster que pedir.
-  it('loadDetalle(null) vacía las listas sin pegarle a nadie', async () => {
+  it('loadDetalle(null) vacía el roster sin pegarle a nadie', async () => {
     const { facade, calls } = setup();
     await facade.loadDetalle(null);
     expect(facade.roster()).toEqual([]);
-    expect(facade.waitlist()).toEqual([]);
     expect(calls).toEqual([]);
   });
 
@@ -123,12 +129,13 @@ describe('GruposFacade', () => {
     expect(facade.detalleError()).toBeNull();
   });
 
-  it('pide categorías y padrón UNA sola vez aunque se llame dos veces', async () => {
+  it('pide categorías UNA sola vez aunque se llame dos veces', async () => {
     const { facade, calls } = setup();
     await facade.loadDetalle('301');
     await facade.loadDetalle('301');
     expect(calls.filter((c) => c === 'categories')).toHaveLength(1);
-    expect(calls.filter((c) => c === 'students')).toHaveLength(1);
+    // El padrón ya no se pide acá: lo necesitaba la lista de espera, que se sacó.
+    expect(calls.filter((c) => c === 'students')).toHaveLength(0);
   });
 
   // LAS DOS TRAMPAS GEMELAS. El modal vive DENTRO de la rama data() del template: si esto
@@ -160,7 +167,7 @@ describe('GruposFacade', () => {
     expect(calls).toEqual([]);
   });
 
-  // El guard que evita mostrarle a un club el roster —y el padrón— de otro. El flag del effect
+  // El guard que evita mostrarle a un club el roster de otro. El flag del effect
   // saltea el valor INICIAL: sin él, el primer run pisaría el estado recién cargado.
   it('resetea al CAMBIAR de tenant, pero NO en el primer disparo del effect', async () => {
     const tenantId = signal('t1');
@@ -175,12 +182,11 @@ describe('GruposFacade', () => {
     TestBed.tick();
     expect(facade.data()).toBeNull();
     expect(facade.roster()).toEqual([]);
-    expect(facade.waitlist()).toEqual([]);
   });
 
   // Los lookups son un cache privado: si sobrevivieran al cambio, el nombre de categoría de un
   // alumno del club viejo saldría en la tabla del nuevo.
-  it('al cambiar de tenant vuelve a pedir categorías y padrón', async () => {
+  it('al cambiar de tenant vuelve a pedir categorías', async () => {
     const tenantId = signal('t1');
     const { facade, calls } = setup({ tenant: { tenantId } });
     await facade.loadDetalle('301');
@@ -190,6 +196,5 @@ describe('GruposFacade', () => {
     TestBed.tick();
     await facade.loadDetalle('301');
     expect(calls.filter((c) => c === 'categories')).toHaveLength(2);
-    expect(calls.filter((c) => c === 'students')).toHaveLength(2);
   });
 });

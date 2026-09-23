@@ -8,7 +8,7 @@ const DTO: ScheduleDto = {
   weekday: 1,
   startTime: '1970-01-01T18:00:00.000Z',
   endTime: '1970-01-01T19:30:00.000Z',
-  capacity: 8, price: '12000', active: true,
+  capacity: 8, active: true,
   validFrom: '2026-08-01T00:00:00.000Z',
   validTo: '2026-12-31T00:00:00.000Z',
 };
@@ -45,11 +45,6 @@ describe('toSchedule', () => {
     expect(toSchedule({ ...DTO, startTime: 'mediodía' }).startTime).toBeNull();
     expect(toSchedule({ ...DTO, validFrom: 'ayer' }).validFrom).toBeNull();
   });
-
-  it('price se normaliza a string aunque llegue como número', () => {
-    expect(toSchedule({ ...DTO, price: 12000 }).price).toBe('12000');
-    expect(toSchedule({ ...DTO, price: null }).price).toBeNull();
-  });
 });
 
 describe('toScheduleRequest', () => {
@@ -59,10 +54,6 @@ describe('toScheduleRequest', () => {
     capacity: 8, active: true,
     validFrom: '2026-08-01', validTo: '2026-12-31',
   };
-
-  it('manda los doce campos cuando están todos', () => {
-    expect(toScheduleRequest(DRAFT)).toEqual(DRAFT);
-  });
 
   it('OMITE validFrom y validTo cuando son null (§3.7)', () => {
     // El service hace `dto.validFrom ? new Date(...) : undefined`, o sea que mandar null
@@ -83,6 +74,12 @@ describe('toScheduleRequest', () => {
   it('weekday viaja como number', () => {
     const req = toScheduleRequest(DRAFT);
     expect(typeof req.weekday).toBe('number');
+  });
+
+  it('manda los once campos cuando están todos', () => {
+    // La red que ataja una clave perdida: si alguien saca `sessionTypeId` del objeto literal
+    // del mapper, los otros tests siguen verdes y el alta pierde el campo en silencio.
+    expect(toScheduleRequest(DRAFT)).toEqual(DRAFT);
   });
 
   it('NO manda price: el backend lo rechaza con 400', () => {

@@ -27,7 +27,7 @@ const SESSION_TYPES: CatalogItem[] = [
 
 const HORARIO: Schedule = {
   id: '1', courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
-  weekday: 1, startTime: '18:00', endTime: '19:30', capacity: 8, price: '12000',
+  weekday: 1, startTime: '18:00', endTime: '19:30', capacity: 8,
   active: true, validFrom: '2026-08-01', validTo: null,
 };
 
@@ -84,7 +84,7 @@ const hora = (f: { nativeElement: HTMLElement }, controlId: string) =>
   f.nativeElement.querySelector<HTMLElement>(`#${controlId} .tt-val`)!.textContent?.trim();
 
 describe('HorarioFormModalComponent', () => {
-  it('precarga los once campos en edición', () => {
+  it('precarga los diez campos en edición', () => {
     const f = setup(HORARIO);
     expect(el(f, '[data-test="cancha"]').value).toBe('10');
     expect(el(f, '[data-test="profesor"]').value).toBe('20');
@@ -94,7 +94,6 @@ describe('HorarioFormModalComponent', () => {
     expect(hora(f, 'horario-inicio')).toBe('18:00');
     expect(hora(f, 'horario-fin')).toBe('19:30');
     expect(el(f, '#horario-cupo').value).toBe('8');
-    expect(el(f, '#horario-precio').value).toBe('12000');
     expect(el(f, '#horario-desde').value).toBe('2026-08-01');
     expect(el(f, '#horario-activo').checked).toBe(true);
   });
@@ -210,14 +209,10 @@ describe('HorarioFormModalComponent', () => {
     expect(el(f, '#horario-desde').value).toBe('');
   });
 
-  it('el precio se MUESTRA pero es readonly: el backend no lo acepta', () => {
-    // CreateScheduleDto no declara price y el pipe corre con forbidNonWhitelisted, así que
-    // mandarlo devuelve 400 y no se puede guardar el horario. Verificado contra el server.
-    // Se muestra el valor guardado —la columna existe y el GET la devuelve— y no se ofrece
-    // editarlo: un campo editable que no persiste es peor que uno que no se ofrece.
-    const f = setup(HORARIO);
-    expect(el(f, '#horario-precio').value).toBe('12000');
-    expect(el(f, '#horario-precio').readOnly).toBe(true);
+  it('NO hay campo de precio: el backend no acepta el campo al escribir', () => {
+    // CreateScheduleDto no lo declara y el pipe corre con forbidNonWhitelisted: mandarlo daba
+    // 400 y no se podía guardar el horario. Se sacó de la pantalla en vez de mostrarlo muerto.
+    expect(setup(HORARIO).nativeElement.querySelector('#horario-precio')).toBeNull();
   });
 
   it('avisa que la vigencia no se puede vaciar', () => {

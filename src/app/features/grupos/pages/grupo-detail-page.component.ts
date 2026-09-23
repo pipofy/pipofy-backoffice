@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Group, GroupSession } from '@domain/entities/group';
+import { Group, GroupSession, RosterMember } from '@domain/entities/group';
 import { SessionAttendanceMark } from '@domain/entities/session-attendance';
 import { domainErrorMessage, asDomainError } from '@domain/errors';
 import { weekdayLabel } from '@shared/weekday-label';
@@ -12,6 +12,7 @@ import { AttendanceModalComponent, AttendanceTarget } from '../components/attend
 import { fechaCorta, groupTitle, initials } from '../grupos-format';
 import { GruposFacade } from '../grupos.facade';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
+import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
 
 /**
  * Detalle de un grupo. Origen: docs/maquetas/index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
@@ -30,8 +31,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
     RosterTableComponent,
     SessionsTableComponent,
     AttendanceModalComponent,
-    PlaceholderComponent,
-  ],
+    PlaceholderComponent, ConfirmDeleteModalComponent,],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './grupo-detail-page.component.html',
   styleUrl: './grupo-detail-page.component.css',
@@ -39,6 +39,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 export class GrupoDetailPageComponent {
   protected readonly facade = inject(GruposFacade);
   private readonly toasts = inject(ToastService);
+  private readonly confirmQuitar = viewChild.required(ConfirmDeleteModalComponent);
   private readonly groupId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly attendanceTarget = signal<AttendanceTarget | null>(null);
@@ -77,7 +78,53 @@ export class GrupoDetailPageComponent {
   protected title(g: Group): string { return groupTitle(g); }
   protected ini(name: string): string { return initials(name); }
   protected dia(weekday: number | null): string { return weekdayLabel(weekday); }
-  protected fecha(v: string | null): string { return fechaCorta(v); }
+
+  /** La reserva que se está cancelando: deshabilita SÓLO su botón, no la tabla entera. */
+  protected readonly quitando = signal<string | null>(null);
+
+  /** 'la clase del Lunes 18:00'. Es el texto del botón, y por eso nombra la CLASE y no el grupo. */
+  protected claseLabel(g: Group): string {
+    return `la clase del ${this.dia(g.weekday)} ${g.startTime ?? ''}`.trim();
+  }
+
+  /** Ver roster-table.nombreEnFrase: el roster cae a un guión cuando el alumno no tiene nombre. */
+  protected nombreEnFrase(m: RosterMember): string {
+    return m.name === '—' || m.name.trim() === '' ? 'este alumno' : m.name;
+  }
+
+  /** A quién se está por quitar. Lo pone askQuitar() y lo lee el modal de confirmación. */
+  protected readonly aQuitar = signal<RosterMember | null>(null);
+
+  /**
+   * Pide confirmación ANTES de cancelar, y no es ceremonia: `ReservationsRepository.cancel()`
+   * manda `offerToWaitingList: true`, así que además de liberar el cupo el backend le ofrece el
+   * lugar por WhatsApp al primero de la lista de espera. Un click de más le manda un mensaje a
+   * una persona real y no se puede deshacer.
+   */
+  protected askQuitar(m: RosterMember): void {
+    if (this.quitando() !== null) return;
+    this.aQuitar.set(m);
+    this.confirmQuitar().open();
+  }
+
+  /**
+   * Quitar saca al alumno de la PRÓXIMA CLASE, no del grupo: no existe la inscripción a un grupo
+   * en la base. Sin próxima sesión programada no hay reserva que cancelar, así que no hace nada.
+   */
+  protected async onQuitarConfirmado(g: Group): Promise<void> {
+    const m = this.aQuitar();
+    if (m === null || g.nextSessionId === null) return;
+    this.quitando.set(m.id);
+    try {
+      await this.facade.quitarDeClase(m.id, g.nextSessionId);
+      this.toasts.show('ok', 'Listo', `${this.nombreEnFrase(m)} ya no está en ${this.claseLabel(g)}.`);
+    } catch (err) {
+      this.toasts.show('info', 'No se pudo quitar', domainErrorMessage(asDomainError(err)));
+    } finally {
+      this.quitando.set(null);
+      this.aQuitar.set(null);
+    }
+  }
 
   protected errorText(): string {
     const err = this.facade.error();

@@ -11,7 +11,7 @@ const ROW = {
   weekday: 1,
   startTime: '1970-01-01T18:00:00.000Z',
   endTime: '1970-01-01T19:30:00.000Z',
-  capacity: 8, price: '12000', active: true,
+  capacity: 8, active: true,
   validFrom: null, validTo: null,
   createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
 };

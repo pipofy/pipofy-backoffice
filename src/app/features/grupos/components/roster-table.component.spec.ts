@@ -35,8 +35,20 @@ describe('RosterTableComponent', () => {
   });
 
   it('ya no tiene columnas de créditos ni de asistencia', () => {
+    // La tercera es la de acciones. Lleva encabezado: un <th> vacío deja a un lector de
+    // pantalla anunciando una columna sin nombre, y es la de los botones destructivos.
     const th = [...render([miembro()], 4).querySelectorAll('thead th')].map((t) => t.textContent?.trim());
-    expect(th).toEqual(['Alumno', 'Categoría']);
+    expect(th).toEqual(['Alumno', 'Categoría', 'Acciones']);
+  });
+
+  it('cada fila ofrece SIEMPRE quitar, y el aria-label nombra la CLASE, no el grupo', () => {
+    // Sacar a alguien cancela su reserva de una sesión: no existe la inscripción a un grupo.
+    const el = render([miembro()], 4);
+    const btn = el.querySelector<HTMLButtonElement>('[data-test="quitar"]')!;
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute('aria-label')).toContain('esta clase');
+    // El texto VISIBLE también nombra la clase: el panel de arriba dice "al grupo".
+    expect(btn.textContent).toContain('Quitar de esta clase');
   });
 
   it('muestra el contador de ocupación en el panel-head', () => {

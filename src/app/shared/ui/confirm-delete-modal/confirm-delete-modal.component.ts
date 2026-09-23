@@ -14,13 +14,14 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
   imports: [ModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-modal #modal title="Eliminar" icon="danger">
-      <p>¿Eliminar {{ itemName() }}? Esta acción no se puede deshacer.</p>
+    <app-modal #modal [title]="action()" icon="danger">
+      <p>¿{{ action() }} {{ itemName() }}? Esta acción no se puede deshacer.</p>
+      @if (warning()) { <p class="hint">{{ warning() }}</p> }
       <div class="modal-foot" modal-foot>
         <button type="button" class="btn btn-ghost" (click)="close()">Cancelar</button>
         <!-- eslint-disable-next-line @angular-eslint/template/no-autofocus -- requerido por el contrato de ModalComponent: showModal() sólo autoenfoca un elemento con el atributo HTML 'autofocus'; sin él, el dialog nativo se autoenfoca a sí mismo y el foco no llega al botón de eliminar (modal.component.ts) -->
         <button type="button" class="btn btn-danger" data-test="confirm" autofocus (click)="onConfirm()">
-          Eliminar
+          {{ action() }}
         </button>
       </div>
     </app-modal>
@@ -28,6 +29,10 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 })
 export class ConfirmDeleteModalComponent {
   readonly itemName = input.required<string>();
+  /** El verbo. Por defecto 'Eliminar', que es lo que hacen casi todos los call sites. */
+  readonly action = input('Eliminar');
+  /** Aviso de un efecto que el usuario NO ve venir (p. ej. un WhatsApp a un tercero). */
+  readonly warning = input('');
   readonly confirmed = output<void>();
 
   private readonly modal = viewChild.required(ModalComponent);

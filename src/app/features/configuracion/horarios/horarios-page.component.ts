@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { HorariosFacade } from './horarios.facade';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HorarioFormModalComponent } from './horario-form-modal.component';
 import { GenerarClasesModalComponent } from './generar-clases-modal.component';
 import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
@@ -27,6 +28,8 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 export class HorariosPageComponent {
   protected readonly facade = inject(HorariosFacade);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private readonly form = viewChild.required(HorarioFormModalComponent);
   private readonly generar = viewChild.required(GenerarClasesModalComponent);
@@ -44,6 +47,28 @@ export class HorariosPageComponent {
     this.facade.clearError();
     // La facade se provee en la ruta PADRE, así que cambiar de tab y volver no recarga.
     if (!this.facade.data() && !this.facade.loading()) void this.facade.load();
+
+    // Deep link desde el detalle de un grupo: un grupo ES un ScheduleTemplate, así que su id
+    // sirve para abrir la fila. Hace falta un effect porque la tabla llega async.
+    //
+    // Se desarma solo con ref.destroy() —no con un booleano a mano— y ADEMÁS saca el parámetro
+    // de la URL: sin eso, un F5 sobre /configuracion/horarios?editar=row vuelve a abrir el modal
+    // encima de lo que el usuario esté haciendo. replaceUrl para no ensuciar el historial.
+    const aEditar = this.route.snapshot.queryParamMap.get('editar');
+    if (aEditar !== null) {
+      const ref = effect(() => {
+        const fila = this.facade.data()?.find((h) => h.id === aEditar);
+        if (fila === undefined) return;
+        ref.destroy();
+        this.openEdit(fila);
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { editar: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
+    }
     // Los cuatro lookups fallan en SILENCIO y de forma INDEPENDIENTE (loadLookup deja []).
     // Mirar sólo courts() (como acá antes) deja sin reintento a cualquiera de los otros tres:
     // si /coaches falla y courts llegó bien, volver a esta tab ve courts() poblado y nunca

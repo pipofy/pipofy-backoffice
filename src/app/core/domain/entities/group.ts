@@ -26,8 +26,6 @@ export interface Group {
   readonly capacity: number;
   /** Lugares tomados en la PRÓXIMA sesión programada. 0 si no hay ninguna. */
   readonly enrolled: number;
-  /** Cuántos esperan en la próxima sesión programada. */
-  readonly waiting: number;
   /** La próxima sesión programada. De acá cuelgan el roster y la lista de espera del detalle. */
   readonly nextSessionId: string | null;
   /** Orden cronológico ASCENDENTE. */
@@ -46,7 +44,6 @@ export interface GroupSession {
   readonly status: string;
   readonly enrolled: number;
   readonly capacity: number;
-  readonly waiting: number;
   /**
    * Si la sesión ya empezó. Se resuelve en el mapper, con el mismo `now` con el que se elige la
    * próxima sesión: así toda la pantalla mira un solo reloj y el template no tiene que llamar a
@@ -79,13 +76,6 @@ export interface RosterMember {
   readonly attendanceStatus: string | null;
 }
 
-export interface GroupWaitlistEntry {
-  readonly id: string;
-  readonly studentId: string;
-  readonly name: string;
-  /** ISO. La pantalla lo formatea; el backend no manda 'hace 2 días'. */
-  readonly requestedAt: string | null;
-}
 
 /**
  * Si tiene sentido tomarle asistencia a esta sesión.

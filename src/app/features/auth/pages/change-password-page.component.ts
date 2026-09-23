@@ -33,7 +33,7 @@ import { PasswordFacade } from '../password.facade';
         <div class="field">
           <label for="current">Contraseña actual</label>
           <input id="current" type="password" formControlName="currentPassword"
-                 autocomplete="current-password" placeholder="La que te dieron" />
+                 autocomplete="current-password" placeholder="La provisoria que te llegó por mail" />
         </div>
 
         <div class="field">

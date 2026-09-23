@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { APP_CONFIG } from '@config/app-config';
 import { Role } from '@domain/entities/registration';
 
 @Component({
@@ -11,7 +12,7 @@ import { Role } from '@domain/entities/registration';
   template: `
     <div class="step-head">
       <p class="eyebrow">Paso 1 de 3</p>
-      <h2>¿Cómo vas a usar PipoFy?</h2>
+      <h2>¿Cómo vas a usar {{ brand.name }}?</h2>
       <p>Elegí tu rol para adaptar el registro. Podés cambiarlo más adelante desde tu cuenta.</p>
     </div>
     <div class="role-grid" role="radiogroup" aria-label="Elegí tu rol">
@@ -32,7 +33,7 @@ import { Role } from '@domain/entities/registration';
     </div>
   `,
   styles: [`
-    /* Portado de onboarding.html líneas 73-102 (step-head + role) + breakpoint 240. */
+    /* Portado de docs/maquetas/onboarding.html líneas 73-102 (step-head + role) + breakpoint 240. */
     .step-head{margin-bottom:var(--space-lg)}
     .step-head .eyebrow{font-size:var(--text-2xs);font-weight:700;letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-on-primary-soft);margin-bottom:var(--space-xs)}
     .step-head h2{font-size:var(--text-xl)}
@@ -56,5 +57,6 @@ import { Role } from '@domain/entities/registration';
   `],
 })
 export class RoleStepComponent {
+  protected readonly brand = inject(APP_CONFIG).brand;
   readonly control = input.required<FormControl<Role | null>>();
 }

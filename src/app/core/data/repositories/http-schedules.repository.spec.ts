@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpSchedulesRepository } from './http-schedules.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 const ROW = {
   id: '1', clubId: '1', courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
@@ -27,7 +27,7 @@ describe('HttpSchedulesRepository', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/rt' } },
+        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
         HttpSchedulesRepository,
       ],
     });
@@ -47,7 +47,7 @@ describe('HttpSchedulesRepository', () => {
     const p = repo.create({
       courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
       weekday: 1, startTime: '18:00', endTime: '19:30',
-      capacity: 8, price: '12000', active: true, validFrom: null, validTo: null,
+      capacity: 8, active: true, validFrom: null, validTo: null,
     });
     const req = http.expectOne({ method: 'POST', url: '/api/schedules' });
     expect(req.request.body.weekday).toBe(1);
@@ -60,7 +60,7 @@ describe('HttpSchedulesRepository', () => {
     const p = repo.update('7', {
       courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
       weekday: 1, startTime: '18:00', endTime: '19:30',
-      capacity: null, price: null, active: false, validFrom: null, validTo: null,
+      capacity: null, active: false, validFrom: null, validTo: null,
     });
     const req = http.expectOne({ method: 'PATCH', url: '/api/schedules/7' });
     expect(req.request.body.capacity).toBeNull();
@@ -94,7 +94,7 @@ describe('HttpSchedulesRepository', () => {
     const p = repo.create({
       courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
       weekday: 1, startTime: '18:00', endTime: '19:30',
-      capacity: null, price: null, active: true, validFrom: null, validTo: null,
+      capacity: null, active: true, validFrom: null, validTo: null,
     });
     http.expectOne({ method: 'POST', url: '/api/schedules' }).flush(
       { statusCode: 409, message: 'Ya existe un horario que se superpone en esa cancha y día' },

@@ -28,7 +28,7 @@ export class HttpCourtsRepository extends CourtsRepository {
 
   async create(draft: CourtDraft): Promise<void> {
     try {
-      const body = v.parse(CourtRequestSchema, toCourtRequest(draft));
+      const body = v.parse(CourtRequestSchema, toCourtRequest(draft, 'alta'));
       await firstValueFrom(this.api.post<unknown>('/courts', body));
     } catch (err) {
       throw toDomainError(err);
@@ -37,7 +37,7 @@ export class HttpCourtsRepository extends CourtsRepository {
 
   async update(id: string, draft: CourtDraft): Promise<void> {
     try {
-      const body = v.parse(CourtRequestSchema, toCourtRequest(draft));
+      const body = v.parse(CourtRequestSchema, toCourtRequest(draft, 'edicion'));
       await firstValueFrom(this.api.patch<unknown>(`/courts/${id}`, body));
     } catch (err) {
       throw toDomainError(err);

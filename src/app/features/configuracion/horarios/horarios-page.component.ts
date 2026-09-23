@@ -50,7 +50,7 @@ export class HorariosPageComponent {
     // vuelve a pedir coaches, así que el select de Profesor queda vacío para siempre.
     // Por eso el gate mira los CUATRO. Las otras pantallas no necesitan esto porque van
     // contra CatalogsRepository, que borra la entrada del cache al fallar
-    // (catalogs.repository.ts:38) y por eso se auto-reintenta sola en la próxima llamada.
+    // (http-catalogs.repository.ts) y por eso se auto-reintenta sola en la próxima llamada.
     // Contrapartida aceptada: un lookup legítimamente vacío (un club sin profesores cargados
     // todavía) hace reintentar en cada visita a la tab. Es aceptable: la request es barata y
     // el caso es transitorio.

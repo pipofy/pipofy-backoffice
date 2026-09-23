@@ -1,59 +1,34 @@
-# Pipofy
+# Pipofy Backoffice · template de backoffice Angular 20
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.32.
+Backoffice del SaaS de gestión de clubes de pádel **Pipofy**, construido como template
+reutilizable: el kernel (auth, HTTP, errores, layout, primitivos de UI, patrón de slice) no
+depende del producto, y el producto se configura en `src/app/product/`, `styles/brand.css` y
+`public/brand/`. Consume la API de `pipofy-backend` (NestJS + Prisma).
 
-## Development server
+- Para arrancar un producto nuevo: **[docs/TEMPLATE.md](docs/TEMPLATE.md)**.
+- Para trabajar en este repo (arquitectura, convenciones, tests): **[CLAUDE.md](CLAUDE.md)**.
 
-To start a local development server, run:
+## Comandos
 
-```bash
-ng serve
-```
+    npm start              # set-env development + ng serve (proxy /api → localhost:3000)
+    npm run build          # set-env production + ng build
+    npm run build:staging
+    npm test               # vitest + jsdom
+    npm run lint           # eslint (TS + templates + boundaries de capas)
+    npm run check:scripts  # self-checks de set-env.mjs y new-slice.mjs
+    npm run new-slice -- <entity> <entities> <feature> <label>
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Antes de arrancar: `cp .env.example .env.development` (sólo `NG_API_BASE_URL` es obligatoria).
+Node 22.12+ (`.nvmrc`).
 
-## Code scaffolding
+## Capas
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+`core/config` (tokens del producto) → `core/domain` (TS puro) → `core/data` (HTTP, DTOs) →
+`shared` (UI agnóstica) → `layout` (shell) → `features/*` (una por pantalla) ← `product/`
+(datos de marca, nav, iconos). Las flechas permitidas están en `eslint.config.js` y violarlas
+es error de lint.
 
-```bash
-ng generate component component-name
-```
+## Docs
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+`docs/superpowers/specs/` (diseño aprobado) y `docs/superpowers/plans/` (planes task por
+task). `docs/maquetas/` son maquetas HTML estáticas de referencia; `docs/brandboard/` la marca.

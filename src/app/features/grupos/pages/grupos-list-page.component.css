@@ -2,7 +2,7 @@
    .row-link, .avatar-sm, .cat-badge, .row-open) viven en styles/components.css.
    Acá queda sólo lo que renderiza ESTE template.
 
-   OJO: la maqueta usa los alias --faint/--muted (index-v2.html:53-57) que NO existen en la app.
+   OJO: la maqueta usa los alias --faint/--muted (docs/maquetas/index-v2.html:53-57) que NO existen en la app.
    Acá van los tokens reales. */
 .grp-cell { display: flex; align-items: center; gap: var(--space-sm); }
 .grp-name { font-weight: 600; }

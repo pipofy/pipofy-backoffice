@@ -11,7 +11,7 @@
 .slot:last-child { border-right: none; }
 .slot.empty { display: grid; place-items: center; }
 
-/* Sesión: card de sólo lectura dentro de la grilla. Fuente: index-v2.html:203-210. */
+/* Sesión: card de sólo lectura dentro de la grilla. Fuente: docs/maquetas/index-v2.html:203-210. */
 .sess { display: block; width: 100%; border-radius: var(--radius-md); padding: var(--space-sm); height: 100%; border: 1px solid transparent; }
 .sess.full { background: var(--color-muted); border-color: var(--color-border-strong); }
 .sess.open { background: var(--color-accent-soft); border-color: var(--color-accent-soft-border); }

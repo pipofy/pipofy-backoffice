@@ -12,7 +12,7 @@ import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';
 import { ClassSession } from '@domain/entities/class-session';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const session: ClassSession = {
   id: '10', scheduleTemplateId: null, courtId: '2', coachId: '5', categoryGroupId: '3',

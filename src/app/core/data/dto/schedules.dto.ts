@@ -32,16 +32,22 @@ export const ScheduleListDtoSchema = v.array(ScheduleDtoSchema);
  * Write-path, UNO SOLO para POST y PATCH: `UpdateScheduleDto` reexporta `CreateScheduleDto`,
  * así que en el PATCH todo lo obligatorio sigue siendo obligatorio. Mismo caso que Planes.
  *
- * Tres formas distintas de "sin valor", y cada una tiene su motivo:
- *   · `capacity` y `price` van EN null — sus columnas son nullables y el service los pasa
- *     crudos a Prisma, así que null los vacía.
+ * SIN `price`, y no es un olvido: `CreateScheduleDto` del backend NO declara el campo y el
+ * ValidationPipe corre con `forbidNonWhitelisted`, así que mandarlo devuelve
+ * `400 "property price should not exist"` y NO se puede crear ni editar un horario.
+ * Verificado contra el server: el mismo body sin price da 201. La columna existe y el GET la
+ * devuelve —por eso `ScheduleDtoSchema` sí la declara—, pero hoy es de sólo lectura.
+ * Cuando el backend acepte `price`, vuelve acá y a `toScheduleRequest`.
+ *
+ * Dos formas distintas de "sin valor", y cada una tiene su motivo:
+ *   · `capacity` va EN null — su columna es nullable y el service lo pasa crudo a Prisma,
+ *     así que null lo vacía.
  *   · `validFrom` y `validTo` se OMITEN — el service hace `dto.validFrom ? ... : undefined`
  *     y convierte el null en "no toques" (§3.7). Mandarlos en null no los borraría, sólo
  *     agrandaría el body.
  *   · el resto es obligatorio y siempre viaja.
  *
- * `weekday` y `capacity` como number, `price` como string: el ValidationPipe corre sin
- * transform (§3.3).
+ * `weekday` y `capacity` como number: el ValidationPipe corre sin transform (§3.3).
  */
 export const ScheduleRequestSchema = v.object({
   courtId: v.string(),
@@ -52,7 +58,6 @@ export const ScheduleRequestSchema = v.object({
   startTime: v.string(),
   endTime: v.string(),
   capacity: v.nullable(v.number()),
-  price: v.nullable(v.string()),
   active: v.boolean(),
   validFrom: v.optional(v.string()),
   validTo: v.optional(v.string()),

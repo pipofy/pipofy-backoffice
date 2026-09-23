@@ -2,9 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { TenantContext } from '@shared/tenant/tenant-context';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
-import { SessionStore } from '@data/auth/session-store';
+import { DomainError, asDomainError } from '@domain/errors';
+import { SessionStore } from '@domain/contracts/session-store';
 
 /**
  * Dueña de la sesión. Se provee en ROOT (app.config.ts) porque el shell la necesita para el
@@ -30,7 +29,7 @@ export class SessionFacade extends SignalStore<void, DomainError> {
   readonly mustChangePassword = this.store.mustChangePassword;
 
   async login(email: string, password: string): Promise<void> {
-    // El guardado en SessionStore va DENTRO de la promesa para que run()/toDomainError se
+    // El guardado en SessionStore va DENTRO de la promesa para que run()/asDomainError se
     // limiten a publicar loading/error; nada se lee de data() después.
     await this.run(
       this.auth.login(email, password).then((session) => {
@@ -39,7 +38,7 @@ export class SessionFacade extends SignalStore<void, DomainError> {
         // mantiene funcionando los effect() que resetean estado al cambiar de tenant.
         this.tenant.set(this.store.clubId());
       }),
-      toDomainError,
+      asDomainError,
     );
   }
 

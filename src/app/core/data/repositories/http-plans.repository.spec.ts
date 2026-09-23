@@ -5,7 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
 import { HttpPlansRepository } from './http-plans.repository';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 import { PlanDraft } from '@domain/entities/plan';
 
 interface Call { readonly method: string; readonly path: string; readonly body?: unknown }
@@ -25,7 +25,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
       HttpPlansRepository,
       { provide: ApiClient, useValue: api },
       { provide: HttpClient, useValue: {} as HttpClient },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   return { repo: TestBed.inject(HttpPlansRepository), calls };
@@ -114,7 +114,7 @@ function setupCategories(fail?: HttpErrorResponse) {
       HttpPlansRepository,
       { provide: ApiClient, useValue: {} as ApiClient },
       { provide: HttpClient, useValue: http },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   return { repo: TestBed.inject(HttpPlansRepository), calls };

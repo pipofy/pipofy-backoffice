@@ -20,15 +20,21 @@ export function toStudent(dto: StudentDto): Student {
 }
 
 /**
- * `categoryId`, `birthDate` y `studentStatusId` se OMITEN cuando son null, por motivos
- * DISTINTOS (ver el comentario del schema). El resto se manda en null, que es lo que los
- * vacía.
+ * `categoryId` se manda EN null al EDITAR: es la única forma de vaciarlo (omitirlo le da a
+ * Prisma `undefined`, que significa "no toques este campo", y la categoría vieja sobrevive
+ * en silencio). En el ALTA se OMITE, porque `students.service.create` hace
+ * `BigInt(dto.categoryId)` apenas la clave está presente y un null sale 500 — sólo el
+ * `update` pasa por `fkOpcional`. Para un alta "en null" y "ausente" significan lo mismo,
+ * así que omitir no pierde nada.
  *
- * Ojo con "unificar" esto con toPlanRequest: ese omite una sola clave (coachId) y manda
- * null en todo lo demás. Cada mapper tiene un test que fija su regla justamente para que
- * el refactor "limpio" rompa en rojo y no en producción.
+ * `birthDate` y `studentStatusId` se OMITEN siempre, cada uno por su motivo: el service
+ * convierte el birthDate null en undefined y Prisma no toca el campo, y studentStatusId es
+ * NOT NULL en la base.
+ *
+ * Ojo con "unificar" esto con toPlanRequest: cada mapper tiene un test que fija su regla
+ * justamente para que el refactor "limpio" rompa en rojo y no en producción.
  */
-export function toStudentRequest(draft: StudentDraft): StudentRequest {
+export function toStudentRequest(draft: StudentDraft, modo: 'alta' | 'edicion'): StudentRequest {
   return {
     phone: draft.phone,
     firstName: draft.firstName,
@@ -36,7 +42,7 @@ export function toStudentRequest(draft: StudentDraft): StudentRequest {
     dominantHand: draft.dominantHand,
     ranking: draft.ranking,
     notes: draft.notes,
-    ...(draft.categoryId !== null ? { categoryId: draft.categoryId } : {}),
+    ...(modo === 'edicion' || draft.categoryId !== null ? { categoryId: draft.categoryId } : {}),
     ...(draft.birthDate !== null ? { birthDate: draft.birthDate } : {}),
     ...(draft.studentStatusId !== null ? { studentStatusId: draft.studentStatusId } : {}),
   };

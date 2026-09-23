@@ -2,9 +2,8 @@ import { Injectable, computed, inject } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach, CoachInput, createCoachDraft } from '@domain/entities/coach';
-import { DomainError, InvalidUserError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { DomainError, InvalidUserError, asDomainError } from '@domain/errors';
+import { UsersRepository } from '@domain/contracts/users.repository';
 import { NewUserInput, createNewUserDraft } from '@domain/entities/new-user';
 
 /** El backend crea el CoachProfile cuando el rol se llama EXACTAMENTE así (users.service.ts). */
@@ -33,7 +32,7 @@ export class ProfesoresFacade extends SignalStore<Coach[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   clearError(): void {
@@ -41,13 +40,13 @@ export class ProfesoresFacade extends SignalStore<Coach[], DomainError> {
   }
 
   /** createCoachDraft no tira, pero la cadena se arma igual que en las otras facades para
-   *  que el fallo del repo salga normalizado por run()/toDomainError. */
+   *  que el fallo del repo salga normalizado por run()/asDomainError. */
   save(id: string, input: CoachInput): Promise<void> {
     return this.run(
       Promise.resolve()
         .then(() => this.repo.update(id, createCoachDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -82,7 +81,7 @@ export class ProfesoresFacade extends SignalStore<Coach[], DomainError> {
       await this.usersRepo.create(createNewUserDraft(input, rol.id));
       creado = true;
     } catch (err) {
-      this.setError(toDomainError(err));
+      this.setError(asDomainError(err));
     }
 
     // Se relee SIEMPRE, también después de un fallo (§3.2).
@@ -94,7 +93,7 @@ export class ProfesoresFacade extends SignalStore<Coach[], DomainError> {
       // ponytail: si la escritura anduvo y sólo falló la relectura, la tabla queda
       // desactualizada hasta cambiar de tab. Techo aceptado: con la escritura ya hecha, un
       // error de red al releer no tiene arreglo del lado del cliente.
-      if (!this.error()) this.setError(toDomainError(err));
+      if (!this.error()) this.setError(asDomainError(err));
     }
 
     this.setLoading(false);

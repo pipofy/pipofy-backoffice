@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpCoachesRepository } from './http-coaches.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: '5', description: null,
@@ -22,7 +22,7 @@ describe('HttpCoachesRepository', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/rt' } },
+        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
         HttpCoachesRepository,
       ],
     });

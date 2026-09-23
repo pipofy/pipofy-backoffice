@@ -13,17 +13,20 @@ export function toCourt(dto: CourtDto): Court {
 }
 
 /**
- * Los FK se OMITEN cuando son null. No es estilo: mandar `surfaceTypeId: null` hace que
- * courts.service ejecute BigInt(null), que tira TypeError y devuelve 500 (§4.5).
+ * Los FK se mandan EN null al EDITAR: es la única forma de vaciarlos, igual que `code`.
+ * En el ALTA se OMITEN, porque `courts.service.create` hace `BigInt(dto.surfaceTypeId)`
+ * apenas la clave está presente y un null sale 500 — sólo el `update` pasa por
+ * `fkOpcional`. Para un alta "en null" y "ausente" significan lo mismo (§4.5).
  *
  * Ojo con "unificar" esto con toCategoryRequest, que hace lo contrario a propósito.
  */
-export function toCourtRequest(draft: CourtDraft): CourtRequest {
+export function toCourtRequest(draft: CourtDraft, modo: 'alta' | 'edicion'): CourtRequest {
+  const editando = modo === 'edicion';
   return {
     name: draft.name,
     code: draft.code,
     indoor: draft.indoor,
-    ...(draft.surfaceTypeId !== null ? { surfaceTypeId: draft.surfaceTypeId } : {}),
-    ...(draft.courtStatusId !== null ? { courtStatusId: draft.courtStatusId } : {}),
+    ...(editando || draft.surfaceTypeId !== null ? { surfaceTypeId: draft.surfaceTypeId } : {}),
+    ...(editando || draft.courtStatusId !== null ? { courtStatusId: draft.courtStatusId } : {}),
   };
 }

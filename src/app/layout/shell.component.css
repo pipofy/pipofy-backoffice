@@ -1,14 +1,10 @@
 :host{
-  /* Tokens de dashboard (antes inline en index-v2.html :root) */
+  /* Tokens de dashboard (antes inline en docs/maquetas/index-v2.html :root). El color del sidebar
+     (--color-sidebar* y --color-live) es de marca y vive en styles/brand.css. */
   --sidebar-w:244px; --header-h:60px;
-  --color-sidebar:var(--color-foreground);
-  --color-sidebar-fg:#E2E8F0; --color-sidebar-idle:#CBD5E1;
-  --color-sidebar-label:#94A3B8; --color-sidebar-line:rgba(255,255,255,.10);
-  --color-sidebar-hover:rgba(255,255,255,.07);
-  /* --color-scrim subió a styles/tokens.css (:root): dialog.modal::backdrop es global y
-     dependía de heredarlo por anidamiento — se rompía fuera del shell. Acá queda heredado. */
-  --color-live:#4ADE80;
-  --color-on-warning-mark:#451A03; --wa:var(--color-accent-strong);
+  /* --color-scrim y --color-on-warning-mark subieron a styles/tokens.css (:root): son
+     globales (dialog.modal::backdrop; el badge de --color-warning-mark) y dependían de
+     heredarlos por anidamiento — se rompían fuera del shell. Acá quedan heredados. */
   --z-nav:20; --z-header:30; --z-scrim:40; --z-drawer:50;
   /* Densidad tipográfica de dashboard (cascada a las vistas hijas del outlet) */
   --text-base:.875rem; --text-md:.9375rem; --text-lg:1.0625rem; --text-xl:1.25rem; --text-2xl:1.5rem;
@@ -25,11 +21,11 @@
 .nav{padding:var(--space-xs) var(--space-sm);flex:1;overflow-y:auto}
 .nav .lbl{font-size:var(--text-2xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-sidebar-label);padding:var(--space-md) var(--space-sm) var(--space-xs);font-weight:600}
 .nav a,.nav summary{display:flex;align-items:center;gap:var(--space-sm);width:100%;padding:var(--space-sm);min-height:42px;border-radius:var(--radius-sm);color:var(--color-sidebar-idle);font-weight:500;font-size:var(--text-sm);text-decoration:none;transition:background var(--duration) var(--ease),color var(--duration) var(--ease)}
-.nav a svg,.nav summary svg{width:18px;height:18px;flex:0 0 auto;opacity:.85}
+.nav a app-icon,.nav summary app-icon{width:18px;height:18px;opacity:.85}
 .nav a:hover,.nav summary:hover{background:var(--color-sidebar-hover);color:#fff}
 .nav a:active{background:rgba(255,255,255,.14)}
 .nav a.on{background:var(--color-surface);color:var(--color-fg);font-weight:600}
-.nav a.on svg{opacity:1;color:var(--color-primary)}
+.nav a.on app-icon{opacity:1;color:var(--color-primary)}
 /* Submenú desplegable (<details>). `summary` COMPARTE la caja de `.nav a` sumándose a sus
    selectores de arriba —no copiándolos— para que el padre y los hermanos sin hijos no puedan
    quedar desalineados; acá queda sólo lo que es suyo. El marker nativo se saca porque el
@@ -57,7 +53,7 @@
 .clock{display:flex;align-items:center;gap:var(--space-sm);padding:0 var(--space-sm);height:42px;background:var(--color-primary-strong);color:#fff;border-radius:var(--radius-sm);flex:0 0 auto;white-space:nowrap;margin-left:auto}
 .clock .live{width:8px;height:8px;border-radius:50%;background:var(--color-live);animation:pulse 2s infinite}
 .clock .t{font-family:var(--font-mono);font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums}
-.clock .d{display:none;font-size:var(--text-2xs);color:#CBD5E1;text-transform:capitalize}
+.clock .d{display:none;font-size:var(--text-2xs);color:var(--color-on-primary-strong-subtle);text-transform:capitalize}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 /* El pie va SIEMPRE al fondo de la pantalla: .scroll es columna y .content crece, así que
    con poco contenido el pie se apoya en el borde inferior en vez de flotar a media altura, y
@@ -75,7 +71,7 @@
 .hamb{display:grid;place-items:center;width:44px;height:44px;border-radius:var(--radius-sm);border:1px solid var(--color-border-strong);color:var(--color-primary);flex:0 0 auto}
 .mobile-tab{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--color-surface);border-top:1px solid var(--color-border);z-index:var(--z-nav);padding:var(--space-xs) 2px calc(var(--space-sm) + env(safe-area-inset-bottom));justify-content:space-around;box-shadow:0 -2px 12px rgba(15,23,42,.08)}
 .mobile-tab a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:var(--space-sm) 1px;min-height:52px;color:var(--color-fg-subtle);font-size:var(--text-2xs);font-weight:600;border-radius:var(--radius-sm);text-align:center;text-decoration:none}
-.mobile-tab a svg{width:20px;height:20px}
+.mobile-tab a app-icon{width:20px;height:20px}
 .mobile-tab a.on{color:var(--color-primary)}
 
 /* ── BREAKPOINTS ── */

@@ -4,7 +4,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpClubRepository } from './http-club.repository';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 const CLUB_JSON = {
   id: '1',
@@ -31,7 +31,7 @@ describe('HttpClubRepository', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/rt' } },
+        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
         HttpClubRepository,
       ],
     });

@@ -7,8 +7,8 @@ import {
   WaitlistEntry,
 } from '@domain/entities/dashboard-snapshot';
 import { occupancyPercent } from '@domain/occupancy';
-import { catalogLabel } from '@data/catalog-labels';
-import { CatalogItem } from '../dto/catalogs.dto';
+import { catalogLabel } from '@domain/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { ClassSession, occupiedSpots } from '@domain/entities/class-session';
 import { localHhMm } from '@domain/local-date';
 

@@ -4,8 +4,7 @@ import { PlansRepository } from '@domain/contracts/plans.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Plan, PlanInput, createPlanDraft } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 import { PlanCategoriasStore } from './plan-categorias-store';
 
 /**
@@ -29,7 +28,7 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -66,7 +65,7 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
 
   /**
    * createPlanDraft tira de forma síncrona (nombre vacío, tipo sin elegir, número decimal);
-   * va DENTRO de la promesa para que run()/toDomainError normalicen tanto la invariante de
+   * va DENTRO de la promesa para que run()/asDomainError normalicen tanto la invariante de
    * dominio como el fallo del repo.
    */
   create(input: PlanInput): Promise<void> {
@@ -74,7 +73,7 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.create(createPlanDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -83,7 +82,7 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(id, createPlanDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -95,7 +94,7 @@ export class PlanesFacade extends SignalStore<Plan[], DomainError> {
         // borra acá, queda huérfana para siempre.
         .then(() => this.categorias.forget(id))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 }

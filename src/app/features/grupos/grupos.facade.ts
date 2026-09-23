@@ -13,9 +13,8 @@ import {
 import { Category } from '@domain/entities/category';
 import { Student } from '@domain/entities/student';
 import { TenantContext } from '@shared/tenant/tenant-context';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
-import { toGroupWaitlist, toRoster } from '@data/mappers/groups.mapper';
+import { DomainError, asDomainError } from '@domain/errors';
+import { toGroupWaitlist, toRoster } from '@domain/derive-groups';
 
 @Injectable()
 export class GruposFacade extends SignalStore<Group[], DomainError> {
@@ -64,7 +63,7 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
   }
 
   load(): Promise<void> {
-    return this.run(this.repo.listGroups(), toDomainError);
+    return this.run(this.repo.listGroups(), asDomainError);
   }
 
   /**
@@ -102,7 +101,7 @@ export class GruposFacade extends SignalStore<Group[], DomainError> {
     } catch (err) {
       this._roster.set([]);
       this._waitlist.set([]);
-      this._detalleError.set(toDomainError(err));
+      this._detalleError.set(asDomainError(err));
     } finally {
       this._detalleCargando.set(false);
     }

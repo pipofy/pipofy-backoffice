@@ -11,7 +11,7 @@ export interface Toast {
   readonly leaving: boolean;
 }
 
-/** Fuente: index-v2.html:1435 — `.out` a los 3600ms, remoción 300ms después. */
+/** Fuente: docs/maquetas/index-v2.html:1435 — `.out` a los 3600ms, remoción 300ms después. */
 const VISIBLE_MS = 3600;
 const LEAVING_MS = 300;
 

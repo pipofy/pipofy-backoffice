@@ -3,7 +3,7 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { Student, studentDisplayName } from '@domain/entities/student';
 import { StudentPlan } from '@domain/entities/student-plan';
 import { domainErrorMessage } from '@domain/errors';
-import { catalogLabel } from '@data/catalog-labels';
+import { catalogLabel } from '@domain/catalog-labels';
 import { AlumnoPlanesFacade } from './alumno-planes.facade';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';

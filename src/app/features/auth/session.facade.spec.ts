@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { SessionFacade } from './session.facade';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { AuthRepository } from '@domain/contracts/auth.repository';
 import { TenantContext } from '@shared/tenant/tenant-context';
 
@@ -17,7 +18,7 @@ function setup(repo: Partial<AuthRepository>) {
       provideZonelessChangeDetection(),
       provideRouter([]),
       SessionFacade,
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       { provide: AuthRepository, useValue: repo },
     ],
   });
@@ -100,6 +101,6 @@ describe('SessionFacade', () => {
 
     expect(facade.error()).toEqual({ kind: 'invalid-credentials' });
     expect(store.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem('PipoFy:session:v1')).toBeNull();
+    expect(localStorage.getItem('app:session:v1')).toBeNull();
   });
 });

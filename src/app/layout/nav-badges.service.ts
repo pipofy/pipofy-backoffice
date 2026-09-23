@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import type { BadgeKey } from './nav.model';
+import type { BadgeKey } from '@config/nav';
 
 /**
  * En cero a propósito: no hay fuente. Los contadores anteriores (6 alertas, 3 pagos) eran

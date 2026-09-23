@@ -7,4 +7,4 @@ export const CatalogItemDtoSchema = v.object({
   name: v.string(),
 });
 export const CatalogListDtoSchema = v.array(CatalogItemDtoSchema);
-export type CatalogItem = v.InferOutput<typeof CatalogItemDtoSchema>;
+export type CatalogItemDto = v.InferOutput<typeof CatalogItemDtoSchema>;

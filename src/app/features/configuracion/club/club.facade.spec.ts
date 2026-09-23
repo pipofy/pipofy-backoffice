@@ -58,7 +58,7 @@ describe('ClubFacade', () => {
 
   it('save() con holdMinutes inválido no llama al repo y normaliza la invariante', async () => {
     // createClubDraft tira de forma SÍNCRONA; va dentro de la promesa para que
-    // run()/toDomainError la normalicen igual que un fallo del repo.
+    // run()/asDomainError la normalicen igual que un fallo del repo.
     let llamado = false;
     const f = setup({ update: async () => { llamado = true; }, get: async () => CLUB });
     await f.save({ ...INPUT, holdMinutes: '' });

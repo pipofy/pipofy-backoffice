@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { HttpDashboardRepository } from './http-dashboard.repository';
-import { CatalogsRepository } from './catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoryGroupsRepository } from '@domain/contracts/category-groups.repository';

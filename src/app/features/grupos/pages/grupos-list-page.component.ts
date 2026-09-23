@@ -11,7 +11,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 const TODAS = 'Todas';
 
 /**
- * Lista de grupos. Origen: index-v2.html:906-931 + renderGrpFilter() 1688-1693 +
+ * Lista de grupos. Origen: docs/maquetas/index-v2.html:906-931 + renderGrpFilter() 1688-1693 +
  * renderGruposList() 1705-1734.
  *
  * SIN el botón "Nuevo grupo" de la maqueta (D3): sólo tiraba un toast.

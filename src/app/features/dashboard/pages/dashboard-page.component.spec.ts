@@ -6,7 +6,7 @@ import { DashboardFacade } from '../dashboard.facade';
 import { DashboardRepository } from '@domain/contracts/dashboard.repository';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { DashboardSnapshot } from '@domain/entities/dashboard-snapshot';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 
 const snapshot: DashboardSnapshot = {
   clubId: 'c1',
@@ -98,7 +98,7 @@ describe('DashboardPageComponent', () => {
 
   it('si falla la carga muestra el mensaje en español, sin el kind crudo', async () => {
     // getSnapshot rechaza con un DomainError ya normalizado (isDomainError lo deja pasar tal
-    // cual en toDomainError). Antes el template imprimía "(network)"; ahora tiene que pasar
+    // cual en asDomainError). Antes el template imprimía "(network)"; ahora tiene que pasar
     // por domainErrorMessage y mostrar la copy en español, no el kind.
     const { el } = await mount({
       getSnapshot: async () => {

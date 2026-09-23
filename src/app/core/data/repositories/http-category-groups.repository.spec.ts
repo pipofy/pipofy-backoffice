@@ -5,7 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError, Observable } from 'rxjs';
 import { HttpCategoryGroupsRepository } from './http-category-groups.repository';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 interface Call { readonly method: string; readonly path: string; readonly body?: unknown }
 
@@ -26,7 +26,7 @@ function setup(responses: Partial<Record<'get' | 'post' | 'patch' | 'delete', Ob
       // El repo también inyecta HttpClient/API_CONFIG para addItem/removeItem (ver más abajo):
       // el field initializer corre siempre, aunque estos tests sólo ejerciten el ApiClient.
       { provide: HttpClient, useValue: {} as HttpClient },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   return { repo: TestBed.inject(HttpCategoryGroupsRepository), calls };
@@ -107,7 +107,7 @@ function setupItems(fail?: HttpErrorResponse) {
       HttpCategoryGroupsRepository,
       { provide: ApiClient, useValue: {} as ApiClient },
       { provide: HttpClient, useValue: http },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   return { repo: TestBed.inject(HttpCategoryGroupsRepository), calls };

@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { APP_CONFIG, storageKey } from '@config/app-config';
 import { Role } from '@domain/entities/registration';
 
 /** Forma cruda del FormGroup del wizard (incluye password/confirm — NO se persisten). */
@@ -16,12 +17,12 @@ export interface OnboardingSnapshot {
   step: string;
 }
 
-// v2: el wizard perdió los pasos professional y club. Un snapshot v1 hidrataría campos
-// que ya no existen, así que se descarta cambiando la clave — sin código de migración.
-const SS_KEY = 'PipoFy:onboarding:v2';
-
 @Injectable()
 export class OnboardingPersistenceService {
+  // v2: el wizard perdió los pasos professional y club. Un snapshot v1 hidrataría campos
+  // que ya no existen, así que se descarta cambiando la clave — sin código de migración.
+  private readonly key = storageKey(inject(APP_CONFIG), 'onboarding', 2);
+
   save(value: OnboardingFormValue, step: string): void {
     // Se descartan password y confirm a propósito: una credencial en texto plano en
     // storage es un riesgo real (cualquier script del origen la lee).
@@ -38,7 +39,7 @@ export class OnboardingPersistenceService {
       step,
     };
     try {
-      sessionStorage.setItem(SS_KEY, JSON.stringify(snapshot));
+      sessionStorage.setItem(this.key, JSON.stringify(snapshot));
     } catch {
       /* storage lleno o bloqueado: seguimos sin persistir */
     }
@@ -46,7 +47,7 @@ export class OnboardingPersistenceService {
 
   restore(): OnboardingSnapshot | null {
     try {
-      const raw = sessionStorage.getItem(SS_KEY);
+      const raw = sessionStorage.getItem(this.key);
       return raw ? (JSON.parse(raw) as OnboardingSnapshot) : null;
     } catch {
       return null;
@@ -55,7 +56,7 @@ export class OnboardingPersistenceService {
 
   clear(): void {
     try {
-      sessionStorage.removeItem(SS_KEY);
+      sessionStorage.removeItem(this.key);
     } catch {
       /* noop */
     }

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { APP_CONFIG } from '@config/app-config';
 import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { OnboardingFormValue } from '../onboarding-persistence.service';
 
@@ -43,12 +44,12 @@ interface SummaryBlock { title: string; edit: 'account'; rows: SummaryRow[] }
 
     <label class="terms" [class.err]="termsErr()" [formGroup]="form()">
       <input type="checkbox" formControlName="acceptedTerms" />
-      <span class="t-txt">Acepto los <a href="#" (click)="$event.preventDefault()">Términos del servicio</a> y la <a href="#" (click)="$event.preventDefault()">Política de privacidad</a> de PipoFy.</span>
+      <span class="t-txt">Acepto los <a href="#" (click)="$event.preventDefault()">Términos del servicio</a> y la <a href="#" (click)="$event.preventDefault()">Política de privacidad</a> de {{ brand.name }}.</span>
     </label>
     <app-field-error [show]="termsErr()" message="Tenés que aceptar los términos para crear la cuenta." />
   `,
   styles: [`
-    /* Portado de onboarding.html líneas 174-201 (summary + terms). */
+    /* Portado de docs/maquetas/onboarding.html líneas 174-201 (summary + terms). */
     .summary{display:flex;flex-direction:column;gap:var(--space-md);margin-bottom:var(--space-lg)}
     .sum-block{border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
     .sum-head{display:flex;align-items:center;gap:var(--space-sm);padding:12px var(--space-md);background:var(--color-surface-2);border-bottom:1px solid var(--color-border)}
@@ -71,6 +72,7 @@ interface SummaryBlock { title: string; edit: 'account'; rows: SummaryRow[] }
   `],
 })
 export class ConfirmStepComponent {
+  protected readonly brand = inject(APP_CONFIG).brand;
   readonly form = input.required<FormGroup>();
   readonly editStep = output<'role' | 'account'>();
 

@@ -16,15 +16,19 @@ export function toPlan(dto: PlanDto): Plan {
 }
 
 /**
- * `coachId` se OMITE cuando es null (BigInt(null) → 500). El resto se manda EN null,
- * porque es la única forma de vaciarlo: omitirlo le da a Prisma `undefined`, que significa
- * "no toques este campo", y el valor viejo sobreviviría en silencio.
+ * `coachId` se manda EN null al EDITAR: es la única forma de vaciarlo, igual que el resto
+ * de los opcionales (omitirlo le da a Prisma `undefined`, que significa "no toques este
+ * campo", y el profesor viejo sobreviviría en silencio).
  *
- * Ojo con "unificar" esto con toStudentRequest: ese omite DOS claves distintas
- * (categoryId y birthDate), y por motivos distintos. Cada mapper tiene un test que fija su
- * regla justamente para que el refactor "limpio" rompa en rojo y no en producción.
+ * En el ALTA se OMITE. Acá `plans.service.create` sí pasa por `fkOpcional` y aguantaría el
+ * null, pero para un alta "en null" y "ausente" significan lo mismo, y omitir mantiene UNA
+ * sola regla en los tres mappers en vez de tres excepciones que hay que recordar.
+ *
+ * Ojo con "unificar" esto con toStudentRequest: ese omite DOS claves más (birthDate y
+ * studentStatusId), y por motivos distintos. Cada mapper tiene un test que fija su regla
+ * justamente para que el refactor "limpio" rompa en rojo y no en producción.
  */
-export function toPlanRequest(draft: PlanDraft): PlanRequest {
+export function toPlanRequest(draft: PlanDraft, modo: 'alta' | 'edicion'): PlanRequest {
   return {
     name: draft.name,
     planTypeId: draft.planTypeId,
@@ -32,6 +36,6 @@ export function toPlanRequest(draft: PlanDraft): PlanRequest {
     price: draft.price,
     validityDays: draft.validityDays,
     active: draft.active,
-    ...(draft.coachId !== null ? { coachId: draft.coachId } : {}),
+    ...(modo === 'edicion' || draft.coachId !== null ? { coachId: draft.coachId } : {}),
   };
 }

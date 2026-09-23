@@ -6,8 +6,7 @@ import {
   CategoryGroupInput,
   createCategoryGroupDraft,
 } from '@domain/entities/category-group';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 import { GrupoItemsStore } from './grupo-items-store';
 
 /**
@@ -30,7 +29,7 @@ export class GruposCategoriaFacade extends SignalStore<CategoryGroup[], DomainEr
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -44,7 +43,7 @@ export class GruposCategoriaFacade extends SignalStore<CategoryGroup[], DomainEr
 
   /**
    * createCategoryGroupDraft tira de forma síncrona cuando el nombre está vacío; va DENTRO
-   * de la promesa para que run()/toDomainError normalicen tanto la invariante de dominio
+   * de la promesa para que run()/asDomainError normalicen tanto la invariante de dominio
    * como el fallo del repo. Mismo patrón que CanchasFacade.create().
    */
   create(input: CategoryGroupInput): Promise<void> {
@@ -52,7 +51,7 @@ export class GruposCategoriaFacade extends SignalStore<CategoryGroup[], DomainEr
       Promise.resolve()
         .then(() => this.repo.create(createCategoryGroupDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -61,7 +60,7 @@ export class GruposCategoriaFacade extends SignalStore<CategoryGroup[], DomainEr
       Promise.resolve()
         .then(() => this.repo.update(id, createCategoryGroupDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -73,7 +72,7 @@ export class GruposCategoriaFacade extends SignalStore<CategoryGroup[], DomainEr
         // queda huérfana para siempre.
         .then(() => this.items.forget(id))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 }

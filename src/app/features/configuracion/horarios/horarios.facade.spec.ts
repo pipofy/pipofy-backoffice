@@ -10,8 +10,8 @@ import { Schedule, ScheduleDraft, ScheduleInput, SessionGenerationDraft } from '
 import { Court } from '@domain/entities/court';
 import { Coach } from '@domain/entities/coach';
 import { CategoryGroup } from '@domain/entities/category-group';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const ROW: Schedule = {
   id: 'row', courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',
@@ -21,7 +21,7 @@ const ROW: Schedule = {
 
 const INPUT: ScheduleInput = {
   courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',
-  weekdays: ['1'], startTime: '18:00', endTime: '19:30', capacity: '8', price: '5000',
+  weekdays: ['1'], startTime: '18:00', endTime: '19:30', capacity: '8',
   active: true, validFrom: '', validTo: '',
 };
 
@@ -225,7 +225,7 @@ describe('HorariosFacade', () => {
 
   it('generate() con un rango de más de 60 días no llama al repo', async () => {
     // createSessionGenerationDraft tira SÍNCRONO; va dentro de la promesa para que
-    // toDomainError lo normalice igual que un fallo del repo.
+    // asDomainError lo normalice igual que un fallo del repo.
     let llamado = false;
     const { facade: f } = setup({ list: async () => [ROW], generateSessions: async () => { llamado = true; return { created: 0, skipped: 0 }; } });
     const r = await f.generate({ from: '2026-01-01', to: '2026-12-31' });

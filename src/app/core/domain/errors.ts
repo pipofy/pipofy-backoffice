@@ -35,6 +35,18 @@ export function isDomainError(value: unknown): value is DomainError {
 // Base for domain-invariant violations, so they surface as a real `domain` kind (not `unknown`).
 export abstract class DomainRuleError extends Error {}
 
+/**
+ * Normaliza lo que NO viene de HTTP: la vía síncrona de `createXDraft` (DomainRuleError) y
+ * cualquier excepción inesperada. Los repositorios ya devuelven DomainError, así que esto es
+ * todo lo que una facade necesita como `mapError` de SignalStore.run(). El caso HTTP y el de
+ * valibot viven en `data/http/to-domain-error.ts`, que termina llamando acá.
+ */
+export function asDomainError(err: unknown): DomainError {
+  if (isDomainError(err)) return err;
+  if (err instanceof DomainRuleError) return { kind: 'domain', message: err.message };
+  return { kind: 'unknown', cause: err };
+}
+
 export class ClubInactiveError extends DomainRuleError {
   constructor(clubId: string) {
     super(`Club ${clubId} is inactive`);

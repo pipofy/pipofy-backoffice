@@ -2,8 +2,7 @@ import { Injectable, computed, inject } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { Court, CourtInput, createCourtDraft } from '@domain/entities/court';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 /**
  * ponytail: create/update/remove reusan `loading`, así que la tabla muestra su spinner
@@ -28,7 +27,7 @@ export class CanchasFacade extends SignalStore<Court[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -42,7 +41,7 @@ export class CanchasFacade extends SignalStore<Court[], DomainError> {
 
   /**
    * createCourtDraft tira de forma síncrona cuando el nombre está vacío; va DENTRO de la
-   * promesa para que run()/toDomainError normalicen tanto la invariante de dominio como el
+   * promesa para que run()/asDomainError normalicen tanto la invariante de dominio como el
    * fallo del repo. Mismo patrón que OnboardingFacade.signup().
    */
   create(input: CourtInput): Promise<void> {
@@ -50,7 +49,7 @@ export class CanchasFacade extends SignalStore<Court[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.create(createCourtDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -59,14 +58,14 @@ export class CanchasFacade extends SignalStore<Court[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(id, createCourtDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
   remove(id: string): Promise<void> {
     return this.run(
       this.repo.remove(id).then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 }

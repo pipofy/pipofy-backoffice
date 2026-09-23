@@ -3,7 +3,7 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { HorariosPageComponent } from './horarios-page.component';
 import { HorariosFacade } from './horarios.facade';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { SchedulesRepository } from '@domain/contracts/schedules.repository';
 import { CourtsRepository } from '@domain/contracts/courts.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';

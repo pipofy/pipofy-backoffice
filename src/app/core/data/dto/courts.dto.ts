@@ -20,9 +20,9 @@ export type CourtDto = v.InferOutput<typeof CourtDtoSchema>;
 export const CourtListDtoSchema = v.array(CourtDtoSchema);
 
 /**
- * Write-path. Los FK son OPCIONALES y no nullables a propósito: mandarlos en null hace
- * que el backend ejecute BigInt(null) y devuelva 500 (§4.5). Cuando no hay valor, la
- * clave se omite.
+ * Write-path. Los FK son nullish: EN null al editar (única forma de vaciarlos, el update
+ * pasa por fkOpcional) y AUSENTES en el alta, donde el create hace BigInt(null) → 500
+ * (§4.5).
  *
  * `code` sí acepta null: Prisma lo setea en null, que es la única forma de limpiarlo.
  * `name` nunca es null — createCourtDraft ya garantizó que tiene contenido.
@@ -33,8 +33,8 @@ export const CourtListDtoSchema = v.array(CourtDtoSchema);
 export const CourtRequestSchema = v.object({
   name: v.string(),
   code: v.nullable(v.string()),
-  surfaceTypeId: v.optional(v.string()),
+  surfaceTypeId: v.nullish(v.string()),
   indoor: v.boolean(),
-  courtStatusId: v.optional(v.string()),
+  courtStatusId: v.nullish(v.string()),
 });
 export type CourtRequest = v.InferOutput<typeof CourtRequestSchema>;

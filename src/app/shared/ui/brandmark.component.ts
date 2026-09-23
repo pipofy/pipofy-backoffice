@@ -1,14 +1,13 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { APP_CONFIG } from '@config/app-config';
 
 /**
- * El lockup de marca. El texto "Pipofy" ya está convertido a trazados dentro del
- * SVG, así que no se duplica en HTML: dos copias se desalinearían. El alt mantiene
- * el nombre accesible y el aria-label del enlace describe el destino.
+ * El lockup de marca. El texto ya está convertido a trazados dentro del SVG, así que no se
+ * duplica en HTML. El alt mantiene el nombre accesible y el aria-label del enlace el destino.
  *
- * ponytail: un <img> no hereda currentColor, así que sobre una superficie oscura el
- * logo navy desaparece. Hoy no hay ninguna. Cuando la haya, la salida es la variante
- * 01b-isotipo-blanco del brandboard, que todavía no está en assets/.
+ * ponytail: un <img> no hereda currentColor, así que sobre una superficie oscura el logo
+ * desaparece. Hoy no hay ninguna. Salida: un segundo campo `logoOnDark` en AppBrand.
  */
 @Component({
   selector: 'app-brandmark',
@@ -17,11 +16,12 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="brandmark" [routerLink]="link()" [attr.aria-label]="ariaLabel()">
-      <img class="bm-img" src="brand/logo-horizontal.svg" alt="Pipofy" />
+      <img class="bm-img" [src]="brand.logoHorizontal" [alt]="brand.name" />
     </a>
   `,
 })
 export class BrandmarkComponent {
+  protected readonly brand = inject(APP_CONFIG).brand;
   readonly link = input<string>('/');
-  readonly ariaLabel = input<string>('Pipofy · ir al panel');
+  readonly ariaLabel = input<string>(`${this.brand.name} · ir al panel`);
 }

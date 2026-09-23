@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, v
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Group, GroupSession } from '@domain/entities/group';
 import { SessionAttendanceMark } from '@domain/entities/session-attendance';
-import { domainErrorMessage } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { domainErrorMessage, asDomainError } from '@domain/errors';
 import { weekdayLabel } from '@shared/weekday-label';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { CupoCellComponent } from '../components/cupo-cell.component';
@@ -15,7 +14,7 @@ import { GruposFacade } from '../grupos.facade';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
- * Detalle de un grupo. Origen: index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
+ * Detalle de un grupo. Origen: docs/maquetas/index-v2.html:933-941 + renderGrupoDetail() 1741-1837.
  *
  * La lista de espera va INLINE acá (D10): sin lógica, sin output y con un solo consumidor, no se
  * gana un componente propio. Se extrae cuando llegue "Ofrecer cupo".
@@ -111,7 +110,7 @@ export class GrupoDetailPageComponent {
       // detección de cambios y sembraría el modal con el target VIEJO.
       this.attendanceTarget.set({ group, session, roster });
     } catch (err) {
-      this.toasts.show('info', 'No se pudo abrir la planilla', domainErrorMessage(toDomainError(err)));
+      this.toasts.show('info', 'No se pudo abrir la planilla', domainErrorMessage(asDomainError(err)));
     } finally {
       this.abriendo.set(false);
     }
@@ -139,10 +138,10 @@ export class GrupoDetailPageComponent {
           `${ok} de ${results.length} se guardaron. Volvé a intentar: reintentar no duplica nada.`);
       }
     } catch (err) {
-      // saveAttendance NO usa run(), así que el error llega crudo hasta acá. toDomainError lo
+      // saveAttendance NO usa run(), así que el error llega crudo hasta acá. asDomainError lo
       // normaliza y domainErrorMessage le pone copy en español: nunca el kind pelado.
       this.modal()?.markFailed();
-      this.toasts.show('info', 'No se pudo guardar', domainErrorMessage(toDomainError(err)));
+      this.toasts.show('info', 'No se pudo guardar', domainErrorMessage(asDomainError(err)));
     }
   }
 }

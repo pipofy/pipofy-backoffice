@@ -3,8 +3,8 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { Plan, PlanInput } from '@domain/entities/plan';
 import { Coach } from '@domain/entities/coach';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 
 /**
  * El mismo componente para alta y edición: `open(null)` es alta, `open(plan)` es edición.
@@ -53,12 +53,7 @@ import { catalogLabel } from '@data/catalog-labels';
         <label for="plan-profesor">Profesor</label>
         <select id="plan-profesor" class="control" data-test="plan-coach"
                 [value]="coachId()" (change)="coachId.set(value($event))">
-          <!-- La opción vacía SÓLO mientras el plan no tiene profesor: una vez asignado no se
-               puede volver a sacar contra este backend (mandarlo en null da 500, omitirlo no
-               lo borra). ponytail: se saca el @if el día que el backend acepte el null. -->
-          @if (canClearCoach()) {
-            <option value="" [selected]="coachId() === ''">— sin asignar —</option>
-          }
+          <option value="" [selected]="coachId() === ''">— sin asignar —</option>
           @if (orphanCoachId(); as orphan) {
             <option [value]="orphan" [selected]="true" disabled>(no disponible)</option>
           }
@@ -156,12 +151,6 @@ export class PlanFormModalComponent {
       if (this.planTypeId() === '' && tipos.length > 0) this.planTypeId.set(tipos[0].id);
     });
   }
-
-  /** En alta (plan === null) siempre se puede dejar sin profesor; en edición, sólo si ya lo está. */
-  protected readonly canClearCoach = computed(() => {
-    const p = this.plan();
-    return p === null || p.coachId === null;
-  });
 
   /**
    * El valor guardado que no tiene ninguna <option> que lo matchee — porque el catálogo

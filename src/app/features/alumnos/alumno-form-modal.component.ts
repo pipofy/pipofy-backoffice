@@ -3,8 +3,8 @@ import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { DOMINANT_HANDS, Student, StudentInput } from '@domain/entities/student';
 import { dominantHandLabel } from './hand-label';
 import { Category } from '@domain/entities/category';
-import { CatalogItem } from '@data/dto/catalogs.dto';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogItem } from '@domain/entities/catalog-item';
+import { catalogLabel } from '@domain/catalog-labels';
 import { NoticeComponent } from '@shared/ui/notice.component';
 
 /**
@@ -65,12 +65,7 @@ import { NoticeComponent } from '@shared/ui/notice.component';
         <label for="alumno-categoria">Categoría</label>
         <select id="alumno-categoria" class="control" data-test="alumno-categoria"
                 [value]="categoryId()" (change)="categoryId.set(value($event))">
-          <!-- La opción vacía SÓLO mientras el alumno no tiene categoría: una vez asignada no
-               se puede volver a sacar contra este backend (mandarla en null da 500, omitirla
-               no la borra). ponytail: se saca el @if el día que el backend acepte el null. -->
-          @if (canClearCategory()) {
-            <option value="" [selected]="categoryId() === ''">— sin categoría —</option>
-          }
+          <option value="" [selected]="categoryId() === ''">— sin categoría —</option>
           @if (orphanCategoryId(); as orphan) {
             <option [value]="orphan" [selected]="true" disabled>(no disponible)</option>
           }
@@ -162,12 +157,6 @@ export class AlumnoFormModalComponent {
   protected readonly notes = signal('');
 
   protected readonly hands = DOMINANT_HANDS;
-
-  /** En alta siempre se puede dejar sin categoría; en edición, sólo si todavía lo está. */
-  protected readonly canClearCategory = computed(() => {
-    const s = this.student();
-    return s === null || s.categoryId === null;
-  });
 
   /** Lo mismo con la fecha, pero acá el motivo es el `? :` del service, no BigInt(null). */
   protected readonly canClearBirthDate = computed(() => {

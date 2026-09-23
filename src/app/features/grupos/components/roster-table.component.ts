@@ -5,7 +5,7 @@ import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 
 /**
  * Tabla de inscriptos del detalle. Origen: el bloque `rosterRows` y su <table> dentro de
- * `renderGrupoDetail()` (index-v2.html:1741-1837).
+ * `renderGrupoDetail()` (docs/maquetas/index-v2.html:1741-1837).
  *
  * SIN filas clickeables ni .row-open (D8): en la maqueta abren la ficha del alumno, que este
  * slice difiere. Una fila muerta o un toast que promete la ficha serían peores.

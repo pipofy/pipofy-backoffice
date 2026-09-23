@@ -6,7 +6,7 @@ import { ProfesoresFacade } from './profesores.facade';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { Coach } from '@domain/entities/coach';
 import { ToastService } from '@shared/ui/toast/toast.service';
-import { UsersRepository } from '@data/repositories/users.repository';
+import { UsersRepository } from '@domain/contracts/users.repository';
 
 const COACHES: Coach[] = [
   { id: '1', displayName: 'Ana Díaz', description: 'Revés a una mano' },

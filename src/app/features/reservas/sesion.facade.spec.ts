@@ -8,7 +8,7 @@ import { ReservationsRepository } from '@domain/contracts/reservations.repositor
 import { WaitingListEntry } from '@domain/entities/waiting-list';
 import { SessionReservation } from '@domain/entities/session-reservation';
 import { ReservationDraft } from '@domain/entities/reservation';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { SessionAttendanceResult } from '@domain/entities/session-attendance';
 
 const entry: WaitingListEntry = { id: '77', studentId: '4', requestedAt: null };

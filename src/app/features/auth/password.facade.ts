@@ -1,9 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
-import { SessionStore } from '@data/auth/session-store';
+import { DomainError, asDomainError } from '@domain/errors';
+import { SessionStore } from '@domain/contracts/session-store';
 
 /**
  * Las tres operaciones de contraseña. Scoped a sus rutas (NO root), igual que
@@ -25,7 +24,7 @@ export class PasswordFacade extends SignalStore<void, DomainError> {
   /** run() devuelve void y se traga el error en el signal: esto recupera el "¿salió bien?". */
   private async attempt(work: Promise<void>): Promise<void> {
     this._done.set(false);
-    await this.run(work, toDomainError);
+    await this.run(work, asDomainError);
     this._done.set(this.error() === null);
   }
 

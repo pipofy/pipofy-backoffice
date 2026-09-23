@@ -5,8 +5,7 @@ import { DashboardRepository } from '@domain/contracts/dashboard.repository';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { RefreshDashboard } from '@domain/use-cases/refresh-dashboard.use-case';
 import { TenantContext } from '@shared/tenant/tenant-context';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 @Injectable()
 export class DashboardFacade extends SignalStore<DashboardSnapshot, DomainError> {
@@ -27,8 +26,8 @@ export class DashboardFacade extends SignalStore<DashboardSnapshot, DomainError>
   }
 
   // El use case gana su lugar (compone + valida), así que lo llamamos — no al repo directo.
-  // toDomainError normaliza cualquier error lanzado (incl. ClubInactiveError) a DomainError.
+  // asDomainError normaliza cualquier error lanzado (incl. ClubInactiveError) a DomainError.
   load(clubId: string): Promise<void> {
-    return this.run(this.refresh.execute(clubId), toDomainError);
+    return this.run(this.refresh.execute(clubId), asDomainError);
   }
 }

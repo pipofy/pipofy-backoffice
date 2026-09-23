@@ -1,0 +1,5 @@
+/* Los primitivos (.panel, .table-scroll, .btn*) viven en styles/components.css. Acá va SÓLO lo
+   específico de esta tabla. */
+.cell-end .btn + .btn {
+  margin-left: var(--space-sm);
+}

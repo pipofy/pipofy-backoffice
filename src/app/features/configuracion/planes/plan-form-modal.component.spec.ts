@@ -89,16 +89,11 @@ describe('PlanFormModalComponent', () => {
     expect(opciones(setup(PLAN), '[data-test="plan-type"]').some((o) => o.value === '')).toBe(false);
   });
 
-  it('el select de profesor SIEMPRE ofrece opción vacía', () => {
-    // coachId se OMITE cuando es null, y omitirlo deja el campo intacto: por eso la opción
-    // vacía sólo tiene sentido mientras el plan todavía no tiene profesor.
+  it('el select de profesor SIEMPRE ofrece opción vacía, tenga o no uno asignado', () => {
+    // El PATCH manda coachId en null y plans.service.update lo pasa por fkOpcional(), así
+    // que a un plan con profesor se le puede sacar. Verificado contra el server: PATCH → 200.
     expect(opciones(setup(null), '[data-test="plan-coach"]').some((o) => o.value === '')).toBe(true);
-  });
-
-  it('el select de profesor NO ofrece vaciar cuando el plan ya tiene uno', () => {
-    // Mandar coachId en null da 500 (BigInt(null)) y omitirlo no lo borra: no hay forma de
-    // sacarle el profesor a un plan contra este backend.
-    expect(opciones(setup(PLAN), '[data-test="plan-coach"]').some((o) => o.value === '')).toBe(false);
+    expect(opciones(setup(PLAN), '[data-test="plan-coach"]').some((o) => o.value === '')).toBe(true);
   });
 
   it('el select muestra el valor guardado aunque las opciones lleguen tarde', () => {

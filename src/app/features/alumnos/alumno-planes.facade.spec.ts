@@ -6,7 +6,7 @@ import { StudentsRepository } from '@domain/contracts/students.repository';
 import { StudentPlan } from '@domain/entities/student-plan';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { Plan } from '@domain/entities/plan';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 
 const CATALOGS_DOUBLE = {
   paymentMethods: async () => [{ id: '3', name: 'efectivo' }],

@@ -5,10 +5,9 @@ import { PlansRepository } from '@domain/contracts/plans.repository';
 import { StudentPlan, studentPlanIsExpired, usableCredits } from '@domain/entities/student-plan';
 import { Plan } from '@domain/entities/plan';
 import { PlanPurchaseInput, createPlanPurchaseDraft } from '@domain/entities/payment';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
-import { CatalogItem } from '@data/dto/catalogs.dto';
+import { DomainError, asDomainError } from '@domain/errors';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { localDateKey } from '@domain/local-date';
 
 /**
@@ -47,7 +46,7 @@ export class AlumnoPlanesFacade extends SignalStore<StudentPlan[], DomainError> 
     // agregarle su latencia a la tabla, que es lo que se vino a ver.
     void this.loadPlanNames();
     void this.loadPaymentMethods();
-    await this.run(this.repo.plans(studentId), toDomainError);
+    await this.run(this.repo.plans(studentId), asDomainError);
   }
 
   /**
@@ -71,7 +70,7 @@ export class AlumnoPlanesFacade extends SignalStore<StudentPlan[], DomainError> 
     try {
       await this.repo.purchasePlan(studentId, createPlanPurchaseDraft(input));
     } catch (err) {
-      this.setError(toDomainError(err));
+      this.setError(asDomainError(err));
       this.setLoading(false);
       return false;
     }
@@ -81,7 +80,7 @@ export class AlumnoPlanesFacade extends SignalStore<StudentPlan[], DomainError> 
     try {
       this.setData(await this.repo.plans(studentId));
     } catch (err) {
-      this.setError(toDomainError(err));
+      this.setError(asDomainError(err));
     }
     this.setLoading(false);
     return true;

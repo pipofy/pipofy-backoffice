@@ -12,7 +12,7 @@ export interface AttendanceTarget {
 }
 
 /**
- * Modal de toma de asistencia. Origen: index-v2.html:1352-1371 + openAttendance() 2107-2176.
+ * Modal de toma de asistencia. Origen: docs/maquetas/index-v2.html:1352-1371 + openAttendance() 2107-2176.
  *
  * UN SOLO MODO. La versión de la maqueta tenía dos —tomar, que descontaba créditos, y editar, que
  * no— derivados de `session.status`. Contra este backend eso no se sostiene: `markBulk` no cambia

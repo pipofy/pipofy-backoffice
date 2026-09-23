@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, finalize, from, map, shareReplay, tap, catchError, throwError } from 'rxjs';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { SessionStore } from '../auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
 
 /**
  * Comparte UN solo refresh entre todos los requests que fallaron con 401 al mismo tiempo.

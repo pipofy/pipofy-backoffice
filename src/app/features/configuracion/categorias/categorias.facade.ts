@@ -2,8 +2,7 @@ import { Injectable, computed, inject } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Category, CategoryInput, createCategoryDraft } from '@domain/entities/category';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 @Injectable()
 export class CategoriasFacade extends SignalStore<Category[], DomainError> {
@@ -25,7 +24,7 @@ export class CategoriasFacade extends SignalStore<Category[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(), toDomainError);
+    return this.run(this.repo.list(), asDomainError);
   }
 
   /**
@@ -42,7 +41,7 @@ export class CategoriasFacade extends SignalStore<Category[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.create(createCategoryDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -51,14 +50,14 @@ export class CategoriasFacade extends SignalStore<Category[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(id, createCategoryDraft(input)))
         .then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 
   remove(id: string): Promise<void> {
     return this.run(
       this.repo.remove(id).then(() => this.repo.list()),
-      toDomainError,
+      asDomainError,
     );
   }
 }

@@ -41,22 +41,33 @@ describe('toStudent', () => {
 });
 
 describe('toStudentRequest', () => {
-  it('OMITE categoryId cuando es null', () => {
-    // students.service hace BigInt(dto.categoryId) apenas la clave está presente, y
-    // BigInt(null) tira TypeError → 500 (§3.2). Verificado con node.
-    expect('categoryId' in toStudentRequest({ ...draft, categoryId: null })).toBe(false);
+  it('OMITE categoryId null en el ALTA', () => {
+    // students.service.create hace BigInt(dto.categoryId) apenas la clave está presente, y
+    // BigInt(null) tira TypeError → 500 (§3.2). Verificado contra el server corriendo:
+    // POST /students con categoryId:null devuelve 500.
+    expect('categoryId' in toStudentRequest({ ...draft, categoryId: null }, 'alta')).toBe(false);
   });
 
-  it('OMITE birthDate cuando es null', () => {
+  it('MANDA categoryId en null al EDITAR: es la única forma de vaciarlo', () => {
+    // students.service.update pasa por fkOpcional(), que deja el null llegar a Prisma.
+    // Verificado contra el server: PATCH con categoryId:null devuelve 200 y la vacía;
+    // omitir la clave deja la categoría vieja intacta.
+    const body = toStudentRequest({ ...draft, categoryId: null }, 'edicion');
+    expect('categoryId' in body).toBe(true);
+    expect(body.categoryId).toBeNull();
+  });
+
+  it('OMITE birthDate cuando es null, en los DOS modos', () => {
     // El service hace `dto.birthDate ? new Date(dto.birthDate) : undefined`: mandarlo en
     // null no lo vacía, deja el campo intacto. Omitirlo tiene el mismo efecto y es honesto.
-    expect('birthDate' in toStudentRequest({ ...draft, birthDate: null })).toBe(false);
+    expect('birthDate' in toStudentRequest({ ...draft, birthDate: null }, 'alta')).toBe(false);
+    expect('birthDate' in toStudentRequest({ ...draft, birthDate: null }, 'edicion')).toBe(false);
   });
 
   it('SÍ manda null en los que se pueden vaciar', () => {
     const body = toStudentRequest({
       ...draft, firstName: null, lastName: null, dominantHand: null, ranking: null, notes: null,
-    });
+    }, 'edicion');
     expect(body.firstName).toBeNull();
     expect(body.lastName).toBeNull();
     expect(body.dominantHand).toBeNull();
@@ -67,17 +78,19 @@ describe('toStudentRequest', () => {
   it('manda phone aunque el backend lo ignore en el PATCH', () => {
     // students.service.update() NO incluye phone en el data: de Prisma (§3.1). Se manda
     // igual para no tener dos schemas; el valor es el original porque el campo es readonly.
-    expect(toStudentRequest(draft).phone).toBe('1155667788');
+    expect(toStudentRequest(draft, 'edicion').phone).toBe('1155667788');
   });
 
-  it('OMITE studentStatusId cuando es null', () => {
+  it('OMITE studentStatusId cuando es null, en los DOS modos', () => {
     // Es lo que pasa en el ALTA: CreateStudentDto no declara la clave, así que mandarla
     // haría rebotar la request entera con el ValidationPipe en whitelist.
-    expect('studentStatusId' in toStudentRequest({ ...draft, studentStatusId: null })).toBe(false);
+    expect('studentStatusId' in toStudentRequest({ ...draft, studentStatusId: null }, 'alta')).toBe(false);
+    expect('studentStatusId' in toStudentRequest({ ...draft, studentStatusId: null }, 'edicion')).toBe(false);
   });
 
   it('manda exactamente las claves del DTO del backend', () => {
-    expect(Object.keys(toStudentRequest(draft)).sort())
-      .toEqual(['birthDate', 'categoryId', 'dominantHand', 'firstName', 'lastName', 'notes', 'phone', 'ranking', 'studentStatusId']);
+    const claves = ['birthDate', 'categoryId', 'dominantHand', 'firstName', 'lastName', 'notes', 'phone', 'ranking', 'studentStatusId'];
+    expect(Object.keys(toStudentRequest(draft, 'alta')).sort()).toEqual(claves);
+    expect(Object.keys(toStudentRequest(draft, 'edicion')).sort()).toEqual(claves);
   });
 });

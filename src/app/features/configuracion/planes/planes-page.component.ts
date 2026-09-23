@@ -1,13 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, LOCALE_ID, signal, viewChild } from '@angular/core';
 import { PlanesFacade } from './planes.facade';
 import { PlanFormModalComponent } from './plan-form-modal.component';
 import { PlanCategoriasModalComponent } from './plan-categorias-modal.component';
 import { formatPlanPrice } from './plan-price';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
-import { catalogLabel } from '@data/catalog-labels';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
+import { catalogLabel } from '@domain/catalog-labels';
 import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/confirm-delete-modal.component';
 import { Plan, PlanInput } from '@domain/entities/plan';
-import { CatalogItem } from '@data/dto/catalogs.dto';
+import { CatalogItem } from '@domain/entities/catalog-item';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
 import { Category } from '@domain/entities/category';
 import { domainErrorMessage } from '@domain/errors';
@@ -34,6 +34,7 @@ export class PlanesPageComponent {
   private readonly catalogs = inject(CatalogsRepository);
   private readonly categoriesRepo = inject(CategoriesRepository);
   private readonly toast = inject(ToastService);
+  private readonly locale = inject(LOCALE_ID);
 
   private readonly form = viewChild.required(PlanFormModalComponent);
   private readonly confirm = viewChild.required(ConfirmDeleteModalComponent);
@@ -86,7 +87,7 @@ export class PlanesPageComponent {
     this.query.set((e.target as HTMLInputElement).value);
   }
 
-  protected price(raw: string | null): string { return formatPlanPrice(raw); }
+  protected price(raw: string | null): string { return formatPlanPrice(raw, this.locale); }
 
   /** El nombre del catálogo por id; '—' cuando todavía no llegó o el id no está. */
   protected planTypeName(id: string): string {

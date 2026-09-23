@@ -7,7 +7,7 @@ import { ConfirmDeleteModalComponent } from '@shared/ui/confirm-delete-modal/con
 import { Student, StudentInput, studentDisplayName } from '@domain/entities/student';
 import { domainErrorMessage } from '@domain/errors';
 import { ToastService } from '@shared/ui/toast/toast.service';
-import { catalogLabel } from '@data/catalog-labels';
+import { catalogLabel } from '@domain/catalog-labels';
 import { NoticeComponent } from '@shared/ui/notice.component';
 import { PlaceholderComponent } from '@shared/ui/placeholder.component';
 

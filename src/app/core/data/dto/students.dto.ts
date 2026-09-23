@@ -26,7 +26,8 @@ export const StudentListDtoSchema = v.array(StudentDtoSchema);
 /**
  * Write-path. TRES claves opcionales, por tres motivos distintos:
  *
- * `categoryId` se omite cuando es null porque BigInt(null) tira TypeError → 500 (§3.2).
+ * `categoryId` es nullish: EN null al editar (única forma de vaciarlo, el update pasa por
+ *   fkOpcional) y AUSENTE en el alta, donde el create hace BigInt(null) → 500 (§3.2).
  * `birthDate` se omite cuando es null porque mandarlo no lo vacía: el service lo convierte
  *   en undefined y Prisma no toca el campo (§3.3). Omitirlo hace lo mismo sin fingir.
  *
@@ -43,7 +44,7 @@ export const StudentRequestSchema = v.object({
   firstName: v.nullable(v.string()),
   lastName: v.nullable(v.string()),
   birthDate: v.optional(v.string()),
-  categoryId: v.optional(v.string()),
+  categoryId: v.nullish(v.string()),
   studentStatusId: v.optional(v.string()),
   dominantHand: v.nullable(v.string()),
   ranking: v.nullable(v.number()),

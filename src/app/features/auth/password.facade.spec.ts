@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { PasswordFacade } from './password.facade';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 
 function setup(repo: Partial<AuthRepository>) {
   TestBed.resetTestingModule();
@@ -11,7 +12,7 @@ function setup(repo: Partial<AuthRepository>) {
     providers: [
       provideZonelessChangeDetection(),
       PasswordFacade,
-      SessionStore,
+      { provide: SessionStore, useClass: LocalStorageSessionStore },
       { provide: AuthRepository, useValue: repo },
     ],
   });

@@ -5,7 +5,8 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthRepository } from '@domain/contracts/auth.repository';
-import { SessionStore } from '@data/auth/session-store';
+import { SessionStore } from '@domain/contracts/session-store';
+import { LocalStorageSessionStore } from '@data/auth/local-storage-session-store';
 import { SessionFacade } from '../session.facade';
 import { LoginPageComponent } from './login-page.component';
 
@@ -25,7 +26,7 @@ describe('LoginPageComponent.resend', () => {
         // A propósito NO se registra 'revisa-tu-mail' (la agrega Task 10): navigate() ahí
         // rechaza con NG04002, igual que pasa hoy en producción antes de que esa ruta exista.
         provideRouter([{ path: 'login', component: LoginPageComponent }]),
-        SessionStore,
+        { provide: SessionStore, useClass: LocalStorageSessionStore },
         SessionFacade,
         {
           provide: AuthRepository,

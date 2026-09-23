@@ -37,7 +37,7 @@ export const CONFIGURACION_ROUTES: Routes = [
       ...CONFIGURACION_PROVIDERS,
     ],
     // SIN componente contenedor: la sub-navegación son los hijos del item Configuración en
-    // la sidebar (nav.model.ts), así que acá no queda nada que envolver y los hijos entran
+    // la sidebar (product/nav.ts), así que acá no queda nada que envolver y los hijos entran
     // derecho al outlet del shell. Una ruta sin componente igual provee: las facades de abajo
     // siguen scoped a toda la sección.
     children: [

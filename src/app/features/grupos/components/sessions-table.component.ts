@@ -17,7 +17,7 @@ const PILL = new Map<string, string>([
 
 /**
  * Tabla de sesiones del detalle. Origen: el bloque `sesRows` y su <table> dentro de
- * `renderGrupoDetail()` (index-v2.html:1741-1837).
+ * `renderGrupoDetail()` (docs/maquetas/index-v2.html:1741-1837).
  *
  * El sub del head dice "Recientes y próximas" y NO "class_session · recientes y próximas" como
  * la maqueta (1826): no se muestran nombres de tablas de la base en la UI.

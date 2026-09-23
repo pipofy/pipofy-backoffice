@@ -8,7 +8,12 @@
     "build:staging": "node set-env.mjs staging && ng build --configuration staging",
     "watch": "node set-env.mjs development && ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "new-slice": "node scripts/new-slice.mjs",
+    "check:scripts": "node test-set-env.mjs && node test-new-slice.mjs"
+  },
+  "engines": {
+    "node": ">=22.12"
   },
   "prettier": {
     "printWidth": 100,

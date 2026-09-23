@@ -1,33 +1,22 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, LOCALE_ID, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Data, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { NgTemplateOutlet } from '@angular/common';
 import { filter } from 'rxjs';
+import { APP_CONFIG } from '@config/app-config';
+import { NAV_CONFIG, type NavItem } from '@config/nav';
 import { BrandmarkComponent } from '@shared/ui/brandmark.component';
+import { IconComponent } from '@shared/ui/icon.component';
 import { SiteFooterComponent } from '@shared/ui/site-footer.component';
 import { ToastHostComponent } from '@shared/ui/toast/toast-host.component';
 import { SessionFacade } from '@features/auth/session.facade';
-import { SessionStore } from '@data/auth/session-store';
-import { UsersRepository } from '@data/repositories/users.repository';
-import { currentUserName } from '@data/dto/users.dto';
+import { SessionStore } from '@domain/contracts/session-store';
+import { UsersRepository } from '@domain/contracts/users.repository';
 import { NavBadgesService } from './nav-badges.service';
-import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from './nav.model';
-
-/**
- * Los cuatro roles que siembra el backend en el signup. El fallback devuelve el nombre crudo:
- * un rol nuevo del seed se ve raro pero honesto, que es mejor que esconderlo.
- */
-const ROLE_LABELS = new Map<string, string>([
-  ['admin', 'Administrador'],
-  ['encargado', 'Encargado'],
-  ['profesor', 'Profesor'],
-  ['superprofesor', 'Superprofesor'],
-]);
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, BrandmarkComponent, SiteFooterComponent, ToastHostComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, BrandmarkComponent, SiteFooterComponent, ToastHostComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [NavBadgesService],
   templateUrl: './shell.component.html',
@@ -41,11 +30,15 @@ export class ShellComponent {
   private readonly usersRepo = inject(UsersRepository);
   protected readonly badges = inject(NavBadgesService);
 
-  protected readonly groups = NAV_GROUPS;
-  protected readonly items = NAV_ITEMS;
+  private readonly nav = inject(NAV_CONFIG);
+  protected readonly groups = this.nav.groups;
+  protected readonly items = this.nav.items;
+
+  private readonly config = inject(APP_CONFIG);
+  private readonly locale = inject(LOCALE_ID);
 
   protected readonly sideOpen = signal(false);
-  protected readonly title = signal('PipoFy');
+  protected readonly title = signal(this.config.brand.name);
   protected readonly crumb = signal('');
 
   /** '' mientras carga y si la request falla — ver loadUser(). */
@@ -77,7 +70,7 @@ export class ShellComponent {
    */
   private async loadUser(): Promise<void> {
     try {
-      this.userName.set(currentUserName(await this.usersRepo.me()));
+      this.userName.set((await this.usersRepo.me()).displayName);
     } catch {
       this.userName.set('');
     }
@@ -99,7 +92,7 @@ export class ShellComponent {
     await this.router.navigate(['/login']).catch((e) => console.error('[shell] redirect a /login falló', e));
   }
 
-  protected itemsIn(group: NavGroup): readonly NavItem[] {
+  protected itemsIn(group: string): readonly NavItem[] {
     return this.items.filter((i) => i.group === group);
   }
 
@@ -114,7 +107,7 @@ export class ShellComponent {
   protected readonly rol = computed(() => {
     const roles = this.store.roles();
     if (!roles.length) return 'Sin rol';
-    return roles.map((r) => ROLE_LABELS.get(r) ?? r).join(' · ');
+    return roles.map((r) => this.config.roleLabels[r] ?? r).join(' · ');
   });
 
   /** 0 = no se dibuja. Se calcula en la clase y no en el template para no pelear con el
@@ -125,7 +118,7 @@ export class ShellComponent {
 
   private syncRouteMeta(): void {
     const data = this.mergedData();
-    this.title.set((data['title'] as string | undefined) ?? 'PipoFy');
+    this.title.set((data['title'] as string | undefined) ?? this.config.brand.name);
     this.crumb.set((data['crumb'] as string | undefined) ?? '');
   }
 
@@ -146,8 +139,8 @@ export class ShellComponent {
   private formatClock(): { t: string; d: string } {
     const now = new Date();
     return {
-      t: new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }).format(now),
-      d: new Intl.DateTimeFormat('es-AR', { weekday: 'short', day: 'numeric', month: 'short' }).format(now),
+      t: new Intl.DateTimeFormat(this.locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(now),
+      d: new Intl.DateTimeFormat(this.locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(now),
     };
   }
 }

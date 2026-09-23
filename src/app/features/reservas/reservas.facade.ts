@@ -3,9 +3,8 @@ import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { ClassSessionsRepository } from '@domain/contracts/class-sessions.repository';
 import { ClassSession } from '@domain/entities/class-session';
 import { CancelClassInput, createCancelClassDraft } from '@domain/entities/class-cancellation';
-import { DomainError } from '@domain/errors';
+import { DomainError, asDomainError } from '@domain/errors';
 import { localDateKey } from '@domain/local-date';
-import { toDomainError } from '@data/http/to-domain-error';
 
 /**
  * Las clases de UNA fecha. La fecha es estado de la facade y no de la página para que
@@ -29,7 +28,7 @@ export class ReservasFacade extends SignalStore<ClassSession[], DomainError> {
   });
 
   load(): Promise<void> {
-    return this.run(this.repo.list(this._date()), toDomainError);
+    return this.run(this.repo.list(this._date()), asDomainError);
   }
 
   setDate(dateKey: string): Promise<void> {
@@ -43,7 +42,7 @@ export class ReservasFacade extends SignalStore<ClassSession[], DomainError> {
 
   /**
    * `createCancelClassDraft` tira de forma síncrona cuando se pide avisar sin motivo; va
-   * DENTRO de la promesa para que run()/toDomainError normalicen la invariante de dominio y
+   * DENTRO de la promesa para que run()/asDomainError normalicen la invariante de dominio y
    * el fallo del repo por la misma vía. Mismo patrón que AlumnosFacade.create().
    *
    * Re-lee la lista en vez de parchear: la cancelación mueve el cupo de la clase (todas sus
@@ -55,7 +54,7 @@ export class ReservasFacade extends SignalStore<ClassSession[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.cancel(sessionId, createCancelClassDraft(input)))
         .then(() => this.repo.list(this._date())),
-      toDomainError,
+      asDomainError,
     );
   }
 
@@ -64,7 +63,7 @@ export class ReservasFacade extends SignalStore<ClassSession[], DomainError> {
       Promise.resolve()
         .then(() => this.repo.cancelDay(this._date(), createCancelClassDraft(input)))
         .then(() => this.repo.list(this._date())),
-      toDomainError,
+      asDomainError,
     );
   }
 }

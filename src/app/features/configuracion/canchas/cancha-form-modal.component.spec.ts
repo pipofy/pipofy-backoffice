@@ -19,6 +19,10 @@ const SIN_FK: Court = {
  * están en sus valores iniciales. Mismo arranque que attendance-modal.component.spec.ts:30.
  */
 function setup(court: Court | null, error = '') {
+  // reset explícito: los tests de la opción vacía llaman setup() más de una vez DENTRO del
+  // mismo it(), y TestBed no deja reconfigurar un módulo ya instanciado sin esto (mismo
+  // patrón que alumno-form-modal.component.spec.ts y plan-form-modal.component.spec.ts).
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(CanchaFormModalComponent);
   fixture.componentRef.setInput('surfaceTypes', SURFACES);
@@ -36,30 +40,18 @@ const opciones = (fixture: { nativeElement: HTMLElement }, campo: 'surface' | 's
 const tieneVacia = (opts: HTMLOptionElement[]) => opts.some((o) => o.value === '');
 
 describe('CanchaFormModalComponent', () => {
-  it('en alta ofrece la opción vacía de superficie', () => {
+  it('la superficie SIEMPRE ofrece la opción vacía', () => {
+    // El PATCH manda el FK en null y courts.service.update lo pasa por fkOpcional(), así
+    // que un FK ya asignado sí se puede vaciar. Verificado contra el server: PATCH → 200.
     expect(tieneVacia(opciones(setup(null), 'surface'))).toBe(true);
-  });
-
-  it('en edición de una cancha CON superficie NO ofrece la opción vacía', () => {
-    // Contra este backend un FK ya asignado no se puede volver a vaciar (§4.5): ofrecer
-    // "sin especificar" haría que el usuario la elija, guarde, y el valor viejo siga ahí.
-    expect(tieneVacia(opciones(setup(CON_FK), 'surface'))).toBe(false);
-  });
-
-  it('en edición de una cancha SIN superficie sí la ofrece', () => {
+    expect(tieneVacia(opciones(setup(CON_FK), 'surface'))).toBe(true);
     expect(tieneVacia(opciones(setup(SIN_FK), 'surface'))).toBe(true);
   });
 
-  it('en alta ofrece la opción vacía de estado', () => {
+  it('el estado SIEMPRE ofrece la opción vacía', () => {
+    // Misma regla que superficie: courtStatusId también pasa por fkOpcional() en el update.
     expect(tieneVacia(opciones(setup(null), 'status'))).toBe(true);
-  });
-
-  it('en edición de una cancha CON estado NO ofrece la opción vacía', () => {
-    // Misma regla de §4.5 que superficie: courtStatusId también pasa por BigInt() en el backend.
-    expect(tieneVacia(opciones(setup(CON_FK), 'status'))).toBe(false);
-  });
-
-  it('en edición de una cancha SIN estado sí la ofrece', () => {
+    expect(tieneVacia(opciones(setup(CON_FK), 'status'))).toBe(true);
     expect(tieneVacia(opciones(setup(SIN_FK), 'status'))).toBe(true);
   });
 

@@ -9,7 +9,7 @@ import { toPlan, toPlanRequest } from '../mappers/plan.mapper';
 import { toDomainError } from '../http/to-domain-error';
 import { ignoringStatus } from '../http/ignoring-status';
 import { ApiClient } from '../http/api-client';
-import { API_CONFIG } from '../config/api-config.token';
+import { API_CONFIG } from '@config/api-config';
 
 /**
  * ApiClient ya normaliza los errores HTTP a DomainError, pero v.parse tira ValiError fuera
@@ -43,7 +43,7 @@ export class HttpPlansRepository extends PlansRepository {
 
   async create(draft: PlanDraft): Promise<void> {
     try {
-      const body = v.parse(PlanRequestSchema, toPlanRequest(draft));
+      const body = v.parse(PlanRequestSchema, toPlanRequest(draft, 'alta'));
       await firstValueFrom(this.api.post<unknown>('/plans', body));
     } catch (err) {
       throw toDomainError(err);
@@ -52,7 +52,7 @@ export class HttpPlansRepository extends PlansRepository {
 
   async update(id: string, draft: PlanDraft): Promise<void> {
     try {
-      const body = v.parse(PlanRequestSchema, toPlanRequest(draft));
+      const body = v.parse(PlanRequestSchema, toPlanRequest(draft, 'edicion'));
       await firstValueFrom(this.api.patch<unknown>(`/plans/${id}`, body));
     } catch (err) {
       throw toDomainError(err);

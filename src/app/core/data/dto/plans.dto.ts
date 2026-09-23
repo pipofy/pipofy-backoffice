@@ -22,8 +22,8 @@ export const PlanListDtoSchema = v.array(PlanDtoSchema);
 /**
  * Write-path.
  *
- * `coachId` es OPCIONAL y no nullable: mandarlo en null hace que validateReferences
- * ejecute BigInt(null) y devuelva 500 (§3.2). Cuando no hay valor, la clave se omite.
+ * `coachId` es nullish: EN null al editar, que es la única forma de vaciarlo, y AUSENTE en
+ * el alta — ver toPlanRequest para por qué el alta omite aunque el backend lo aguante.
  *
  * `price` es string incluso siendo un número: el backend lo valida con @IsNumberString()
  * y un número JSON da 400 (§3.5).
@@ -36,7 +36,7 @@ export const PlanListDtoSchema = v.array(PlanDtoSchema);
 export const PlanRequestSchema = v.object({
   name: v.nullable(v.string()),
   planTypeId: v.string(),
-  coachId: v.optional(v.string()),
+  coachId: v.nullish(v.string()),
   classCount: v.nullable(v.number()),
   price: v.nullable(v.string()),
   validityDays: v.nullable(v.number()),

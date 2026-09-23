@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { LOCALE_ID, provideZonelessChangeDetection } from '@angular/core';
 import { PlanesPageComponent } from './planes-page.component';
 import { PlanesFacade } from './planes.facade';
-import { CatalogsRepository } from '@data/repositories/catalogs.repository';
+import { CatalogsRepository } from '@domain/contracts/catalogs.repository';
 import { PlansRepository } from '@domain/contracts/plans.repository';
 import { CoachesRepository } from '@domain/contracts/coaches.repository';
 import { CategoriesRepository } from '@domain/contracts/categories.repository';
@@ -36,6 +36,7 @@ async function mount(over: Partial<PlansRepository> = {}) {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
+      { provide: LOCALE_ID, useValue: 'es-AR' },
       PlanesFacade,
       { provide: PlansRepository, useValue: repo },
       {

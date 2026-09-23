@@ -2,8 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { SignalStore } from '@shared/signal-store/signal-store.base';
 import { ClubRepository } from '@domain/contracts/club.repository';
 import { Club, ClubInput, createClubDraft } from '@domain/entities/club';
-import { DomainError } from '@domain/errors';
-import { toDomainError } from '@data/http/to-domain-error';
+import { DomainError, asDomainError } from '@domain/errors';
 
 /**
  * La primera facade con `T` OBJETO y no array. Nada en SignalStore asume array, así que es
@@ -22,12 +21,12 @@ export class ClubFacade extends SignalStore<Club, DomainError> {
   private readonly repo = inject(ClubRepository);
 
   load(): Promise<void> {
-    return this.run(this.repo.get(), toDomainError);
+    return this.run(this.repo.get(), asDomainError);
   }
 
   /**
    * createClubDraft tira de forma SÍNCRONA cuando holdMinutes no sirve; va DENTRO de la
-   * promesa para que run()/toDomainError normalicen tanto la invariante de dominio como el
+   * promesa para que run()/asDomainError normalicen tanto la invariante de dominio como el
    * fallo del repo. Mismo patrón que CanchasFacade.create().
    *
    * Relee con get() y no reusa el input: lo que quede en data() tiene que ser lo que el
@@ -38,7 +37,7 @@ export class ClubFacade extends SignalStore<Club, DomainError> {
       Promise.resolve()
         .then(() => this.repo.update(createClubDraft(input)))
         .then(() => this.repo.get()),
-      toDomainError,
+      asDomainError,
     );
   }
 

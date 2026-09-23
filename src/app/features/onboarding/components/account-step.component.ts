@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { APP_CONFIG } from '@config/app-config';
 import { FieldErrorComponent } from '@shared/ui/field-error.component';
 import { firstErrorMessage } from '../onboarding.validators';
 import { strengthInfo } from '../password-strength';
@@ -15,7 +16,7 @@ import { strengthInfo } from '../password-strength';
     <div class="step-head">
       <p class="eyebrow">Paso 2 de 3</p>
       <h2>Creá tu cuenta</h2>
-      <p>Con estos datos vas a ingresar a PipoFy.</p>
+      <p>Con estos datos vas a ingresar a {{ brand.name }}.</p>
     </div>
 
     <div class="fg" [formGroup]="group()">
@@ -100,6 +101,7 @@ import { strengthInfo } from '../password-strength';
   `,
 })
 export class AccountStepComponent {
+  protected readonly brand = inject(APP_CONFIG).brand;
   readonly group = input.required<FormGroup>();
   readonly role = input<'profesor' | 'club' | null>(null);
   protected readonly showPw = signal(false);

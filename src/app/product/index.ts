@@ -13,7 +13,7 @@ export const PRODUCT_PROVIDERS: Provider[] = [
   { provide: APP_CONFIG, useValue: PIPOFY_CONFIG },
   {
     provide: API_CONFIG,
-    useValue: { apiBaseUrl: environment.apiBaseUrl, realtimeBaseUrl: environment.realtimeBaseUrl },
+    useValue: { apiBaseUrl: environment.apiBaseUrl },
   },
   { provide: NAV_CONFIG, useValue: PIPOFY_NAV },
   { provide: ICONS, useValue: PIPOFY_ICONS },

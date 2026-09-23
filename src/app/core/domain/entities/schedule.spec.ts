@@ -12,7 +12,7 @@ import { InvalidScheduleError, InvalidNumberError } from '../errors';
 const BASE: ScheduleInput = {
   courtId: '1', coachId: '2', categoryGroupId: '3', sessionTypeId: '4',
   weekdays: ['1'], startTime: '18:00', endTime: '19:30',
-  capacity: '8', price: '12000', active: true,
+  capacity: '8', active: true,
   validFrom: '', validTo: '',
 };
 
@@ -21,7 +21,7 @@ describe('createScheduleDraft', () => {
     expect(createScheduleDraft(BASE)).toEqual({
       courtId: '1', coachId: '2', categoryGroupId: '3', sessionTypeId: '4',
       weekday: 1, startTime: '18:00', endTime: '19:30',
-      capacity: 8, price: '12000', active: true,
+      capacity: 8, active: true,
       validFrom: null, validTo: null,
     });
   });
@@ -29,10 +29,6 @@ describe('createScheduleDraft', () => {
   it('weekday viaja como NUMBER: @IsInt() sin enableImplicitConversion (§3.3)', () => {
     expect(createScheduleDraft(BASE).weekday).toBe(1);
     expect(typeof createScheduleDraft(BASE).weekday).toBe('number');
-  });
-
-  it('price viaja como STRING: @IsNumberString(), un número JSON da 400 (§3.3)', () => {
-    expect(typeof createScheduleDraft(BASE).price).toBe('string');
   });
 
   it('cada FK vacío tira nombrando SU campo', () => {
@@ -96,9 +92,6 @@ describe('createScheduleDraft', () => {
     expect(() => createScheduleDraft({ ...BASE, capacity: '-2' })).toThrow(InvalidNumberError);
   });
 
-  it('price vacío es null', () => {
-    expect(createScheduleDraft({ ...BASE, price: '   ' }).price).toBeNull();
-  });
 
   it('la vigencia vacía es null, y la invertida tira', () => {
     expect(createScheduleDraft({ ...BASE, validFrom: '2026-01-01', validTo: '' }).validTo).toBeNull();

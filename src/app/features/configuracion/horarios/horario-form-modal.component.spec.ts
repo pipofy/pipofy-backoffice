@@ -210,17 +210,14 @@ describe('HorarioFormModalComponent', () => {
     expect(el(f, '#horario-desde').value).toBe('');
   });
 
-  it('el precio se siembra en el DOM aunque el valor se repita entre aperturas', () => {
-    // El <input> es el MISMO nodo entre aperturas y Angular sólo escribe el DOM cuando la
-    // expresión del binding CAMBIA. Por eso la siembra es un `.value =` directo.
-    // Ver plan-form-modal.component.ts:195-212 para la explicación completa.
-    const f = setup(null);
-    el(f, '#horario-precio').value = '9999';
-    el(f, '#horario-precio').dispatchEvent(new Event('input'));
-    f.detectChanges();
-    f.componentInstance.open(null);
-    f.detectChanges();
-    expect(el(f, '#horario-precio').value).toBe('');
+  it('el precio se MUESTRA pero es readonly: el backend no lo acepta', () => {
+    // CreateScheduleDto no declara price y el pipe corre con forbidNonWhitelisted, así que
+    // mandarlo devuelve 400 y no se puede guardar el horario. Verificado contra el server.
+    // Se muestra el valor guardado —la columna existe y el GET la devuelve— y no se ofrece
+    // editarlo: un campo editable que no persiste es peor que uno que no se ofrece.
+    const f = setup(HORARIO);
+    expect(el(f, '#horario-precio').value).toBe('12000');
+    expect(el(f, '#horario-precio').readOnly).toBe(true);
   });
 
   it('avisa que la vigencia no se puede vaciar', () => {
@@ -235,7 +232,7 @@ describe('HorarioFormModalComponent', () => {
     expect(emitido).toEqual({
       courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
       weekdays: ['1'], startTime: '18:00', endTime: '19:30',
-      capacity: '8', price: '12000', active: true,
+      capacity: '8', active: true,
       validFrom: '2026-08-01', validTo: '',
     });
   });

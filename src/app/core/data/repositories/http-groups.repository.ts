@@ -11,10 +11,17 @@ import { toGroups } from '@domain/derive-groups';
 import { toDomainError } from '../http/to-domain-error';
 
 /**
- * ponytail: la ventana de sesiones es FIJA. `GET /class-sessions` exige from/to y no acepta
- * filtro por plantilla, así que se pide un rango y se agrupa en el cliente. Techo: un grupo en
- * receso de más de un mes se muestra sin sesiones. Salida: `?scheduleTemplateId=` del lado del
- * backend, y la ventana desaparece. Ver el spec §3.2.
+ * ponytail: la ventana de sesiones es FIJA. `GET /class-sessions` exige from/to, así que se
+ * pide un rango y se agrupa en el cliente. Techo: un grupo en receso de más de un mes se
+ * muestra sin sesiones. Ver el spec §3.2.
+ *
+ * OJO, el backend SÍ acepta `?scheduleTemplateId=` (está en ListClassSessionsDto junto con
+ * courtId y categoryGroupId; verificado contra el server: con un id numérico devuelve sólo
+ * las clases de esa plantilla, y con basura devuelve 400). Este comentario decía lo contrario
+ * y era falso. No se usa acá a propósito: filtrar por plantilla sería UNA llamada POR GRUPO,
+ * y una sola del rango entero las cubre a todas. La salida para el techo es el DETALLE de un
+ * grupo —ahí sí, una llamada filtrada con un rango amplio y la ventana desaparece—, no esta
+ * lista.
  */
 const VENTANA_DIAS = 28;
 

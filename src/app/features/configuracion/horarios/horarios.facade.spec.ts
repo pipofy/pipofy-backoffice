@@ -21,7 +21,7 @@ const ROW: Schedule = {
 
 const INPUT: ScheduleInput = {
   courtId: 'c1', coachId: 'p1', categoryGroupId: 'g1', sessionTypeId: '40',
-  weekdays: ['1'], startTime: '18:00', endTime: '19:30', capacity: '8', price: '5000',
+  weekdays: ['1'], startTime: '18:00', endTime: '19:30', capacity: '8',
   active: true, validFrom: '', validTo: '',
 };
 

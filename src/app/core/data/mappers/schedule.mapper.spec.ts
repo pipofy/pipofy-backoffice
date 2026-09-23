@@ -56,7 +56,7 @@ describe('toScheduleRequest', () => {
   const DRAFT: ScheduleDraft = {
     courtId: '10', coachId: '20', categoryGroupId: '30', sessionTypeId: '40',
     weekday: 1, startTime: '18:00', endTime: '19:30',
-    capacity: 8, price: '12000', active: true,
+    capacity: 8, active: true,
     validFrom: '2026-08-01', validTo: '2026-12-31',
   };
 
@@ -72,19 +72,23 @@ describe('toScheduleRequest', () => {
     expect('validTo' in req).toBe(false);
   });
 
-  it('MANDA capacity y price EN null: sus columnas sí se vacían', () => {
+  it('MANDA capacity EN null: su columna sí se vacía', () => {
     // Contraste deliberado con las dos de arriba, DENTRO DEL MISMO MAPPER. Los dos tests
     // existen para que un refactor que "unifique" las reglas rompa en rojo.
-    const req = toScheduleRequest({ ...DRAFT, capacity: null, price: null });
+    const req = toScheduleRequest({ ...DRAFT, capacity: null });
     expect('capacity' in req).toBe(true);
     expect(req.capacity).toBeNull();
-    expect('price' in req).toBe(true);
-    expect(req.price).toBeNull();
   });
 
-  it('weekday viaja como number y price como string', () => {
+  it('weekday viaja como number', () => {
     const req = toScheduleRequest(DRAFT);
     expect(typeof req.weekday).toBe('number');
-    expect(typeof req.price).toBe('string');
+  });
+
+  it('NO manda price: el backend lo rechaza con 400', () => {
+    // CreateScheduleDto no declara el campo y el pipe corre con forbidNonWhitelisted, así
+    // que mandarlo rompe el alta y la edición enteras. Verificado contra el server: el mismo
+    // body con price da 400 "property price should not exist", y sin él da 201.
+    expect('price' in toScheduleRequest(DRAFT)).toBe(false);
   });
 });

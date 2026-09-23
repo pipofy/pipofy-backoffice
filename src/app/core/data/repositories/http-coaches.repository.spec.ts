@@ -22,7 +22,7 @@ describe('HttpCoachesRepository', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/rt' } },
+        { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
         HttpCoachesRepository,
       ],
     });

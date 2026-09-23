@@ -40,7 +40,7 @@ async function harnessAt(url: string, conSesion = true, mustChangePassword = fal
       { provide: AuthRepository, useValue: { signup: async () => undefined } },
       { provide: ApiClient, useValue: { get: () => of([]) } },
       { provide: HttpClient, useValue: {} as HttpClient },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
       // En root, igual que en app.config.ts: lo usan Configuración y el dashboard, y una
       // instancia por ruta lazy significaba un cache de catálogos por ruta.
       { provide: CatalogsRepository, useClass: HttpCatalogsRepository },

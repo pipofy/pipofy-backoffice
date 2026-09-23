@@ -39,8 +39,11 @@ export function toSchedule(dto: ScheduleDto): Schedule {
 
 /**
  * `validFrom` y `validTo` se OMITEN cuando son null, porque el service convierte el null en
- * `undefined` y el valor viejo sobrevive (§3.7). `capacity` y `price` SÍ van en null: sus
- * columnas lo aceptan y es la única forma de vaciarlos.
+ * `undefined` y el valor viejo sobrevive (§3.7). `capacity` SÍ va en null: su columna lo
+ * acepta y es la única forma de vaciarlo.
+ *
+ * NO manda `price`: el backend no declara el campo y lo rechaza con 400 (ver el comentario
+ * de `ScheduleRequestSchema`). El GET sí lo devuelve, así que `toSchedule` lo sigue leyendo.
  *
  * Ojo con "unificar" esto con toPlanRequest, toStudentRequest o toClubRequest: los dos
  * primeros omiten claves distintas y por motivos distintos, y toClubRequest no omite NINGUNA
@@ -58,7 +61,6 @@ export function toScheduleRequest(draft: ScheduleDraft): ScheduleRequest {
     startTime: draft.startTime,
     endTime: draft.endTime,
     capacity: draft.capacity,
-    price: draft.price,
     active: draft.active,
     ...(draft.validFrom !== null ? { validFrom: draft.validFrom } : {}),
     ...(draft.validTo !== null ? { validTo: draft.validTo } : {}),

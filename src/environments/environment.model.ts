@@ -5,6 +5,4 @@
 export interface Environment {
   production: boolean;
   apiBaseUrl: string;
-  /** Sin consumidor todavía (SseRealtimeConnection). */
-  realtimeBaseUrl?: string;
 }

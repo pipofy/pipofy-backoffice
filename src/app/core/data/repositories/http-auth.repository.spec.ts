@@ -20,7 +20,7 @@ function repo(httpMock: Partial<HttpClient>): HttpAuthRepository {
       provideZonelessChangeDetection(),
       HttpAuthRepository,
       { provide: HttpClient, useValue: httpMock },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/api/stream' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   return TestBed.inject(HttpAuthRepository);

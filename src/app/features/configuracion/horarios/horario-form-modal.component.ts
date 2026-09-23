@@ -129,12 +129,15 @@ import { WEEKDAY_OPTIONS } from '@shared/weekday-label';
           </div>
           <div class="field field-dense">
             <label for="horario-precio">Precio</label>
-            <!-- SIN [value]: campo NO CONTROLADO, sembrado imperativamente por open() vía
-                 #precioInput. La explicación completa —por qué un [value] en vivo borra lo
-                 tipeado al llegar al punto decimal, y por qué un signal-semilla aparte tampoco
-                 alcanza— está en plan-form-modal.component.ts:79-95 y :195-212. No se repite. -->
-            <input id="horario-precio" #precioInput class="control" type="number" min="0" step="0.01"
-                   (input)="price.set(value($event))" />
+            <!-- READONLY: el backend no acepta el campo price al crear ni al editar un
+                 horario (CreateScheduleDto no lo declara y el pipe corre con
+                 forbidNonWhitelisted), así que mandarlo devolvía 400 y no se podía guardar
+                 NADA. Se muestra el valor guardado y no se ofrece editarlo, que sería mentir.
+                 El día que el backend lo acepte vuelve a ser editable, y ahí sí va sin
+                 [value] como el precio de planes. Por eso ya no hace falta el campo no
+                 controlado que había acá. -->
+            <input id="horario-precio" class="control" type="number" readonly
+                   [value]="price()" />
           </div>
         </div>
 
@@ -197,8 +200,6 @@ export class HorarioFormModalComponent {
   private readonly modal = viewChild.required(ModalComponent);
   /** Los dos relojes, para cerrarlos al reabrir el modal: ver open(). */
   private readonly dials = viewChildren(TimePickerFieldComponent);
-  /** Input de precio, NO controlado: ver el comentario del template junto al input. */
-  private readonly priceInput = viewChild.required<ElementRef<HTMLInputElement>>('precioInput');
   private readonly modalBody = viewChild.required<ElementRef<HTMLElement>>('body');
 
   /** El horario en edición, o null en alta. Lo pone open(), no un input: ver ahí por qué. */
@@ -213,7 +214,7 @@ export class HorarioFormModalComponent {
   protected readonly startTime = signal('');
   protected readonly endTime = signal('');
   protected readonly capacity = signal('');
-  /** Lo que lee onSave(); el DOM del input se siembra aparte, ver open(). */
+  /** SÓLO para mostrar: el precio no viaja en el save porque el backend lo rechaza. */
   protected readonly price = signal('');
   protected readonly active = signal(true);
   protected readonly validFrom = signal('');
@@ -335,7 +336,6 @@ export class HorarioFormModalComponent {
     this.endTime.set(schedule?.endTime ?? '');
     this.capacity.set(schedule?.capacity != null ? String(schedule.capacity) : '');
     this.price.set(schedule?.price ?? '');
-    this.priceInput().nativeElement.value = schedule?.price ?? '';
     this.active.set(schedule?.active ?? true);
     this.validFrom.set(schedule?.validFrom ?? '');
     this.validTo.set(schedule?.validTo ?? '');
@@ -357,7 +357,6 @@ export class HorarioFormModalComponent {
       startTime: this.startTime(),
       endTime: this.endTime(),
       capacity: this.capacity(),
-      price: this.price(),
       active: this.active(),
       validFrom: this.validFrom(),
       validTo: this.validTo(),

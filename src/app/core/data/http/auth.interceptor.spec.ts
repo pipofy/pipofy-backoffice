@@ -30,7 +30,7 @@ function setup() {
       { provide: SessionStore, useClass: LocalStorageSessionStore },
       TokenRefresher,
       { provide: AuthRepository, useClass: HttpAuthRepository },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api', realtimeBaseUrl: '/api/stream' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: '/api' } },
     ],
   });
   const store = TestBed.inject(SessionStore);

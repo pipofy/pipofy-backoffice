@@ -12,7 +12,7 @@ function make(httpMock: Partial<HttpClient>) {
       provideZonelessChangeDetection(),
       ApiClient,
       { provide: HttpClient, useValue: httpMock },
-      { provide: API_CONFIG, useValue: { apiBaseUrl: 'https://api.test', realtimeBaseUrl: 'x' } },
+      { provide: API_CONFIG, useValue: { apiBaseUrl: 'https://api.test' } },
     ],
   });
   return TestBed.inject(ApiClient);

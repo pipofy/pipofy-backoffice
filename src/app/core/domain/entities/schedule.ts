@@ -23,7 +23,11 @@ export interface Schedule {
   readonly startTime: string | null;
   readonly endTime: string | null;
   readonly capacity: number | null;
-  /** Decimal sin redondear, como string. El formateo es cosa de la pantalla. */
+  /**
+   * Decimal sin redondear, como string. SÓLO LECTURA: el backend devuelve la columna pero
+   * no acepta el campo al escribir (ver `ScheduleRequestSchema`), así que no está en
+   * `ScheduleDraft` ni en `ScheduleInput`. El formateo es cosa de la pantalla.
+   */
   readonly price: string | null;
   readonly active: boolean;
   /** 'YYYY-MM-DD', el formato que quiere <input type="date"> (§3.2). */
@@ -40,7 +44,6 @@ export interface ScheduleDraft {
   readonly startTime: string;
   readonly endTime: string;
   readonly capacity: number | null;
-  readonly price: string | null;
   readonly active: boolean;
   readonly validFrom: string | null;
   readonly validTo: string | null;
@@ -61,7 +64,6 @@ export interface ScheduleInput {
   readonly startTime: string;
   readonly endTime: string;
   readonly capacity: string;
-  readonly price: string;
   readonly active: boolean;
   readonly validFrom: string;
   readonly validTo: string;
@@ -162,8 +164,6 @@ export function createScheduleDrafts(input: ScheduleInput): ScheduleDraft[] {
     // El mensaje dice "0 o más" y no "positivo" porque el regex de optionalInt (/^\d+$/)
     // acepta '0': el texto de plan.ts dice "positivo" y es falso ahí también.
     capacity: optionalInt(input.capacity, 'El cupo tiene que ser un número entero de 0 o más.'),
-    // String y no number: @IsNumberString() en el backend, un número JSON da 400 (§3.3).
-    price: input.price.trim() || null,
     active: input.active,
     validFrom,
     validTo,
